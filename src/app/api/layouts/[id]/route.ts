@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, verifyOwnership } from "@/lib/utils/apiAuth";
 import { getLayoutById, updateLayout, deleteLayout } from "@/lib/db/layouts";
 import { validateLayoutData } from "@/lib/utils/validation";
-import { encrypt } from "@/lib/utils/encryption";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 
 /**
@@ -35,7 +34,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    
+
     console.log("Update layout request body:", JSON.stringify(body, null, 2));
 
     // Validate layout data
@@ -44,28 +43,20 @@ export async function PATCH(
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
-    // Encrypt sessionid if provided (and it's a new value, not empty)
-    let encryptedSessionId = undefined;
+    // Store sessionid as plain text (no encryption needed)
+    let sessionIdValue = undefined;
     if (body.sessionid) {
-      // User provided a new sessionid value - encrypt it
-      console.log("Encrypting new sessionid");
-      try {
-        encryptedSessionId = encrypt(body.sessionid);
-      } catch (error) {
-        console.error("Encryption error:", error);
-        return NextResponse.json(
-          { error: "Failed to encrypt session data" },
-          { status: 500 }
-        );
-      }
+      // User provided a new sessionid value - store it as-is
+      console.log("Storing new sessionid (plain text)");
+      sessionIdValue = body.sessionid;
     } else if (body.sessionid === null || body.sessionid === "") {
       // User explicitly wants to clear the sessionid
       console.log("Clearing sessionid");
-      encryptedSessionId = null;
+      sessionIdValue = null;
     } else {
       // sessionid not provided in update - keep existing value
       console.log("Keeping existing sessionid");
-      encryptedSessionId = layout.sessionid;
+      sessionIdValue = layout.sessionid;
     }
 
     // Prepare update data - allow clearing fields with null/empty string
@@ -86,8 +77,8 @@ export async function PATCH(
       updateData.interval = body.interval || null;
     }
 
-    // sessionid - use encrypted value determined above
-    updateData.sessionid = encryptedSessionId;
+    // sessionid - use plain text value determined above
+    updateData.sessionid = sessionIdValue;
 
     // sessionidSign - allow null to clear
     if (body.sessionidSign !== undefined) {
@@ -104,7 +95,7 @@ export async function PATCH(
 
     // Update layout
     const updatedLayout = await updateLayout(id, updateData);
-    
+
     console.log("Layout updated successfully");
 
     return NextResponse.json(updatedLayout);

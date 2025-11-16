@@ -4,7 +4,7 @@ import { getLayoutById } from "@/lib/db/layouts";
 import { createSnapshot } from "@/lib/db/snapshots";
 import { generateSnapshot } from "@/lib/services/chartimg";
 import { captureWithPlaywright } from "@/lib/services/playwright-screenshot";
-import { decrypt } from "@/lib/utils/encryption";
+import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 
 /**
@@ -44,16 +44,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Decrypt sessionid if exists
-    let decryptedSessionId: string | undefined;
-    if (layout.sessionid) {
-      try {
-        decryptedSessionId = decrypt(layout.sessionid);
-      } catch (error) {
-        console.error("Failed to decrypt sessionid:", error);
-        // Continue without sessionid if decryption fails
-      }
-    }
+    // sessionid is stored as plain text (no decryption needed)
+    const sessionId = layout.sessionid;
 
     let snapshotResult: { url: string; expiresAt: Date };
 
@@ -65,23 +57,23 @@ export async function POST(request: NextRequest) {
       layoutId: layout.layoutId,
     });
 
-    // Use Playwright ONLY - CHART-IMG is disabled
+    // Use Puppeteer ONLY - CHART-IMG is disabled
     if (!layout.layoutId || !layout.sessionid || !layout.sessionidSign) {
       return NextResponse.json(
         {
           error:
-            "Missing required credentials (layoutId, sessionid, or sessionidSign) for Playwright screenshot",
+            "Missing required credentials (layoutId, sessionid, or sessionidSign) for Puppeteer screenshot",
         },
         { status: 400 }
       );
     }
 
     console.log(
-      "Using Playwright to capture chart with layoutId:",
+      "Using Puppeteer to capture chart with layoutId:",
       layout.layoutId
     );
 
-    const screenshotDataUrl = await captureWithPlaywright({
+    const screenshotDataUrl = await captureWithPuppeteer({
       layoutId: layout.layoutId,
       sessionid: layout.sessionid,
       sessionidSign: layout.sessionidSign,
@@ -89,7 +81,7 @@ export async function POST(request: NextRequest) {
       height: 1080,
     });
 
-    // For Playwright screenshots, we store the base64 data URL directly
+    // For Puppeteer screenshots, we store the base64 data URL directly
     // Set expiration to 30 days from now
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);

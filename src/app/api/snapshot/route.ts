@@ -3,6 +3,7 @@ import { authenticateRequest, verifyOwnership } from "@/lib/utils/apiAuth";
 import { getLayoutById } from "@/lib/db/layouts";
 import { createSnapshot } from "@/lib/db/snapshots";
 import { generateSnapshot } from "@/lib/services/chartimg";
+import { captureWithPlaywright } from "@/lib/services/playwright-screenshot";
 import { decrypt } from "@/lib/utils/encryption";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 
@@ -54,15 +55,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate snapshot using CHART-IMG API
-    // Use layoutId to capture user's saved chart with drawings and indicators
-    const snapshotResult = await generateSnapshot({
-      layoutId: layout.layoutId || undefined,
-      symbol: layout.symbol || undefined,
-      interval: layout.interval || undefined,
-      sessionid: decryptedSessionId,
-      sessionidSign: layout.sessionidSign || undefined,
+    let snapshotResult: { url: string; expiresAt: Date };
+
+    // Debug: Log what we have
+    console.log("Layout data:", {
+      hasLayoutId: !!layout.layoutId,
+      hasSessionid: !!layout.sessionid,
+      hasSessionidSign: !!layout.sessionidSign,
+      layoutId: layout.layoutId,
     });
+
+    // Use Playwright ONLY - CHART-IMG is disabled
+    if (!layout.layoutId || !layout.sessionid || !layout.sessionidSign) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing required credentials (layoutId, sessionid, or sessionidSign) for Playwright screenshot",
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(
+      "Using Playwright to capture chart with layoutId:",
+      layout.layoutId
+    );
+
+    const screenshotDataUrl = await captureWithPlaywright({
+      layoutId: layout.layoutId,
+      sessionid: layout.sessionid,
+      sessionidSign: layout.sessionidSign,
+      width: 1920,
+      height: 1080,
+    });
+
+    // For Playwright screenshots, we store the base64 data URL directly
+    // Set expiration to 30 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    snapshotResult = {
+      url: screenshotDataUrl,
+      expiresAt,
+    };
 
     // Save snapshot to database
     const snapshot = await createSnapshot(

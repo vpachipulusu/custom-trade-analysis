@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String     @id @default(uuid())
+  firebaseUid           String     @unique
+  email                 String     @unique
+  createdAt             DateTime   @default(now())
+  
+  // Subscription fields
+  stripeCustomerId      String?    @unique
+  stripeSubscriptionId  String?    @unique
+  stripePriceId         String?
+  stripeCurrentPeriodEnd DateTime?
+  subscriptionTier      String     @default("free") // free, pro, enterprise
+  subscriptionStatus    String     @default("inactive") // inactive, active, canceled, past_due
+  
+  layouts               Layout[]
+  analyses              Analysis[]
+}
+
+model Layout {
+  id             String     @id @default(uuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  layoutId       String?
+  symbol         String?
+  interval       String?
+  sessionid      String?
+  sessionidSign  String?
+  createdAt      DateTime   @default(now())
+  snapshots      Snapshot[]
+}
+
+model Snapshot {
+  id          String     @id @default(uuid())
+  layoutId    String
+  layout      Layout     @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  url         String
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+  analysis    Analysis?
+}
+
+model Analysis {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshotId  String     @unique
+  snapshot    Snapshot   @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  action      String
+  confidence  Int
+  timeframe   String
+  reasons     Json
+  createdAt   DateTime   @default(now())
+}

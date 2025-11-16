@@ -1,0 +1,241 @@
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  IconButton,
+  Box,
+  Chip,
+  Typography,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import { format } from "date-fns";
+import { Layout } from "@/hooks/useLayouts";
+import { useDeleteLayout } from "@/hooks/useLayouts";
+import AddLayoutDialog from "./AddLayoutDialog";
+import EditLayoutDialog from "./EditLayoutDialog";
+import ViewSnapshotsDialog from "./ViewSnapshotsDialog";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import { useCreateSnapshot } from "@/hooks/useSnapshots";
+
+interface LayoutsTableProps {
+  layouts: Layout[];
+  onRefresh: () => void;
+}
+
+export default function LayoutsTable({
+  layouts,
+  onRefresh,
+}: LayoutsTableProps) {
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialog, setEditDialog] = useState<{
+    open: boolean;
+    layout: Layout | null;
+  }>({
+    open: false,
+    layout: null,
+  });
+  const [viewSnapshotsDialog, setViewSnapshotsDialog] = useState<{
+    open: boolean;
+    layoutId: string | null;
+  }>({
+    open: false,
+    layoutId: null,
+  });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    layoutId: string | null;
+  }>({
+    open: false,
+    layoutId: null,
+  });
+
+  const deleteLayout = useDeleteLayout();
+  const createSnapshot = useCreateSnapshot();
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    if (deleteDialog.layoutId) {
+      try {
+        await deleteLayout.mutateAsync(deleteDialog.layoutId);
+        setDeleteDialog({ open: false, layoutId: null });
+      } catch (error) {
+        console.error("Delete failed:", error);
+      }
+    }
+  };
+
+  const handleGenerateSnapshot = async (layoutId: string) => {
+    try {
+      await createSnapshot.mutateAsync(layoutId);
+    } catch (error) {
+      console.error("Snapshot generation failed:", error);
+    }
+  };
+
+  if (layouts.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <Typography variant="body1" color="text.secondary" gutterBottom>
+          No layouts yet. Create your first layout to get started.
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddDialogOpen(true)}
+          sx={{ mt: 2 }}
+        >
+          Add Layout
+        </Button>
+        <AddLayoutDialog
+          open={addDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          onSuccess={() => {
+            setAddDialogOpen(false);
+            onRefresh();
+          }}
+        />
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddDialogOpen(true)}
+        >
+          Add Layout
+        </Button>
+      </Box>
+
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Symbol</TableCell>
+              <TableCell>Interval</TableCell>
+              <TableCell>Layout ID</TableCell>
+              <TableCell>Snapshots</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {layouts.map((layout) => (
+              <TableRow key={layout.id}>
+                <TableCell>{layout.symbol || "-"}</TableCell>
+                <TableCell>{layout.interval || "-"}</TableCell>
+                <TableCell>
+                  {layout.layoutId ? (
+                    <Chip label={layout.layoutId} size="small" />
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={layout.snapshotCount}
+                    size="small"
+                    color="primary"
+                  />
+                </TableCell>
+                <TableCell>
+                  {format(new Date(layout.createdAt), "MMM dd, yyyy")}
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    title="Generate Snapshot"
+                    onClick={() => handleGenerateSnapshot(layout.id)}
+                    disabled={createSnapshot.isPending}
+                  >
+                    <CameraAltIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="info"
+                    title="View Snapshots"
+                    onClick={() =>
+                      setViewSnapshotsDialog({
+                        open: true,
+                        layoutId: layout.id,
+                      })
+                    }
+                  >
+                    <PhotoLibraryIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="secondary"
+                    title="Edit"
+                    onClick={() => setEditDialog({ open: true, layout })}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    title="Delete"
+                    onClick={() =>
+                      setDeleteDialog({ open: true, layoutId: layout.id })
+                    }
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <AddLayoutDialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        onSuccess={() => {
+          setAddDialogOpen(false);
+          onRefresh();
+        }}
+      />
+
+      {editDialog.layout && (
+        <EditLayoutDialog
+          open={editDialog.open}
+          layout={editDialog.layout}
+          onClose={() => setEditDialog({ open: false, layout: null })}
+          onSuccess={() => {
+            setEditDialog({ open: false, layout: null });
+            onRefresh();
+          }}
+        />
+      )}
+
+      <ViewSnapshotsDialog
+        open={viewSnapshotsDialog.open}
+        layoutId={viewSnapshotsDialog.layoutId}
+        onClose={() => setViewSnapshotsDialog({ open: false, layoutId: null })}
+      />
+
+      <DeleteConfirmationDialog
+        open={deleteDialog.open}
+        title="Delete Layout"
+        message="Are you sure you want to delete this layout? This will also delete all associated snapshots and analyses."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteDialog({ open: false, layoutId: null })}
+      />
+    </>
+  );
+}

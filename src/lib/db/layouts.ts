@@ -1,0 +1,97 @@
+import { prisma } from "@/lib/prisma";
+import { Layout } from "@prisma/client";
+
+export interface CreateLayoutData {
+  layoutId?: string | null;
+  symbol?: string | null;
+  interval?: string | null;
+  sessionid?: string | null;
+  sessionidSign?: string | null;
+}
+
+export interface UpdateLayoutData {
+  layoutId?: string | null;
+  symbol?: string | null;
+  interval?: string | null;
+  sessionid?: string | null;
+  sessionidSign?: string | null;
+}
+
+/**
+ * Create a new layout
+ */
+export async function createLayout(
+  userId: string,
+  data: CreateLayoutData
+): Promise<Layout> {
+  return await prisma.layout.create({
+    data: {
+      userId,
+      layoutId: data.layoutId,
+      symbol: data.symbol,
+      interval: data.interval,
+      sessionid: data.sessionid,
+      sessionidSign: data.sessionidSign,
+    },
+  });
+}
+
+/**
+ * Get all layouts for a user
+ */
+export async function getLayoutsByUserId(userId: string): Promise<Layout[]> {
+  return await prisma.layout.findMany({
+    where: { userId },
+    include: {
+      snapshots: {
+        select: {
+          id: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+/**
+ * Get layout by ID
+ */
+export async function getLayoutById(id: string): Promise<Layout | null> {
+  return await prisma.layout.findUnique({
+    where: { id },
+    include: {
+      user: true,
+      snapshots: true,
+    },
+  });
+}
+
+/**
+ * Update layout
+ */
+export async function updateLayout(
+  id: string,
+  data: UpdateLayoutData
+): Promise<Layout> {
+  return await prisma.layout.update({
+    where: { id },
+    data: {
+      layoutId: data.layoutId,
+      symbol: data.symbol,
+      interval: data.interval,
+      sessionid: data.sessionid,
+      sessionidSign: data.sessionidSign,
+    },
+  });
+}
+
+/**
+ * Delete layout (will cascade delete snapshots and analyses)
+ */
+export async function deleteLayout(id: string): Promise<void> {
+  await prisma.layout.delete({
+    where: { id },
+  });
+}

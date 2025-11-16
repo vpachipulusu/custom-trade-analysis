@@ -21,9 +21,9 @@ export async function captureWithPuppeteer(
 
   let browser;
   try {
-    // Launch browser with user data to maintain session
+    // Launch browser in headless mode
     browser = await puppeteer.launch({
-      headless: false, // Set to false to see what's happening
+      headless: true,
       args: [
         `--window-size=${width},${height}`,
         "--no-sandbox",

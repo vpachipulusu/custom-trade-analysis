@@ -23,7 +23,7 @@ export async function captureWithPlaywright(
   try {
     // Launch browser in non-headless mode for debugging
     browser = await chromium.launch({
-      headless: false, // Set to false to see what's happening
+      headless: true, // Set to false to see what's happening
       args: ["--start-maximized"],
     });
 

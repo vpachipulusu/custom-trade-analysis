@@ -11,8 +11,24 @@ if (process.env.NODE_ENV !== "development") {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Completely ignore undici for client-side bundles
+      config.plugins.push(
+        new (require("webpack").IgnorePlugin)({
+          resourceRegExp: /^undici$/,
+        })
+      );
+
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        undici: false,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
   },
   images: {
     remotePatterns: [

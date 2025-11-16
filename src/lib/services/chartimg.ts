@@ -57,14 +57,50 @@ export async function generateSnapshot(
       );
     }
 
+    // Log request details for debugging
+    console.log("CHART-IMG API Request Body:", JSON.stringify(body, null, 2));
+    console.log("CHART-IMG API Headers:", {
+      "x-api-key": CHARTIMG_API_KEY ? "***SET***" : "***NOT SET***",
+      "tv-sessionid": params.sessionid ? "***SET***" : "***NOT SET***",
+      "tv-sessionid_sign": params.sessionidSign ? "***SET***" : "***NOT SET***",
+    });
+
     // Make API request
     const response = await axios.post(CHARTIMG_API_URL, body, {
       headers,
       timeout: 30000, // 30 second timeout
     });
 
-    if (!response.data || !response.data.url) {
-      throw new Error("Invalid response from CHART-IMG API");
+    // Log the full response for debugging
+    console.log(
+      "CHART-IMG API Response:",
+      JSON.stringify(response.data, null, 2)
+    );
+
+    // Handle different response formats
+    let imageUrl: string | undefined;
+
+    // Try different possible response field names
+    if (response.data.url) {
+      imageUrl = response.data.url;
+    } else if (response.data.image) {
+      imageUrl = response.data.image;
+    } else if (response.data.imageUrl) {
+      imageUrl = response.data.imageUrl;
+    } else if (response.data.data?.url) {
+      imageUrl = response.data.data.url;
+    } else if (
+      typeof response.data === "string" &&
+      response.data.startsWith("http")
+    ) {
+      imageUrl = response.data;
+    }
+
+    if (!imageUrl) {
+      console.error("Invalid CHART-IMG response structure:", response.data);
+      throw new Error(
+        `Invalid response from CHART-IMG API: ${JSON.stringify(response.data)}`
+      );
     }
 
     // Calculate expiration date (typically 30 days for CHART-IMG hosted images)
@@ -72,7 +108,7 @@ export async function generateSnapshot(
     expiresAt.setDate(expiresAt.getDate() + 30);
 
     return {
-      url: response.data.url,
+      url: imageUrl,
       expiresAt,
     };
   } catch (error) {

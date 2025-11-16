@@ -36,8 +36,8 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <StrictMode>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider theme={theme}>

@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate snapshot using CHART-IMG API
+    // Use layoutId to capture user's saved chart with drawings and indicators
     const snapshotResult = await generateSnapshot({
       layoutId: layout.layoutId || undefined,
       symbol: layout.symbol || undefined,

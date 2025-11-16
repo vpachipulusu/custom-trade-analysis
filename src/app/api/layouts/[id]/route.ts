@@ -35,6 +35,8 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    
+    console.log("Update layout request body:", JSON.stringify(body, null, 2));
 
     // Validate layout data
     const validation = validateLayoutData(body);
@@ -42,33 +44,68 @@ export async function PATCH(
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
-    // Encrypt sessionid if provided
-    let encryptedSessionId = body.sessionid;
-    if (body.sessionid && body.sessionid !== layout.sessionid) {
+    // Encrypt sessionid if provided (and it's a new value, not empty)
+    let encryptedSessionId = undefined;
+    if (body.sessionid) {
+      // User provided a new sessionid value - encrypt it
+      console.log("Encrypting new sessionid");
       try {
         encryptedSessionId = encrypt(body.sessionid);
       } catch (error) {
+        console.error("Encryption error:", error);
         return NextResponse.json(
           { error: "Failed to encrypt session data" },
           { status: 500 }
         );
       }
+    } else if (body.sessionid === null || body.sessionid === "") {
+      // User explicitly wants to clear the sessionid
+      console.log("Clearing sessionid");
+      encryptedSessionId = null;
+    } else {
+      // sessionid not provided in update - keep existing value
+      console.log("Keeping existing sessionid");
+      encryptedSessionId = layout.sessionid;
     }
 
-    // Update layout
-    const updatedLayout = await updateLayout(id, {
-      layoutId: body.layoutId !== undefined ? body.layoutId : layout.layoutId,
-      symbol: body.symbol !== undefined ? body.symbol : layout.symbol,
-      interval: body.interval !== undefined ? body.interval : layout.interval,
-      sessionid:
-        encryptedSessionId !== undefined
-          ? encryptedSessionId
-          : layout.sessionid,
-      sessionidSign:
-        body.sessionidSign !== undefined
-          ? body.sessionidSign
-          : layout.sessionidSign,
+    // Prepare update data - allow clearing fields with null/empty string
+    const updateData: any = {};
+
+    // layoutId - allow null to clear
+    if (body.layoutId !== undefined) {
+      updateData.layoutId = body.layoutId || null;
+    }
+
+    // symbol - allow null to clear
+    if (body.symbol !== undefined) {
+      updateData.symbol = body.symbol || null;
+    }
+
+    // interval - allow null to clear
+    if (body.interval !== undefined) {
+      updateData.interval = body.interval || null;
+    }
+
+    // sessionid - use encrypted value determined above
+    updateData.sessionid = encryptedSessionId;
+
+    // sessionidSign - allow null to clear
+    if (body.sessionidSign !== undefined) {
+      updateData.sessionidSign = body.sessionidSign || null;
+    } else {
+      // Keep existing value
+      updateData.sessionidSign = layout.sessionidSign;
+    }
+
+    console.log("Update data being sent to database:", {
+      ...updateData,
+      sessionid: updateData.sessionid ? "[encrypted]" : updateData.sessionid,
     });
+
+    // Update layout
+    const updatedLayout = await updateLayout(id, updateData);
+    
+    console.log("Layout updated successfully");
 
     return NextResponse.json(updatedLayout);
   } catch (error) {

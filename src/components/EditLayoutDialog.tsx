@@ -75,17 +75,29 @@ export default function EditLayoutDialog({
 
     try {
       const dataToSubmit: UpdateLayoutData = {
-        layoutId: formData.layoutId || undefined,
-        symbol: formData.symbol || undefined,
-        interval: formData.interval || undefined,
-        sessionid: formData.sessionid || undefined,
-        sessionidSign: formData.sessionidSign || undefined,
+        layoutId: formData.layoutId || null,
+        symbol: formData.symbol || null,
+        interval: formData.interval || null,
+        // Only send sessionid/sessionidSign if user typed something
+        // Empty string means keep existing, so don't send it
+        ...(formData.sessionid && { sessionid: formData.sessionid }),
+        ...(formData.sessionidSign && {
+          sessionidSign: formData.sessionidSign,
+        }),
       };
 
+      console.log("Submitting layout update:", {
+        ...dataToSubmit,
+        sessionid: dataToSubmit.sessionid ? "[provided]" : undefined,
+        sessionidSign: dataToSubmit.sessionidSign ? "[provided]" : undefined,
+      });
+
       await updateLayout.mutateAsync({ id: layout.id, data: dataToSubmit });
+      console.log("Layout update successful");
       handleClose();
       onSuccess();
     } catch (err: any) {
+      console.error("Layout update error:", err);
       setError(err.response?.data?.error || "Failed to update layout");
     }
   };
@@ -162,7 +174,31 @@ export default function EditLayoutDialog({
                 color="text.secondary"
                 sx={{ mb: 2, display: "block" }}
               >
-                Update session authentication (leave blank to keep existing)
+                <strong>Required for snapshot generation:</strong> TradingView
+                session credentials allow the snapshot API to access your saved
+                chart layouts with drawings.
+              </Typography>
+              <Typography
+                variant="caption"
+                color="info.main"
+                sx={{
+                  mb: 2,
+                  display: "block",
+                  fontFamily: "monospace",
+                  fontSize: "0.75rem",
+                }}
+              >
+                📋 How to get credentials:
+                <br />
+                1. Go to tradingview.com (logged in)
+                <br />
+                2. Open browser DevTools (F12)
+                <br />
+                3. Go to Application → Cookies → tradingview.com
+                <br />
+                4. Copy "sessionid" value → paste below
+                <br />
+                5. Copy "sessionid_sign" value → paste below
               </Typography>
               <TextField
                 label="Session ID"
@@ -172,8 +208,8 @@ export default function EditLayoutDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, sessionid: e.target.value })
                 }
-                type="password"
-                placeholder="****** (encrypted)"
+                placeholder="Paste sessionid cookie value"
+                helperText="Leave blank to keep existing value"
               />
               <TextField
                 label="Session ID Sign"
@@ -183,7 +219,8 @@ export default function EditLayoutDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, sessionidSign: e.target.value })
                 }
-                type="password"
+                placeholder="Paste sessionid_sign cookie value"
+                helperText="Leave blank to keep existing value"
               />
             </AccordionDetails>
           </Accordion>

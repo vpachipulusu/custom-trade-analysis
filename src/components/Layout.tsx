@@ -17,6 +17,7 @@ import {
   useMediaQuery,
   useTheme,
   Container,
+  Button,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -62,6 +63,9 @@ export default function Layout({ children }: LayoutProps) {
         <ListItem button onClick={() => router.push("/dashboard")}>
           <ListItemText primary="Dashboard" />
         </ListItem>
+        <ListItem button onClick={() => router.push("/automation")}>
+          <ListItemText primary="Automation" />
+        </ListItem>
         <ListItem button onClick={() => router.push("/economic-calendar")}>
           <ListItemText primary="Economic Calendar" />
         </ListItem>
@@ -87,11 +91,32 @@ export default function Layout({ children }: LayoutProps) {
           <Typography
             variant="h6"
             component="div"
-            sx={{ flexGrow: 1, cursor: "pointer" }}
+            sx={{ cursor: "pointer" }}
             onClick={() => router.push("/dashboard")}
           >
             TradingView AI Evaluator
           </Typography>
+
+          {!isMobile && (
+            <Box sx={{ display: "flex", gap: 2, mx: 4, flexGrow: 1 }}>
+              <Button color="inherit" onClick={() => router.push("/dashboard")}>
+                Dashboard
+              </Button>
+              <Button
+                color="inherit"
+                onClick={() => router.push("/automation")}
+              >
+                Automation
+              </Button>
+              <Button
+                color="inherit"
+                onClick={() => router.push("/economic-calendar")}
+              >
+                Economic Calendar
+              </Button>
+            </Box>
+          )}
+
           {user && (
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography

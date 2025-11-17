@@ -10,13 +10,6 @@ import { verifyWebhookSignature } from "@/lib/stripe";
 import { updateUser, getUserById } from "@/lib/db/users";
 import Stripe from "stripe";
 
-// Disable body parsing - we need raw body for signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export async function POST(request: NextRequest) {
   try {
     // Get raw body

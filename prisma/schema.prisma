@@ -26,6 +26,8 @@ model User {
   
   layouts               Layout[]
   analyses              Analysis[]
+  automationSchedules   AutomationSchedule[]
+  telegramConfig        TelegramConfig?
 }
 
 model Layout {
@@ -39,6 +41,7 @@ model Layout {
   sessionidSign  String?
   createdAt      DateTime   @default(now())
   snapshots      Snapshot[]
+  automationSchedule AutomationSchedule?
 }
 
 model Snapshot {
@@ -64,6 +67,7 @@ model Analysis {
   tradeSetup      Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
   createdAt       DateTime          @default(now())
   economicContext EconomicContext?
+  history         AnalysisHistory[]
 }
 
 model EconomicEvent {
@@ -110,4 +114,69 @@ model EconomicContext {
   
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+}
+
+model AutomationSchedule {
+  id                  String    @id @default(uuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  layoutId            String    @unique
+  layout              Layout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  
+  enabled             Boolean   @default(true)
+  frequency           String    // "15m", "1h", "4h", "1d", "1w"
+  customCron          String?   // For future custom schedules
+  
+  sendToTelegram      Boolean   @default(true)
+  
+  lastRunAt           DateTime?
+  nextRunAt           DateTime?
+  
+  // Alert filters
+  onlyOnSignalChange  Boolean   @default(false)  // Only alert if signal changes
+  minConfidence       Int       @default(0)      // Minimum confidence (0-100)
+  sendOnHold          Boolean   @default(false)  // Send HOLD signals
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([nextRunAt, enabled])
+  @@index([userId])
+}
+
+model TelegramConfig {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  chatId          String    // Telegram chat ID
+  username        String?   // Telegram username
+  
+  isActive        Boolean   @default(true)
+  
+  // Message preferences
+  includeChart    Boolean   @default(true)   // Send chart image
+  includeEconomic Boolean   @default(true)   // Include economic context
+  notifyOnHold    Boolean   @default(false)  // Send HOLD signals
+  
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model AnalysisHistory {
+  id               String    @id @default(uuid())
+  analysisId       String
+  analysis         Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  previousAction   String    // Previous action for comparison
+  newAction        String    // New action
+  signalChanged    Boolean   // True if action changed
+  
+  notificationSent Boolean   @default(false)
+  sentAt           DateTime?
+  
+  createdAt        DateTime  @default(now())
+  
+  @@index([analysisId, createdAt])
 }

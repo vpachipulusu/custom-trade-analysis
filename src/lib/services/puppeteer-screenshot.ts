@@ -23,7 +23,7 @@ export async function captureWithPuppeteer(
   try {
     // Launch browser in headless mode
     browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
       args: [
         `--window-size=${width},${height}`,
         "--no-sandbox",

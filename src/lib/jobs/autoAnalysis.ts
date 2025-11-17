@@ -110,6 +110,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       data: {
         layoutId,
         url: `https://www.tradingview.com/chart/${layoutIdTradingView}/`,
+        imageData: imagePath,
         expiresAt,
       },
     });

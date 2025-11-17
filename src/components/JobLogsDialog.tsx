@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -25,7 +26,6 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import TelegramIcon from "@mui/icons-material/Telegram";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
@@ -182,8 +182,8 @@ export default function JobLogsDialog({
               </TableHead>
               <TableBody>
                 {logs.map((log) => (
-                  <>
-                    <TableRow key={log.id} hover>
+                  <React.Fragment key={log.id}>
+                    <TableRow hover>
                       <TableCell>
                         <IconButton
                           size="small"
@@ -334,7 +334,7 @@ export default function JobLogsDialog({
                         </Collapse>
                       </TableCell>
                     </TableRow>
-                  </>
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>

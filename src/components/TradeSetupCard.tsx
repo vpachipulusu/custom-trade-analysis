@@ -31,7 +31,8 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
   action,
 }) => {
   // Smart price formatting based on magnitude
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number | null): string => {
+    if (!price && price !== 0) return "N/A";
     if (price >= 10000) {
       // BTC, large numbers - 2 decimals
       return price.toFixed(2);
@@ -187,7 +188,10 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
                   Risk:Reward
                 </Typography>
                 <Typography variant="h6" color="primary">
-                  1:{tradeSetup.riskRewardRatio.toFixed(2)}
+                  {tradeSetup.riskRewardRatio !== null &&
+                  tradeSetup.riskRewardRatio !== undefined
+                    ? `1:${tradeSetup.riskRewardRatio.toFixed(2)}`
+                    : "N/A"}
                 </Typography>
               </Box>
             </Grid>

@@ -49,6 +49,7 @@ model Snapshot {
   layoutId    String
   layout      Layout     @relation(fields: [layoutId], references: [id], onDelete: Cascade)
   url         String
+  imageData   String?    @db.Text
   expiresAt   DateTime
   createdAt   DateTime   @default(now())
   analysis    Analysis?

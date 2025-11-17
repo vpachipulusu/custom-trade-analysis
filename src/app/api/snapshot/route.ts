@@ -6,6 +6,7 @@ import { generateSnapshot } from "@/lib/services/chartimg";
 import { captureWithPlaywright } from "@/lib/services/playwright-screenshot";
 import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { decrypt } from "@/lib/utils/encryption";
 
 /**
  * POST /api/snapshot
@@ -44,8 +45,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // sessionid is stored as plain text (no decryption needed)
-    const sessionId = layout.sessionid;
+    // Decrypt sessionid (it's encrypted in the database)
+    let decryptedSessionId = layout.sessionid;
+    try {
+      if (layout.sessionid && layout.sessionid.includes(":")) {
+        // Check if it's encrypted (format: iv:encryptedData)
+        decryptedSessionId = decrypt(layout.sessionid);
+        console.log("Decrypted sessionid length:", decryptedSessionId.length);
+      } else {
+        console.log("Using plain sessionid (not encrypted)");
+      }
+    } catch (error) {
+      console.error("Failed to decrypt sessionid:", error);
+      // If decryption fails, use as-is (might be plain text)
+    }
 
     let snapshotResult: { url: string; expiresAt: Date };
 
@@ -58,7 +71,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Use Puppeteer ONLY - CHART-IMG is disabled
-    if (!layout.layoutId || !layout.sessionid || !layout.sessionidSign) {
+    if (!layout.layoutId || !decryptedSessionId || !layout.sessionidSign) {
       return NextResponse.json(
         {
           error:
@@ -75,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     const screenshotDataUrl = await captureWithPuppeteer({
       layoutId: layout.layoutId,
-      sessionid: layout.sessionid,
+      sessionid: decryptedSessionId,
       sessionidSign: layout.sessionidSign,
       width: 1920,
       height: 1080,

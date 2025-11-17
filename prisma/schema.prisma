@@ -52,14 +52,61 @@ model Snapshot {
 }
 
 model Analysis {
-  id          String     @id @default(uuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  snapshotId  String     @unique
-  snapshot    Snapshot   @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-  action      String
-  confidence  Int
-  timeframe   String
-  reasons     Json
-  createdAt   DateTime   @default(now())
+  id              String            @id @default(uuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshotId      String            @unique
+  snapshot        Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  action          String
+  confidence      Int
+  timeframe       String
+  reasons         Json
+  createdAt       DateTime          @default(now())
+  economicContext EconomicContext?
+}
+
+model EconomicEvent {
+  id            String    @id @default(uuid())
+  eventId       String    @unique  // External API event ID
+  date          DateTime
+  time          String?
+  country       String
+  currency      String?
+  event         String    @db.Text
+  impact        String    // LOW, MEDIUM, HIGH
+  category      String    // Employment, GDP, Inflation, CentralBank, etc.
+  actual        String?
+  forecast      String?
+  previous      String?
+  source        String    // API source name
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([date, impact])
+  @@index([country, date])
+  @@index([currency, date])
+}
+
+model EconomicContext {
+  id                String     @id @default(uuid())
+  analysisId        String     @unique
+  analysis          Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  symbol            String
+  
+  // Immediate events (within ±1 hour)
+  upcomingEvents    Json       // Array of event objects
+  immediateRisk     String     // NONE, LOW, MEDIUM, HIGH, EXTREME
+  
+  // Weekly events (within 7 days)
+  weeklyEvents      Json       // Array of event objects
+  weeklyOutlook     String     // BULLISH, BEARISH, NEUTRAL, VOLATILE
+  
+  // AI-generated analysis
+  impactSummary     String     @db.Text
+  warnings          Json       // Array of warning strings
+  opportunities     Json       // Array of opportunity strings
+  recommendation    String?    @db.Text
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 }

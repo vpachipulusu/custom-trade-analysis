@@ -62,6 +62,9 @@ export default function Layout({ children }: LayoutProps) {
         <ListItem button onClick={() => router.push("/dashboard")}>
           <ListItemText primary="Dashboard" />
         </ListItem>
+        <ListItem button onClick={() => router.push("/economic-calendar")}>
+          <ListItemText primary="Economic Calendar" />
+        </ListItem>
       </List>
     </Box>
   );

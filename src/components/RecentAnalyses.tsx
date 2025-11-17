@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { Analysis } from "@/hooks/useAnalyses";
 import ActionChip from "./ActionChip";
 import ConfidenceProgress from "./ConfidenceProgress";
+import RiskLevelBadge from "./RiskLevelBadge";
 
 interface RecentAnalysesProps {
   analyses: Analysis[];
@@ -47,9 +48,17 @@ export default function RecentAnalyses({ analyses }: RecentAnalysesProps) {
                   mb: 1,
                 }}
               >
-                <Typography variant="subtitle2" component="div">
-                  {analysis.snapshot.layout.symbol || "Chart Analysis"}
-                </Typography>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Typography variant="subtitle2" component="div">
+                    {analysis.snapshot.layout.symbol || "Chart Analysis"}
+                  </Typography>
+                  {analysis.economicContext && (
+                    <RiskLevelBadge
+                      riskLevel={analysis.economicContext.immediateRisk}
+                      size="small"
+                    />
+                  )}
+                </Box>
                 <ActionChip action={analysis.action} size="small" />
               </Box>
 

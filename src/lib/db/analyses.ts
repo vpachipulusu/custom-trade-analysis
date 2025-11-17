@@ -62,6 +62,7 @@ export async function getAnalysesByUserId(
             },
           },
         },
+        economicContext: true, // Include economic context
       },
       orderBy: {
         createdAt: "desc",
@@ -97,6 +98,7 @@ export async function getAnalysisById(
         },
       },
       user: true,
+      economicContext: true, // Include economic context
     },
   })) as AnalysisWithRelations | null;
 }

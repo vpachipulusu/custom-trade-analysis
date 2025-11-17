@@ -30,6 +30,23 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
   tradeSetup,
   action,
 }) => {
+  // Smart price formatting based on magnitude
+  const formatPrice = (price: number): string => {
+    if (price >= 10000) {
+      // BTC, large numbers - 2 decimals
+      return price.toFixed(2);
+    } else if (price >= 1000) {
+      // Gold, medium numbers - 2 decimals
+      return price.toFixed(2);
+    } else if (price >= 10) {
+      // Stocks, some forex - 3 decimals
+      return price.toFixed(3);
+    } else {
+      // Forex pairs - 5 decimals
+      return price.toFixed(5);
+    }
+  };
+
   const getQualityColor = (quality: string) => {
     switch (quality) {
       case "A":
@@ -106,7 +123,7 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <TimelineIcon color="primary" fontSize="small" />
                   <Typography variant="h6">
-                    {tradeSetup.entryPrice.toFixed(2)}
+                    {formatPrice(tradeSetup.entryPrice)}
                   </Typography>
                 </Box>
               </Box>
@@ -128,7 +145,7 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <TrendingDownIcon color="error" fontSize="small" />
                   <Typography variant="h6" color="error.main">
-                    {tradeSetup.stopLoss.toFixed(2)}
+                    {formatPrice(tradeSetup.stopLoss)}
                   </Typography>
                 </Box>
               </Box>
@@ -150,7 +167,7 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <TrendingUpIcon color="success" fontSize="small" />
                   <Typography variant="h6" color="success.main">
-                    {tradeSetup.targetPrice.toFixed(2)}
+                    {formatPrice(tradeSetup.targetPrice)}
                   </Typography>
                 </Box>
               </Box>

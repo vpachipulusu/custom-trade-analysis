@@ -180,6 +180,27 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
       throw new Error("Failed to parse AI analysis result");
     }
 
+    // Log the trade setup for debugging
+    console.log("[OpenAI] Analysis result:", JSON.stringify(analysisResult, null, 2));
+    
+    // Validate and warn about trade setup issues
+    if (analysisResult.tradeSetup) {
+      const { entryPrice, stopLoss } = analysisResult.tradeSetup;
+      
+      if (entryPrice !== null && stopLoss !== null) {
+        const priceDiff = Math.abs(entryPrice - stopLoss);
+        const priceAvg = (entryPrice + stopLoss) / 2;
+        const percentDiff = (priceDiff / priceAvg) * 100;
+        
+        console.log(`[OpenAI] Trade Setup - Entry: ${entryPrice}, Stop: ${stopLoss}, Diff: ${priceDiff.toFixed(5)} (${percentDiff.toFixed(2)}%)`);
+        
+        // Warn if entry and stop are too close (less than 0.1% difference)
+        if (percentDiff < 0.1) {
+          console.warn("[OpenAI] WARNING: Entry and Stop Loss are nearly identical!");
+        }
+      }
+    }
+
     // Validate the response
     if (!validateAnalysisResult(analysisResult)) {
       throw new Error("Invalid analysis result from AI");

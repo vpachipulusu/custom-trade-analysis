@@ -35,16 +35,9 @@ export async function captureWithPuppeteer(
       },
     });
 
-    const page = await browser.newPage();
+    // Get browser context and set cookies before creating page
+    const context = browser.defaultBrowserContext();
 
-    // First navigate to TradingView to establish context
-    console.log("Puppeteer: Navigating to TradingView homepage first");
-    await page.goto("https://www.tradingview.com", {
-      waitUntil: "domcontentloaded",
-      timeout: 30000,
-    });
-
-    // Set cookies after initial navigation
     console.log("Puppeteer: Setting TradingView cookies");
     console.log("Puppeteer: sessionid length:", params.sessionid?.length);
     console.log(
@@ -52,7 +45,8 @@ export async function captureWithPuppeteer(
       params.sessionidSign?.length
     );
 
-    await page.setCookie(
+    // Set cookies at browser context level
+    await context.setCookie(
       {
         name: "sessionid",
         value: params.sessionid,
@@ -72,6 +66,8 @@ export async function captureWithPuppeteer(
         sameSite: "Lax",
       }
     );
+
+    const page = await browser.newPage();
 
     // Verify cookies
     const cookies = await page.cookies();

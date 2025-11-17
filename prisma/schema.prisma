@@ -61,6 +61,7 @@ model Analysis {
   confidence      Int
   timeframe       String
   reasons         Json
+  tradeSetup      Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
   createdAt       DateTime          @default(now())
   economicContext EconomicContext?
 }

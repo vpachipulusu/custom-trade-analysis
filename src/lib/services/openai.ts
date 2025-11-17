@@ -6,6 +6,14 @@ export interface AnalysisResult {
   confidence: number;
   timeframe: "intraday" | "swing" | "long";
   reasons: string[];
+  tradeSetup?: {
+    quality: "A" | "B" | "C";
+    entryPrice: number | null;
+    stopLoss: number | null;
+    targetPrice: number | null;
+    riskRewardRatio: number | null;
+    setupDescription: string;
+  };
 }
 
 export interface EconomicImpactResult {
@@ -20,17 +28,66 @@ export interface EconomicImpactResult {
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_API_KEY = process.env.OPENAI_KEY;
 
-const ANALYSIS_PROMPT = `You are an expert technical analyst. Analyze the TradingView chart image and return ONLY valid JSON:
+const ANALYSIS_PROMPT = `You are an expert technical analyst and professional trader. Analyze the TradingView chart image and return ONLY valid JSON.
 
+CRITICAL: You MUST read the ACTUAL numerical price values visible on the chart. Look at:
+1. The price scale on the RIGHT EDGE of the chart (vertical axis with numbers)
+2. The current price displayed in the TOP LEFT corner (usually shows the ticker and current price)
+3. Any price levels drawn as horizontal lines on the chart
+
+DO NOT make up or approximate prices. If BTC is trading at 92,658.44, your entry should be near 92,658, NOT 92.00 or 100.00.
+
+JSON Format:
 {
   "action": "BUY" | "SELL" | "HOLD",
   "confidence": <0-100>,
   "timeframe": "intraday" | "swing" | "long",
-  "reasons": ["reason 1 with specific indicators", "reason 2 with price levels", "reason 3 with trend"]
+  "reasons": ["reason 1 with specific price levels", "reason 2 with indicators", "reason 3 with trend"],
+  "tradeSetup": {
+    "quality": "A" | "B" | "C",
+    "entryPrice": <ACTUAL number from chart or null>,
+    "stopLoss": <ACTUAL number from chart or null>,
+    "targetPrice": <ACTUAL number from chart or null>,
+    "riskRewardRatio": <calculated number or null>,
+    "setupDescription": "detailed explanation with ACTUAL price levels"
+  }
 }
 
-BUY: bullish signals, uptrend. SELL: bearish signals, downtrend. HOLD: mixed/unclear.
-Provide 3-5 specific reasons. If chart unreadable, return confidence 0 and HOLD.`;
+PRICE READING RULES:
+- BTC/BTCUSD: Prices are typically 90,000 - 100,000 range (e.g., 92,658.44)
+- ETH/ETHUSD: Prices are typically 2,000 - 4,000 range
+- XAUUSD (Gold): Prices are typically 2,600 - 2,700 range
+- Forex pairs: Usually 1.0000 - 2.0000 range
+- Read the EXACT numbers from the price scale on the right side
+
+TRADE SETUP QUALITY:
+- A Setup: Perfect confluence, clear trend, 3:1+ R:R, strong support/resistance
+- B Setup: Good signals, 2:1+ R:R, acceptable entry
+- C Setup: Marginal, <2:1 R:R, mixed signals
+
+PRICE CALCULATIONS:
+- entryPrice: Current price OR better entry at nearby support/resistance (READ FROM CHART)
+- stopLoss: Recent swing high/low OR support/resistance level (READ FROM CHART)  
+- targetPrice: Next resistance/support level (READ FROM CHART)
+- riskRewardRatio: (targetPrice - entryPrice) / (entryPrice - stopLoss) for SELL reverse the formula
+
+EXAMPLE for BTCUSD at 92,658:
+{
+  "action": "SELL",
+  "confidence": 75,
+  "timeframe": "swing",
+  "reasons": ["Price below Ichimoku Cloud at 94,500", "Resistance at 100,000 held", "Downtrend from 104,000"],
+  "tradeSetup": {
+    "quality": "A",
+    "entryPrice": 92600,
+    "stopLoss": 100000,
+    "targetPrice": 80000,
+    "riskRewardRatio": 1.70,
+    "setupDescription": "Enter short at current 92,600 level with stop at 100,000 resistance (7,400 risk). Target 80,000 support level (12,600 reward) for 1.7:1 R:R."
+  }
+}
+
+If prices unreadable, set tradeSetup values to null.`;
 
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o

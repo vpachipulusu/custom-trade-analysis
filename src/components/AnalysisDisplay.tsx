@@ -26,6 +26,7 @@ import { Analysis } from "@/hooks/useAnalyses";
 import ActionChip from "./ActionChip";
 import ConfidenceProgress from "./ConfidenceProgress";
 import EconomicContextPanel from "./EconomicContextPanel";
+import TradeSetupCard from "./TradeSetupCard";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
 
@@ -141,6 +142,16 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
                 ))}
               </List>
             </Grid>
+
+            {/* Trade Setup */}
+            {analysis.tradeSetup && (
+              <Grid item xs={12}>
+                <TradeSetupCard
+                  tradeSetup={analysis.tradeSetup}
+                  action={analysis.action}
+                />
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <Divider />

@@ -8,6 +8,14 @@ export interface Analysis {
   confidence: number;
   timeframe: "intraday" | "swing" | "long";
   reasons: string[];
+  tradeSetup?: {
+    quality: "A" | "B" | "C";
+    entryPrice: number | null;
+    stopLoss: number | null;
+    targetPrice: number | null;
+    riskRewardRatio: number | null;
+    setupDescription: string;
+  } | null;
   createdAt: string;
   snapshot: {
     url: string;
@@ -16,6 +24,17 @@ export interface Analysis {
       interval: string | null;
     };
   };
+  economicContext?: {
+    symbol: string;
+    upcomingEvents: any[];
+    immediateRisk: string;
+    weeklyEvents: any[];
+    weeklyOutlook: string;
+    impactSummary: string;
+    warnings: string[];
+    opportunities: string[];
+    recommendation: string;
+  } | null;
 }
 
 export interface AnalysesResponse {

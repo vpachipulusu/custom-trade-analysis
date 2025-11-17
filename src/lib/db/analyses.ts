@@ -6,6 +6,14 @@ export interface CreateAnalysisData {
   confidence: number;
   timeframe: string;
   reasons: string[];
+  tradeSetup?: {
+    quality: "A" | "B" | "C";
+    entryPrice: number | null;
+    stopLoss: number | null;
+    targetPrice: number | null;
+    riskRewardRatio: number | null;
+    setupDescription: string;
+  } | null;
 }
 
 export interface AnalysisWithRelations extends Analysis {
@@ -34,6 +42,7 @@ export async function createAnalysis(
       confidence: data.confidence,
       timeframe: data.timeframe,
       reasons: data.reasons,
+      tradeSetup: data.tradeSetup || undefined,
     },
   });
 }
@@ -128,6 +137,7 @@ export async function updateAnalysis(
       confidence: data.confidence,
       timeframe: data.timeframe,
       reasons: data.reasons,
+      tradeSetup: data.tradeSetup || undefined,
     },
   });
 }

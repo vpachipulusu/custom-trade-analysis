@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         confidence: analysisResult.confidence,
         timeframe: analysisResult.timeframe,
         reasons: analysisResult.reasons,
+        tradeSetup: analysisResult.tradeSetup,
       });
     } else {
       // Create new analysis
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
         confidence: analysisResult.confidence,
         timeframe: analysisResult.timeframe,
         reasons: analysisResult.reasons,
+        tradeSetup: analysisResult.tradeSetup,
       });
     }
 

@@ -62,7 +62,7 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
     <Card>
       <CardMedia
         component="img"
-        image={analysis.snapshot.url}
+        image={analysis.snapshot.imageData || analysis.snapshot.url}
         alt="Chart Analysis"
         sx={{
           maxHeight: 500,

@@ -104,6 +104,7 @@ export async function getAnalysisById(
           id: true,
           layoutId: true,
           url: true,
+          imageData: true,
           layout: {
             select: {
               symbol: true,

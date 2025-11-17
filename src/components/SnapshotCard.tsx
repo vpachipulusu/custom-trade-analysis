@@ -14,6 +14,7 @@ interface SnapshotCardProps {
   snapshot: {
     id: string;
     url: string;
+    imageData?: string | null;
     createdAt: Date | string;
     analysis?: {
       id: string;
@@ -43,7 +44,7 @@ export default function SnapshotCard({
       <CardMedia
         component="img"
         height="200"
-        image={snapshot.url}
+        image={snapshot.imageData || snapshot.url}
         alt="Chart snapshot"
         sx={{ objectFit: "cover", backgroundColor: "#f5f5f5" }}
       />

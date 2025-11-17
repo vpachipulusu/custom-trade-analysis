@@ -99,13 +99,16 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       sessionidSign: decryptedSessionidSign!,
     });
 
-    console.log(`✅ Screenshot saved: ${imagePath}`);
+    console.log(`✅ Screenshot captured successfully`);
+    console.log(`📊 Screenshot data length: ${imagePath.length} bytes`);
+    console.log(`📊 Screenshot preview: ${imagePath.substring(0, 50)}...`);
 
     // Step 3: Calculate expiration (24 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Step 4: Create snapshot record
+    console.log(`💾 Creating snapshot with imageData...`);
     const snapshot = await prisma.snapshot.create({
       data: {
         layoutId,
@@ -116,6 +119,10 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     });
 
     console.log(`✅ Snapshot created: ${snapshot.id}`);
+    console.log(`📊 Snapshot has imageData: ${!!snapshot.imageData}`);
+    console.log(
+      `📊 ImageData length in DB: ${snapshot.imageData?.length || 0} bytes`
+    );
 
     // Step 5: Analyze with OpenAI
     console.log(`🧠 Analyzing chart with AI...`);

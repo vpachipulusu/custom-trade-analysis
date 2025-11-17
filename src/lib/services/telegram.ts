@@ -71,6 +71,13 @@ interface TelegramAlertOptions {
 export async function sendTradingAlert(
   options: TelegramAlertOptions
 ): Promise<void> {
+  console.log(`\n📨 sendTradingAlert called:`);
+  console.log(`   Analysis ID: ${options.analysis?.id}`);
+  console.log(`   Chat ID: ${options.chatId}`);
+  console.log(`   Include Chart: ${options.includeChart}`);
+  console.log(`   Include Economic: ${options.includeEconomic}`);
+  console.log(`   Chart Path: ${options.chartImagePath}`);
+
   const {
     analysis,
     chatId,
@@ -79,7 +86,9 @@ export async function sendTradingAlert(
     chartImagePath,
   } = options;
 
+  console.log(`   Initializing Telegram bot...`);
   const bot = initializeBot();
+  console.log(`   ✅ Bot initialized`);
 
   // Build message
   let message = `🤖 *Trade Analysis Alert*\n\n`;
@@ -144,23 +153,40 @@ export async function sendTradingAlert(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   }/analysis/${analysis.id})`;
 
+  console.log(`\n📝 Message built (${message.length} chars)`);
+  console.log(`   First 200 chars: ${message.substring(0, 200)}...`);
+
   try {
     // Send chart image if available
     if (includeChart && chartImagePath && fs.existsSync(chartImagePath)) {
+      console.log(`   📷 Sending as PHOTO with caption`);
+      console.log(`   Image exists: ${fs.existsSync(chartImagePath)}`);
+      console.log(`   Image path: ${chartImagePath}`);
+
       await bot.sendPhoto(chatId, chartImagePath, {
         caption: message,
         parse_mode: "Markdown",
       });
+
+      console.log(`   ✅ Photo sent successfully`);
     } else {
-      // Send text only
+      console.log(`   💬 Sending as TEXT message`);
+      console.log(
+        `   Reason: includeChart=${includeChart}, path=${chartImagePath}, exists=${
+          chartImagePath ? fs.existsSync(chartImagePath) : false
+        }`
+      );
+
       await bot.sendMessage(chatId, message, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       });
+
+      console.log(`   ✅ Text message sent successfully`);
     }
 
     console.log(
-      `✅ Telegram alert sent to ${chatId} for analysis ${analysis.id}`
+      `\n✅✅✅ TELEGRAM ALERT DELIVERED to ${chatId} for analysis ${analysis.id}`
     );
   } catch (error) {
     console.error("❌ Failed to send Telegram alert:", error);

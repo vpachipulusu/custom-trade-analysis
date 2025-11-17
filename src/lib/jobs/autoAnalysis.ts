@@ -36,7 +36,35 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
   } = job;
 
   const layoutName = `${symbol || "Chart"} ${interval || ""}`;
-  console.log(`\n🤖 Starting automation job for layout: ${layoutName}`);
+  console.log(`\n${"=".repeat(80)}`);
+  console.log(`🤖 Starting automation job for layout: ${layoutName}`);
+  console.log(`📋 Schedule ID: ${scheduleId}`);
+  console.log(`👤 User ID: ${userId}`);
+  console.log(`📊 Layout ID: ${layoutId}`);
+  console.log(`⚙️ Settings:`, {
+    telegramEnabled: !!telegramChatId,
+    chatId: telegramChatId,
+    onlyOnSignalChange: job.onlyOnSignalChange,
+    minConfidence: job.minConfidence,
+    sendOnHold: job.sendOnHold,
+    includeChart: job.includeChart,
+    includeEconomic: job.includeEconomic,
+  });
+  console.log(`${"=".repeat(80)}\n`);
+
+  // Create job log
+  const jobLog = await prisma.automationJobLog.create({
+    data: {
+      scheduleId,
+      status: "running",
+      telegramChatId: telegramChatId || null,
+    },
+  });
+
+  let logData: any = {
+    completedAt: new Date(),
+    duration: 0,
+  };
 
   try {
     // Step 1: Decrypt session ID (or use as-is if not encrypted)
@@ -126,10 +154,11 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     // Step 7: Check if we should send alert
     let shouldSendAlert = true;
     let signalChanged = false;
+    let previousAnalysis = null;
 
     // Check previous analysis if "only on signal change" is enabled
     if (job.onlyOnSignalChange) {
-      const previousAnalysis = await prisma.analysis.findFirst({
+      previousAnalysis = await prisma.analysis.findFirst({
         where: {
           userId,
           snapshot: { layoutId },
@@ -148,24 +177,49 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     }
 
     // Check minimum confidence
-    if (job.minConfidence && analysis.confidence < job.minConfidence) {
-      shouldSendAlert = false;
-      console.log(
-        `⏭️ Skipping alert: Confidence ${analysis.confidence}% < minimum ${job.minConfidence}%`
-      );
+    if (job.minConfidence) {
+      console.log(`\n📊 Confidence Check:`);
+      console.log(`   Current: ${analysis.confidence}%`);
+      console.log(`   Minimum: ${job.minConfidence}%`);
+
+      if (analysis.confidence < job.minConfidence) {
+        shouldSendAlert = false;
+        console.log(`   ❌ Result: Below threshold - Alert SKIPPED`);
+      } else {
+        console.log(`   ✅ Result: Above threshold - Check passed`);
+      }
     }
 
     // Check if HOLD should be sent
-    if (!job.sendOnHold && analysis.action === "HOLD") {
-      shouldSendAlert = false;
-      console.log(`⏭️ Skipping alert: HOLD signals disabled`);
+    if (analysis.action === "HOLD") {
+      console.log(`\n⏸️ HOLD Action Check:`);
+      console.log(`   Action: ${analysis.action}`);
+      console.log(`   Send HOLD enabled: ${job.sendOnHold}`);
+
+      if (!job.sendOnHold) {
+        shouldSendAlert = false;
+        console.log(`   ❌ Result: HOLD disabled - Alert SKIPPED`);
+      } else {
+        console.log(`   ✅ Result: HOLD enabled - Check passed`);
+      }
     }
 
     // Step 8: Send Telegram alert if configured and conditions met
     let telegramSent = false;
+
+    console.log(`\n📱 Telegram Alert Decision:`);
+    console.log(`   Should send: ${shouldSendAlert}`);
+    console.log(`   Chat ID configured: ${!!telegramChatId}`);
+    console.log(`   Chat ID: ${telegramChatId || "N/A"}`);
+
     if (shouldSendAlert && telegramChatId) {
       try {
-        console.log(`📱 Sending Telegram alert to ${telegramChatId}...`);
+        console.log(`\n📤 Sending Telegram alert...`);
+        console.log(`   To: ${telegramChatId}`);
+        console.log(`   Include Chart: ${job.includeChart}`);
+        console.log(`   Include Economic: ${job.includeEconomic}`);
+        console.log(`   Image Path: ${imagePath}`);
+
         await sendTradingAlert({
           analysis: analysis as any,
           chatId: telegramChatId,
@@ -173,15 +227,23 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
           includeEconomic: job.includeEconomic,
           chartImagePath: imagePath,
         });
+
         telegramSent = true;
-        console.log(`✅ Telegram alert sent successfully`);
+        console.log(`\n✅ TELEGRAM ALERT SENT SUCCESSFULLY`);
+        console.log(`   Message: ${analysis.action} ${analysis.confidence}%`);
+        console.log(`   Layout: ${layoutName}`);
       } catch (error) {
-        console.error(`❌ Failed to send Telegram alert:`, error);
+        console.error(`\n❌ TELEGRAM SEND FAILED:`, error);
+        console.error(`   Error details:`, (error as Error).message);
+        console.error(`   Stack:`, (error as Error).stack);
         // Don't throw - job should still be marked as successful
       }
     } else {
+      console.log(`\n⏭️ TELEGRAM ALERT SKIPPED`);
       console.log(
-        `⏭️ Telegram alert not sent (shouldSend: ${shouldSendAlert}, chatId: ${!!telegramChatId})`
+        `   Reason: ${
+          !shouldSendAlert ? "Conditions not met" : "No chat ID configured"
+        }`
       );
     }
 
@@ -210,6 +272,36 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
 
     // Step 10: Update automation schedule
     const duration = Date.now() - startTime;
+
+    // Update job log with success
+    logData = {
+      ...logData,
+      status: "success",
+      duration,
+      action: analysis.action,
+      confidence: analysis.confidence,
+      previousAction: previousAnalysis?.action || null,
+      signalChanged,
+      metMinConfidence:
+        !job.minConfidence || analysis.confidence >= job.minConfidence,
+      telegramSent,
+      screenshotPath: imagePath,
+      analysisId: analysis.id,
+      skipReason: !shouldSendAlert
+        ? `Filters not met: ${
+            !signalChanged && job.onlyOnSignalChange ? "Signal unchanged" : ""
+          }${
+            job.minConfidence && analysis.confidence < job.minConfidence
+              ? ` Confidence ${analysis.confidence}% < ${job.minConfidence}%`
+              : ""
+          }${
+            !job.sendOnHold && analysis.action === "HOLD"
+              ? " HOLD disabled"
+              : ""
+          }`.trim()
+        : null,
+    };
+
     await prisma.automationSchedule.update({
       where: { id: scheduleId },
       data: {
@@ -218,11 +310,30 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       },
     });
 
+    // Update job log
+    await prisma.automationJobLog.update({
+      where: { id: jobLog.id },
+      data: logData,
+    });
+
     console.log(`✅ Automation job completed in ${duration}ms`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
   } catch (error: any) {
     const duration = Date.now() - startTime;
     console.error(`❌ Automation job failed:`, error);
+
+    // Update job log with error
+    await prisma.automationJobLog.update({
+      where: { id: jobLog.id },
+      data: {
+        status: "failed",
+        duration,
+        completedAt: new Date(),
+        errorMessage: error.message,
+        errorStack: error.stack,
+        telegramError: telegramChatId ? error.message : null,
+      },
+    });
 
     // Send error notification if Telegram is configured
     if (telegramChatId) {

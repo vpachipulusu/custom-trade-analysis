@@ -180,3 +180,42 @@ model AnalysisHistory {
   
   @@index([analysisId, createdAt])
 }
+
+model AutomationJobLog {
+  id               String    @id @default(uuid())
+  scheduleId       String
+  
+  // Execution details
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+  duration         Int?      // milliseconds
+  status           String    // "success", "failed", "skipped"
+  
+  // Analysis results
+  action           String?   // BUY, SELL, HOLD
+  confidence       Int?      // 0-100
+  previousAction   String?   // For signal change tracking
+  
+  // Filter decisions
+  signalChanged    Boolean   @default(false)
+  metMinConfidence Boolean   @default(true)
+  
+  // Telegram notification
+  telegramSent     Boolean   @default(false)
+  telegramChatId   String?
+  telegramError    String?   @db.Text
+  
+  // Skip/error reasons
+  skipReason       String?   @db.Text
+  errorMessage     String?   @db.Text
+  errorStack       String?   @db.Text
+  
+  // Screenshot and analysis
+  screenshotPath   String?
+  analysisId       String?
+  
+  createdAt        DateTime  @default(now())
+  
+  @@index([scheduleId, createdAt])
+  @@index([status, createdAt])
+}

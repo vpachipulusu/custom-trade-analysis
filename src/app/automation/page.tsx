@@ -33,8 +33,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TelegramIcon from "@mui/icons-material/Telegram";
 import AddIcon from "@mui/icons-material/Add";
+import DescriptionIcon from "@mui/icons-material/Description";
 import TelegramSetupDialog from "@/components/TelegramSetupDialog";
 import AutomationSettingsDialog from "@/components/AutomationSettingsDialog";
+import JobLogsDialog from "@/components/JobLogsDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -77,6 +79,11 @@ export default function AutomationPage() {
   const [telegramDialogOpen, setTelegramDialogOpen] = useState(false);
   const [automationDialogOpen, setAutomationDialogOpen] = useState(false);
   const [layoutSelectDialogOpen, setLayoutSelectDialogOpen] = useState(false);
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [selectedScheduleForLogs, setSelectedScheduleForLogs] = useState<{
+    id: string;
+    layoutName: string;
+  } | null>(null);
   const [selectedLayout, setSelectedLayout] = useState<any>(null);
   const [editingSchedule, setEditingSchedule] =
     useState<AutomationSchedule | null>(null);
@@ -187,6 +194,11 @@ export default function AutomationPage() {
     setSelectedLayout(layout || null);
     setEditingSchedule(schedule);
     setAutomationDialogOpen(true);
+  };
+
+  const handleViewLogs = (scheduleId: string, layoutName: string) => {
+    setSelectedScheduleForLogs({ id: scheduleId, layoutName });
+    setLogsDialogOpen(true);
   };
 
   const handleAddAutomation = () => {
@@ -395,7 +407,22 @@ export default function AutomationPage() {
                           <TableCell>
                             <IconButton
                               size="small"
+                              onClick={() =>
+                                handleViewLogs(
+                                  schedule.id,
+                                  `${schedule.layout.symbol || "Chart"} ${
+                                    schedule.layout.interval || ""
+                                  }`
+                                )
+                              }
+                              title="View Logs"
+                            >
+                              <DescriptionIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
                               onClick={() => handleEditAutomation(schedule)}
+                              title="Edit Settings"
                             >
                               <SettingsIcon />
                             </IconButton>
@@ -404,6 +431,7 @@ export default function AutomationPage() {
                               onClick={() =>
                                 deleteAutomation.mutate(schedule.id)
                               }
+                              title="Delete"
                             >
                               <DeleteIcon />
                             </IconButton>
@@ -496,6 +524,16 @@ export default function AutomationPage() {
                 }
               : null
           }
+        />
+
+        <JobLogsDialog
+          open={logsDialogOpen}
+          onClose={() => {
+            setLogsDialogOpen(false);
+            setSelectedScheduleForLogs(null);
+          }}
+          scheduleId={selectedScheduleForLogs?.id}
+          layoutName={selectedScheduleForLogs?.layoutName}
         />
       </Layout>
     </ProtectedRoute>

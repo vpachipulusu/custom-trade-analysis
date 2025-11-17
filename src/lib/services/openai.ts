@@ -30,64 +30,93 @@ const OPENAI_API_KEY = process.env.OPENAI_KEY;
 
 const ANALYSIS_PROMPT = `You are an expert technical analyst and professional trader. Analyze the TradingView chart image and return ONLY valid JSON.
 
-CRITICAL: You MUST read the ACTUAL numerical price values visible on the chart. Look at:
-1. The price scale on the RIGHT EDGE of the chart (vertical axis with numbers)
-2. The current price displayed in the TOP LEFT corner (usually shows the ticker and current price)
-3. Any price levels drawn as horizontal lines on the chart
-
-DO NOT make up or approximate prices. If BTC is trading at 92,658.44, your entry should be near 92,658, NOT 92.00 or 100.00.
+CRITICAL PRICE READING INSTRUCTIONS:
+1. Look at the price scale on the RIGHT EDGE of the chart - these are the ACTUAL prices
+2. Read the current price from the TOP LEFT corner (ticker info area)
+3. Identify support/resistance levels from horizontal lines drawn on the chart
+4. Use 4-5 decimal places for forex pairs (e.g., 1.1592, not 1.16)
+5. Entry and Stop Loss MUST be different prices with meaningful distance
+6. Stop Loss should be at least 20-50 pips away from entry for forex
 
 JSON Format:
 {
   "action": "BUY" | "SELL" | "HOLD",
   "confidence": <0-100>,
   "timeframe": "intraday" | "swing" | "long",
-  "reasons": ["reason 1 with specific price levels", "reason 2 with indicators", "reason 3 with trend"],
+  "reasons": [
+    "Specific technical indicator with exact price level",
+    "Trend analysis with direction and key levels",
+    "Support/Resistance level identification",
+    "Pattern recognition (if visible)",
+    "Volume or momentum indicator reading",
+    "Additional confluence factor"
+  ],
   "tradeSetup": {
     "quality": "A" | "B" | "C",
-    "entryPrice": <ACTUAL number from chart or null>,
-    "stopLoss": <ACTUAL number from chart or null>,
-    "targetPrice": <ACTUAL number from chart or null>,
-    "riskRewardRatio": <calculated number or null>,
-    "setupDescription": "detailed explanation with ACTUAL price levels"
+    "entryPrice": <ACTUAL number with proper decimals>,
+    "stopLoss": <ACTUAL number meaningfully different from entry>,
+    "targetPrice": <ACTUAL number from chart>,
+    "riskRewardRatio": <calculated ratio>,
+    "setupDescription": "detailed multi-sentence explanation with specific prices and risk management"
   }
 }
 
-PRICE READING RULES:
-- BTC/BTCUSD: Prices are typically 90,000 - 100,000 range (e.g., 92,658.44)
-- ETH/ETHUSD: Prices are typically 2,000 - 4,000 range
-- XAUUSD (Gold): Prices are typically 2,600 - 2,700 range
-- Forex pairs: Usually 1.0000 - 2.0000 range
-- Read the EXACT numbers from the price scale on the right side
+IMPORTANT ANALYSIS REQUIREMENTS:
+- Provide 5-7 specific reasons, each mentioning actual price levels or indicator readings
+- Each reason should be detailed and reference visible chart elements
+- Include trend analysis, support/resistance, indicators, and patterns
+- Mention specific price levels visible on the chart
 
-TRADE SETUP QUALITY:
-- A Setup: Perfect confluence, clear trend, 3:1+ R:R, strong support/resistance
-- B Setup: Good signals, 2:1+ R:R, acceptable entry
-- C Setup: Marginal, <2:1 R:R, mixed signals
+PRICE PRECISION BY INSTRUMENT:
+- Forex pairs (EUR/USD, GBP/USD): Use 4-5 decimals (e.g., 1.15920, NOT 1.16)
+- JPY pairs (USD/JPY): Use 2-3 decimals (e.g., 149.875)
+- BTC/BTCUSD: Use whole numbers or 2 decimals (e.g., 92658.00)
+- Gold/XAUUSD: Use 2 decimals (e.g., 2658.50)
+- Read EXACT values from the right side price scale
 
-PRICE CALCULATIONS:
-- entryPrice: Current price OR better entry at nearby support/resistance (READ FROM CHART)
-- stopLoss: Recent swing high/low OR support/resistance level (READ FROM CHART)  
-- targetPrice: Next resistance/support level (READ FROM CHART)
-- riskRewardRatio: (targetPrice - entryPrice) / (entryPrice - stopLoss) for SELL reverse the formula
+STOP LOSS PLACEMENT RULES:
+- For SELL: Stop Loss MUST be ABOVE entry (at resistance or swing high)
+- For BUY: Stop Loss MUST be BELOW entry (at support or swing low)
+- Minimum distance: 0.0020 for forex pairs (20 pips), 200+ for BTC, 10+ for Gold
+- Never place entry and stop at the same price level
+- Stop should be at a logical technical level (support/resistance, swing point)
 
-EXAMPLE for BTCUSD at 92,658:
+TRADE SETUP REQUIREMENTS:
+- entryPrice: Current market price with full precision (e.g., 1.1592 for EUR/USD)
+- stopLoss: Swing high/low or S/R level with proper distance from entry
+- targetPrice: Next major S/R level or measured move target
+- riskRewardRatio: Must be calculated correctly - (target-entry)/(entry-stop) for SELL
+- setupDescription: Multi-sentence explanation covering:
+  * Why enter at this specific price
+  * Where stop is placed and why (swing level, S/R)
+  * Target selection reasoning
+  * Risk/reward calculation with actual pip/point values
+  * Additional confluence factors
+
+EXAMPLE for EUR/USD at 1.1592:
 {
   "action": "SELL",
-  "confidence": 75,
+  "confidence": 85,
   "timeframe": "swing",
-  "reasons": ["Price below Ichimoku Cloud at 94,500", "Resistance at 100,000 held", "Downtrend from 104,000"],
+  "reasons": [
+    "Price trading below Ichimoku Cloud at 1.1600, indicating bearish momentum",
+    "Strong resistance zone at 1.1613 rejected price multiple times",
+    "Downtrend channel from 1.1700 high remains intact",
+    "RSI showing bearish divergence at 1.1613 resistance",
+    "Price made lower highs and lower lows, confirming downtrend structure",
+    "200 EMA at 1.1620 acting as dynamic resistance"
+  ],
   "tradeSetup": {
     "quality": "A",
-    "entryPrice": 92600,
-    "stopLoss": 100000,
-    "targetPrice": 80000,
-    "riskRewardRatio": 1.70,
-    "setupDescription": "Enter short at current 92,600 level with stop at 100,000 resistance (7,400 risk). Target 80,000 support level (12,600 reward) for 1.7:1 R:R."
+    "entryPrice": 1.1592,
+    "stopLoss": 1.1613,
+    "targetPrice": 1.1500,
+    "riskRewardRatio": 4.38,
+    "setupDescription": "Enter short at current 1.1592 level as price shows rejection at resistance. Place stop loss at 1.1613 above the recent swing high and resistance zone (21 pip risk). Target the 1.1500 psychological support level and previous swing low (92 pip reward), giving us a 4.38:1 risk-reward ratio. The setup shows strong bearish confluence with Ichimoku Cloud, resistance rejection, and intact downtrend."
   }
 }
 
-If prices unreadable, set tradeSetup values to null.`;
+If chart is unreadable or prices unclear, set tradeSetup values to null.`;
 
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o

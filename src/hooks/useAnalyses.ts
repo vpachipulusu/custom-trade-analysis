@@ -18,6 +18,8 @@ export interface Analysis {
   } | null;
   createdAt: string;
   snapshot: {
+    id: string;
+    layoutId: string;
     url: string;
     layout: {
       symbol: string | null;

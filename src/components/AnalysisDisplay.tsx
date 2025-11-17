@@ -46,13 +46,13 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
   const handleRegenerate = async () => {
     try {
       setRegenerating(true);
-      // This would need the layoutId - we'll skip for now or get from analysis
-      // const snapshot = await createSnapshot.mutateAsync(layoutId);
-      // const newAnalysis = await createAnalysis.mutateAsync(snapshot.id);
-      // router.push(`/analysis/${newAnalysis.id}`);
-      alert("Regeneration feature requires layout context");
+      const layoutId = analysis.snapshot.layoutId;
+      const snapshot = await createSnapshot.mutateAsync(layoutId);
+      const newAnalysis = await createAnalysis.mutateAsync(snapshot.id);
+      router.push(`/analysis/${newAnalysis.id}`);
     } catch (error) {
       console.error("Regeneration failed:", error);
+      alert("Failed to regenerate analysis. Please try again.");
     } finally {
       setRegenerating(false);
     }

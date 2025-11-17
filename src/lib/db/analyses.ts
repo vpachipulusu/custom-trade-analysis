@@ -62,7 +62,10 @@ export async function getAnalysesByUserId(
       where: { userId },
       include: {
         snapshot: {
-          include: {
+          select: {
+            id: true,
+            layoutId: true,
+            url: true,
             layout: {
               select: {
                 symbol: true,
@@ -97,7 +100,10 @@ export async function getAnalysisById(
     where: { id },
     include: {
       snapshot: {
-        include: {
+        select: {
+          id: true,
+          layoutId: true,
+          url: true,
           layout: {
             select: {
               symbol: true,

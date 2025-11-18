@@ -74,13 +74,18 @@ export default function JournalPage() {
 
   const checkFirstTime = async () => {
     try {
-      const response = await fetch("/api/journal/settings");
-      if (response.ok) {
-        const settings = await response.json();
-        // Show onboarding if starting balance is not set or is zero
-        if (!settings.startingBalance || settings.startingBalance === 0) {
-          setOnboardingOpen(true);
-        }
+      const token = await user?.getIdToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/journal/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 404) {
+        // No settings exist - first time user
+        setOnboardingOpen(true);
       }
       setLoading(false);
     } catch (err) {
@@ -91,9 +96,15 @@ export default function JournalPage() {
 
   const handleOnboardingComplete = async (startingBalance: number) => {
     try {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const response = await fetch("/api/journal/settings", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ startingBalance }),
       });
 

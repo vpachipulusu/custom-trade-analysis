@@ -14,6 +14,7 @@ import {
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StatsData {
   totalTrades: number;
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export default function JournalStats({ refreshTrigger }: Props) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -59,9 +61,14 @@ export default function JournalStats({ refreshTrigger }: Props) {
       setLoading(true);
       setError(null);
 
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const headers = { Authorization: `Bearer ${token}` };
+
       const [statsRes, settingsRes] = await Promise.all([
-        fetch("/api/journal/stats?type=alltime"),
-        fetch("/api/journal/settings"),
+        fetch("/api/journal/stats?type=alltime", { headers }),
+        fetch("/api/journal/settings", { headers }),
       ]);
 
       if (!statsRes.ok || !settingsRes.ok) {

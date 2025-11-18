@@ -169,7 +169,7 @@ export default function OnboardingDialog({
               helperText="Enter your initial account balance in your trading currency"
               sx={{ mt: 2 }}
               InputProps={{
-                startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
+                startAdornment: <Typography sx={{ mr: 1 }}>£</Typography>,
               }}
             />
 

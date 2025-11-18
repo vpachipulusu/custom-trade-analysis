@@ -76,17 +76,41 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
 
   useEffect(() => {
     if (open) {
+      // Reset form when dialog opens
+      setActiveStep(0);
+      setError(null);
+      setDate(new Date());
+      setTime(new Date());
+      setDirection("Long");
+      setMarket("");
+      setEntryPrice("");
+      setPositionSize("");
+      setStopLossPrice("");
+      setTakeProfitPrice("");
+      setTradeCosts("0");
+      setTradeNotes("");
+      setDisciplineRating(5);
+      setEmotionalState("");
+      setStrategy("");
+      setSetup("");
+
       fetchSettings();
     }
   }, [open]);
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch("/api/journal/settings");
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch("/api/journal/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
-        setSettings(data.settings);
-        setAccountBalance(data.settings.currentBalance);
+        setSettings(data);
+        // Convert Decimal to string
+        setAccountBalance(String(data.currentBalance || ""));
       }
     } catch (err) {
       console.error("Failed to fetch settings:", err);
@@ -112,6 +136,22 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
   };
 
   const handleNext = () => {
+    // Validate step before moving forward
+    if (activeStep === 0) {
+      // Step 1: Basic Info validation
+      if (!date || !time || !market) {
+        setError("Please fill in all required fields in this step");
+        return;
+      }
+    } else if (activeStep === 1) {
+      // Step 2: Entry Details validation
+      if (!entryPrice || !accountBalance || !positionSize) {
+        setError("Please fill in all required fields in this step");
+        return;
+      }
+    }
+
+    setError(null);
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
@@ -120,15 +160,19 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (
-      !date ||
-      !time ||
-      !market ||
-      !entryPrice ||
-      !accountBalance ||
-      !positionSize
-    ) {
-      setError("Please fill in all required fields");
+    // Validate required fields
+    const missingFields = [];
+    if (!date) missingFields.push("Date");
+    if (!time) missingFields.push("Time");
+    if (!market) missingFields.push("Market");
+    if (!entryPrice) missingFields.push("Entry Price");
+    if (!accountBalance) missingFields.push("Account Balance");
+    if (!positionSize) missingFields.push("Position Size");
+
+    if (missingFields.length > 0) {
+      setError(
+        `Please fill in all required fields: ${missingFields.join(", ")}`
+      );
       return;
     }
 

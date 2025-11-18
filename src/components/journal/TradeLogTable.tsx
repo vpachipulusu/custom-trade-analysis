@@ -27,6 +27,7 @@ import {
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 import TradeDetailsDialog from "./TradeDetailsDialog";
 import CloseTradeDialog from "./CloseTradeDialog";
 
@@ -59,6 +60,7 @@ interface Props {
 }
 
 export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -81,11 +83,16 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
       setLoading(true);
       setError(null);
 
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (marketFilter) params.append("market", marketFilter);
 
-      const res = await fetch(`/api/journal/trades?${params.toString()}`);
+      const res = await fetch(`/api/journal/trades?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to fetch trades");
 
       const data = await res.json();
@@ -133,8 +140,12 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
     }
 
     try {
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const res = await fetch(`/api/journal/trades/${menuTrade.id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error("Failed to delete trade");

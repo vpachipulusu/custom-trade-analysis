@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -17,6 +17,7 @@ import {
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Trade {
   id: string;
@@ -43,11 +44,22 @@ export default function CloseTradeDialog({
   onClose,
   onTradeClosed,
 }: Props) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exitDate, setExitDate] = useState<Date | null>(new Date());
   const [exitTime, setExitTime] = useState<Date | null>(new Date());
-  const [actualExitPrice, setActualExitPrice] = useState("");
+  const [actualExitPrice, setActualExitPrice] = useState<string>("");
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setExitDate(new Date());
+      setExitTime(new Date());
+      setActualExitPrice("");
+      setError(null);
+    }
+  }, [open]);
 
   const calculatePL = () => {
     if (!actualExitPrice) return null;
@@ -80,11 +92,17 @@ export default function CloseTradeDialog({
       setLoading(true);
       setError(null);
 
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
       const timeStr = exitTime.toTimeString().split(" ")[0].substring(0, 5);
 
       const res = await fetch(`/api/journal/trades/${trade.id}/close`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           actualExitPrice: parseFloat(actualExitPrice),
           exitDate: exitDate.toISOString(),
@@ -93,12 +111,15 @@ export default function CloseTradeDialog({
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ error: res.statusText }));
+        console.error("Close trade error:", data);
         throw new Error(data.error || "Failed to close trade");
       }
 
+      onClose();
       onTradeClosed();
     } catch (err) {
+      console.error("Close trade exception:", err);
       setError(err instanceof Error ? err.message : "Failed to close trade");
     } finally {
       setLoading(false);

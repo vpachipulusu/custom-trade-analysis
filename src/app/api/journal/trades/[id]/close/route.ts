@@ -10,13 +10,15 @@ import { Decimal } from "@prisma/client/runtime/library";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    const params = await context.params;
 
     // Verify ownership and trade is open
     const existingTrade = await getTradeById(params.id);

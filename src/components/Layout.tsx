@@ -48,8 +48,14 @@ export default function Layout({ children }: LayoutProps) {
 
   const fetchOpenTradesCount = async () => {
     try {
+      const token = await user?.getIdToken();
+      if (!token) return;
+
       const response = await fetch(
-        "/api/journal/trades?status=open&limit=1000"
+        "/api/journal/trades?status=open&limit=1000",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       if (response.ok) {
         const data = await response.json();

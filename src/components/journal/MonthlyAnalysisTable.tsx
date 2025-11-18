@@ -18,6 +18,7 @@ import {
   Alert,
   Typography,
 } from "@mui/material";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MonthlyStats {
   month: number;
@@ -58,6 +59,7 @@ const monthNames = [
 ];
 
 export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
+  const { user } = useAuth();
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +79,12 @@ export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/journal/stats?type=monthly&year=${year}`);
+      const token = await user?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(`/api/journal/stats?type=monthly&year=${year}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to fetch stats");
 
       const data = await res.json();

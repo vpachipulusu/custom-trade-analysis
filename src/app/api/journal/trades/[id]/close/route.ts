@@ -85,7 +85,7 @@ export async function POST(
     });
 
     // Update current balance
-    const { prisma } = await import("@/lib/db/prisma");
+    const { prisma } = await import("@/lib/prisma");
     const settings = await prisma.journalSettings.findUnique({
       where: { userId: authResult.user.userId },
     });

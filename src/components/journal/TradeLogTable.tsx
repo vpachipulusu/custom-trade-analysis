@@ -29,6 +29,7 @@ import {
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import DownloadIcon from "@mui/icons-material/Download";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
@@ -276,6 +277,76 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
     setPage(0);
   };
 
+  const downloadCSV = () => {
+    // Prepare CSV headers
+    const headers = [
+      "Entry Date",
+      "Entry Time",
+      "Account Number",
+      "Direction",
+      "Instrument",
+      "Entry Price",
+      "Position Size",
+      "Stop Loss",
+      "Take Profit",
+      "Exit Price",
+      "Exit Date",
+      "Exit Time",
+      "P/L",
+      "Costs",
+      "Status",
+      "R:R",
+      "Change %",
+      "Discipline Rating",
+      "Emotional State",
+      "Notes",
+    ];
+
+    // Prepare CSV rows from filtered trades
+    const rows = filteredAndSortedTrades.map((trade) => [
+      format(new Date(trade.date), "dd/MM/yyyy"),
+      trade.time,
+      trade.accountNumber || "",
+      trade.direction,
+      trade.market,
+      parseFloat(trade.entryPrice).toFixed(5),
+      parseFloat(trade.positionSize).toFixed(4),
+      trade.stopLossPrice ? parseFloat(trade.stopLossPrice).toFixed(5) : "",
+      trade.takeProfitPrice ? parseFloat(trade.takeProfitPrice).toFixed(5) : "",
+      trade.actualExitPrice ? parseFloat(trade.actualExitPrice).toFixed(5) : "",
+      trade.exitDate ? format(new Date(trade.exitDate), "dd/MM/yyyy") : "",
+      trade.exitTime || "",
+      trade.closedPositionPL || "",
+      trade.tradeCosts || "",
+      trade.status,
+      trade.riskRewardRatio || "",
+      trade.accountChangePercent || "",
+      trade.disciplineRating?.toString() || "",
+      trade.emotionalState || "",
+      trade.tradeNotes ? `"${trade.tradeNotes.replace(/"/g, '""')}"` : "",
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `trade-log-${format(new Date(), "yyyy-MM-dd")}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleMenuClick = (
     event: React.MouseEvent<HTMLElement>,
     trade: Trade
@@ -430,6 +501,15 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
             onClick={clearFilters}
           >
             Clear Filters
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={downloadCSV}
+            disabled={filteredAndSortedTrades.length === 0}
+          >
+            Download CSV
           </Button>
 
           <Box sx={{ flexGrow: 1 }} />

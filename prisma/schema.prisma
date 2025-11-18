@@ -28,6 +28,11 @@ model User {
   analyses              Analysis[]
   automationSchedules   AutomationSchedule[]
   telegramConfig        TelegramConfig?
+  
+  // Trading Journal
+  journalSettings       JournalSettings?
+  trades                Trade[]
+  monthlyStats          MonthlyStats[]
 }
 
 model Layout {
@@ -69,6 +74,7 @@ model Analysis {
   createdAt       DateTime          @default(now())
   economicContext EconomicContext?
   history         AnalysisHistory[]
+  trades          Trade[]           // Can link multiple trades to one analysis
 }
 
 model EconomicEvent {
@@ -220,3 +226,125 @@ model AutomationJobLog {
   @@index([scheduleId, createdAt])
   @@index([status, createdAt])
 }
+
+// ==================== TRADING JOURNAL MODELS ====================
+
+model JournalSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Account Settings
+  startingBalance       Decimal  @db.Decimal(15, 2)
+  currentBalance        Decimal  @db.Decimal(15, 2)
+  currency              String   @default("GBP")
+  
+  // Preferences
+  timezone              String   @default("UTC")
+  defaultPositionSize   Decimal? @db.Decimal(10, 4)
+  defaultRiskPercent    Decimal? @db.Decimal(5, 2)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Trade {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Trade Info
+  date                  DateTime
+  time                  String
+  direction             String   // "Long" or "Short"
+  market                String   // Symbol (e.g., "GBPUSD", "BTC", "AAPL")
+  
+  // Entry Details
+  entryPrice            Decimal  @db.Decimal(15, 8)
+  accountBalance        Decimal  @db.Decimal(15, 2)
+  positionSize          Decimal  @db.Decimal(15, 8)
+  
+  // Exit Planning
+  stopLossPrice         Decimal? @db.Decimal(15, 8)
+  takeProfitPrice       Decimal? @db.Decimal(15, 8)
+  
+  // Exit Execution
+  actualExitPrice       Decimal? @db.Decimal(15, 8)
+  exitDate              DateTime?
+  exitTime              String?
+  
+  // Costs & Performance
+  tradeCosts            Decimal  @db.Decimal(10, 2) @default(0)
+  riskRewardRatio       String?  // "1:2.5" format
+  closedPositionPL      Decimal? @db.Decimal(15, 2)
+  accountChangePercent  Decimal? @db.Decimal(8, 4)
+  
+  // Trade Analysis
+  tradeScreenshot       String?  // URL to screenshot
+  tradeNotes            String?  @db.Text
+  disciplineRating      Int?     // 1-10
+  emotionalState        String?  // "Calm and focused", "Anxious", etc.
+  
+  // Strategy/Setup (optional tags)
+  strategy              String?
+  setup                 String?
+  tags                  Json?    // Array of custom tags
+  
+  // Status
+  status                String   @default("open") // "open", "closed", "cancelled"
+  
+  // Link to analysis (optional)
+  analysisId            String?
+  analysis              Analysis? @relation(fields: [analysisId], references: [id])
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([userId, date])
+  @@index([userId, status])
+  @@index([market, date])
+}
+
+model MonthlyStats {
+  id                        String   @id @default(uuid())
+  userId                    String
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  year                      Int
+  month                     Int      // 1-12
+  
+  // Trade Counts
+  totalTrades               Int      @default(0)
+  winningTrades             Int      @default(0)
+  losingTrades              Int      @default(0)
+  breakEvenTrades           Int      @default(0)
+  
+  // Win Rate
+  winRate                   Decimal  @db.Decimal(5, 2) @default(0)
+  
+  // P&L Metrics
+  totalPL                   Decimal  @db.Decimal(15, 2) @default(0)
+  averageWin                Decimal? @db.Decimal(15, 2)
+  averageLoss               Decimal? @db.Decimal(15, 2)
+  largestWin                Decimal? @db.Decimal(15, 2)
+  largestLoss               Decimal? @db.Decimal(15, 2)
+  averagePLPerTrade         Decimal? @db.Decimal(15, 2)
+  
+  // Costs
+  totalTradeCosts           Decimal  @db.Decimal(15, 2) @default(0)
+  
+  // Risk/Reward
+  averageRiskPerTrade       Decimal? @db.Decimal(5, 4)
+  averageRewardPerTrade     Decimal? @db.Decimal(5, 4)
+  averageRiskRewardRatio    String?  // "1:1.5" format
+  
+  // ROI
+  returnOnInvestment        Decimal? @db.Decimal(8, 4)
+  
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  
+  @@unique([userId, year, month])
+  @@index([userId, year, month])
+}
+

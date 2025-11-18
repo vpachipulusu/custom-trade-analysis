@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   AppBar,
@@ -18,9 +18,11 @@ import {
   useTheme,
   Container,
   Button,
+  Badge,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
+import BookIcon from "@mui/icons-material/Book";
 import { useAuth } from "@/contexts/AuthContext";
 import styles from "./Layout.module.scss";
 
@@ -31,10 +33,32 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openTradesCount, setOpenTradesCount] = useState(0);
   const { user, logout } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Fetch open trades count for badge
+  useEffect(() => {
+    if (user) {
+      fetchOpenTradesCount();
+    }
+  }, [user]);
+
+  const fetchOpenTradesCount = async () => {
+    try {
+      const response = await fetch(
+        "/api/journal/trades?status=open&limit=1000"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setOpenTradesCount(data.trades?.length || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch open trades count:", error);
+    }
+  };
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -62,6 +86,18 @@ export default function Layout({ children }: LayoutProps) {
       <List>
         <ListItem button onClick={() => router.push("/dashboard")}>
           <ListItemText primary="Dashboard" />
+        </ListItem>
+        <ListItem button onClick={() => router.push("/journal")}>
+          <ListItemText
+            primary={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                Trading Journal
+                {openTradesCount > 0 && (
+                  <Badge badgeContent={openTradesCount} color="primary" />
+                )}
+              </Box>
+            }
+          />
         </ListItem>
         <ListItem button onClick={() => router.push("/automation")}>
           <ListItemText primary="Automation" />
@@ -104,6 +140,15 @@ export default function Layout({ children }: LayoutProps) {
               </Button>
               <Button
                 color="inherit"
+                onClick={() => router.push("/journal")}
+                startIcon={<BookIcon />}
+              >
+                <Badge badgeContent={openTradesCount} color="secondary">
+                  Journal
+                </Badge>
+              </Button>
+              <Button
+                color="inherit"
                 onClick={() => router.push("/automation")}
               >
                 Automation
@@ -116,6 +161,8 @@ export default function Layout({ children }: LayoutProps) {
               </Button>
             </Box>
           )}
+
+          <Box sx={{ flexGrow: 1 }} />
 
           {user && (
             <Box sx={{ display: "flex", alignItems: "center" }}>

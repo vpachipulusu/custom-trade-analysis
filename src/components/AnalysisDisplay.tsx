@@ -27,6 +27,7 @@ import ActionChip from "./ActionChip";
 import ConfidenceProgress from "./ConfidenceProgress";
 import EconomicContextPanel from "./EconomicContextPanel";
 import TradeSetupCard from "./TradeSetupCard";
+import LinkToJournalButton from "./LinkToJournalButton";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
 
@@ -183,11 +184,18 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
               <Box
                 sx={{
                   display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
                   gap: 2,
                   justifyContent: "center",
                   mt: 2,
                 }}
               >
+                <LinkToJournalButton
+                  analysisId={analysis.id}
+                  analysisTitle={`${
+                    analysis.snapshot.layout.symbol || "Chart"
+                  } - ${analysis.action}`}
+                />
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}

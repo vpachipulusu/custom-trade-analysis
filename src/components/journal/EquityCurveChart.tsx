@@ -52,7 +52,12 @@ export default function EquityCurveChart({
 
   // Sort trades by date and time
   const sortedTrades = [...trades]
-    .filter((t) => t.status === "closed" && t.closedPositionPL !== null && t.closedPositionPL !== undefined)
+    .filter(
+      (t) =>
+        t.status === "closed" &&
+        t.closedPositionPL !== null &&
+        t.closedPositionPL !== undefined
+    )
     .sort((a, b) => {
       const dateA = new Date(`${a.exitDate || a.date}T${a.exitTime || a.time}`);
       const dateB = new Date(`${b.exitDate || b.date}T${b.exitTime || b.time}`);

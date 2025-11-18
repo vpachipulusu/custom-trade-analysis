@@ -54,7 +54,7 @@ export default function RecentAnalyses({ analyses }: RecentAnalysesProps) {
                   </Typography>
                   {analysis.economicContext && (
                     <RiskLevelBadge
-                      riskLevel={analysis.economicContext.immediateRisk}
+                      riskLevel={analysis.economicContext.immediateRisk as "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXTREME"}
                       size="small"
                     />
                   )}

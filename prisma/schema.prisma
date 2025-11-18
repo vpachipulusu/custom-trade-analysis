@@ -253,6 +253,9 @@ model Trade {
   userId                String
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  // Account Info
+  accountNumber         String?  // Account number (can be alphanumeric)
+  
   // Basic Trade Info
   date                  DateTime
   time                  String

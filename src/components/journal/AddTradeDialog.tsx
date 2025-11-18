@@ -60,6 +60,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
   const [time, setTime] = useState<Date | null>(new Date());
   const [direction, setDirection] = useState("Long");
   const [market, setMarket] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
   const [entryPrice, setEntryPrice] = useState("");
   const [accountBalance, setAccountBalance] = useState("");
   const [positionSize, setPositionSize] = useState("");
@@ -83,6 +84,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
       setTime(new Date());
       setDirection("Long");
       setMarket("");
+      setAccountNumber("");
       setEntryPrice("");
       setPositionSize("");
       setStopLossPrice("");
@@ -199,6 +201,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
           time: timeStr,
           direction,
           market,
+          accountNumber: accountNumber || undefined,
           entryPrice: parseFloat(entryPrice),
           accountBalance: parseFloat(accountBalance),
           positionSize: parseFloat(positionSize),
@@ -237,6 +240,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
     setTime(new Date());
     setDirection("Long");
     setMarket("");
+    setAccountNumber("");
     setEntryPrice("");
     setPositionSize("");
     setStopLossPrice("");
@@ -303,6 +307,16 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
                 value={market}
                 onChange={(e) => setMarket(e.target.value.toUpperCase())}
                 placeholder="e.g. GBPUSD, BTC, AAPL"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Account Number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder="e.g. ACC-12345 or MT4-9876"
+                helperText="Optional: Your trading account identifier"
               />
             </Grid>
           </Grid>

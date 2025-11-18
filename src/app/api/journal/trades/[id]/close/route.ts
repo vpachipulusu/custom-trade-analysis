@@ -84,6 +84,27 @@ export async function POST(
       accountChangePercent,
     });
 
+    // Update current balance
+    const { prisma } = await import("@/lib/db/prisma");
+    const settings = await prisma.journalSettings.findUnique({
+      where: { userId: authResult.user.userId },
+    });
+
+    if (settings) {
+      const newBalance = settings.currentBalance.toNumber() + closedPositionPL;
+      await prisma.journalSettings.update({
+        where: { userId: authResult.user.userId },
+        data: { currentBalance: new Decimal(newBalance) },
+      });
+    }
+
+    // Recalculate monthly stats for the month this trade was closed
+    const { recalculateMonthlyStats } = await import("@/lib/db/journal");
+    const exitDateObj = new Date(exitDate);
+    const year = exitDateObj.getFullYear();
+    const month = exitDateObj.getMonth() + 1;
+    await recalculateMonthlyStats(authResult.user.userId, year, month);
+
     return NextResponse.json({
       trade,
       calculatedPL: closedPositionPL,

@@ -1,7 +1,14 @@
 "use client";
 
 import React from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
 import { Trade } from "@prisma/client";
 
@@ -30,7 +37,9 @@ const COLORS = [
   "#8bc34a",
 ];
 
-export default function InstrumentPieChart({ trades }: InstrumentPieChartProps) {
+export default function InstrumentPieChart({
+  trades,
+}: InstrumentPieChartProps) {
   const closedTrades = trades.filter((t) => t.status === "closed");
 
   // Group trades by instrument
@@ -108,7 +117,9 @@ export default function InstrumentPieChart({ trades }: InstrumentPieChartProps) 
               cy="50%"
               labelLine={false}
               label={(props: any) =>
-                props.percentage > 5 ? `${props.name} ${props.percentage.toFixed(0)}%` : ""
+                props.percentage > 5
+                  ? `${props.name} ${props.percentage.toFixed(0)}%`
+                  : ""
               }
               outerRadius={100}
               fill="#8884d8"

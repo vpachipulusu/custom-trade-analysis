@@ -34,17 +34,34 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
   const [viewMode, setViewMode] = React.useState<ViewMode>("count");
 
   const closedTrades = trades.filter(
-    (t) => t.status === "closed" && t.closedPositionPL !== null
+    (t) =>
+      t.status === "closed" &&
+      t.closedPositionPL !== null &&
+      t.closedPositionPL !== undefined
   );
 
-  // Helper to safely convert Decimal to number
-  const toNum = (val: any) =>
-    typeof val === "number" ? val : val?.toNumber?.() || 0;
+  // Helper to safely convert Decimal/string to number
+  const toNum = (val: any) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") return parseFloat(val) || 0;
+    if (val.toNumber) return val.toNumber();
+    return 0;
+  };
 
   // Calculate statistics
-  const wins = closedTrades.filter((t) => toNum(t.closedPositionPL) > 0);
-  const losses = closedTrades.filter((t) => toNum(t.closedPositionPL) < 0);
-  const breakeven = closedTrades.filter((t) => toNum(t.closedPositionPL) === 0);
+  const wins = closedTrades.filter((t) => {
+    const pl = toNum(t.closedPositionPL);
+    return pl > 0;
+  });
+  const losses = closedTrades.filter((t) => {
+    const pl = toNum(t.closedPositionPL);
+    return pl < 0;
+  });
+  const breakeven = closedTrades.filter((t) => {
+    const pl = toNum(t.closedPositionPL);
+    return pl === 0;
+  });
 
   const totalWinAmount = wins.reduce(
     (sum, t) => sum + toNum(t.closedPositionPL),

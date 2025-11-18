@@ -168,8 +168,8 @@ export default function InstrumentPerformanceChart({
           Performance by Instrument
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          No closed trades yet. Your performance by instrument will appear here once
-          you close trades.
+          No closed trades yet. Your performance by instrument will appear here
+          once you close trades.
         </Typography>
       </Paper>
     );

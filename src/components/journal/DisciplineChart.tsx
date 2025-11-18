@@ -259,7 +259,8 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
               fontWeight="bold"
               color={avgPLHighDiscipline >= 0 ? "success.main" : "error.main"}
             >
-              {avgPLHighDiscipline >= 0 ? "+" : ""}$
+              {avgPLHighDiscipline >= 0 ? "+" : ""}
+              {symbol}
               {avgPLHighDiscipline.toFixed(2)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -275,7 +276,8 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
               fontWeight="bold"
               color={avgPLLowDiscipline >= 0 ? "success.main" : "error.main"}
             >
-              {avgPLLowDiscipline >= 0 ? "+" : ""}$
+              {avgPLLowDiscipline >= 0 ? "+" : ""}
+              {symbol}
               {avgPLLowDiscipline.toFixed(2)}
             </Typography>
             <Typography variant="caption" color="text.secondary">

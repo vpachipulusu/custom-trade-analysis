@@ -465,7 +465,13 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      disableRestoreFocus
+    >
       <DialogTitle>Add New Trade</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>

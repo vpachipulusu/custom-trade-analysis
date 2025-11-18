@@ -221,7 +221,13 @@ export default function JournalSettingsDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableRestoreFocus
+    >
       <DialogTitle>Journal Settings</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>

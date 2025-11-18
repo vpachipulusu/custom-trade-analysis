@@ -132,7 +132,13 @@ export default function CloseTradeDialog({
   const plResult = calculatePL();
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableRestoreFocus
+    >
       <DialogTitle>Close Trade</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>

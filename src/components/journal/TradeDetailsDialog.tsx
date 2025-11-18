@@ -76,50 +76,57 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      disableRestoreFocus
+    >
+      <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Box
               sx={{
                 bgcolor:
                   trade.direction === "Long" ? "success.main" : "error.main",
                 color: "white",
-                p: 1.5,
-                borderRadius: 2,
+                p: 1,
+                borderRadius: 1.5,
                 display: "flex",
                 alignItems: "center",
               }}
             >
               {trade.direction === "Long" ? (
-                <TrendingUpIcon fontSize="large" />
+                <TrendingUpIcon />
               ) : (
-                <TrendingDownIcon fontSize="large" />
+                <TrendingDownIcon />
               )}
             </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h6" fontWeight="bold">
                 {trade.market}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {format(new Date(trade.date), "MMMM dd, yyyy")} at {trade.time}
+              <Typography variant="caption" color="text.secondary">
+                {format(new Date(trade.date), "MMM dd, yyyy")} at {trade.time}
               </Typography>
             </Box>
           </Stack>
           <Chip
             label={trade.status.toUpperCase()}
             color={trade.status === "open" ? "warning" : "success"}
-            sx={{ fontWeight: "bold", px: 2 }}
+            size="small"
+            sx={{ fontWeight: "bold" }}
           />
         </Box>
       </DialogTitle>
       <DialogContent>
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 1 }}>
           {/* P/L Summary Card - Only for closed trades */}
           {trade.status === "closed" && (
             <Card
               sx={{
-                mb: 3,
+                mb: 2,
                 background:
                   trade.closedPositionPL &&
                   parseFloat(trade.closedPositionPL) >= 0
@@ -128,21 +135,21 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                 color: "white",
               }}
             >
-              <CardContent>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <CardContent sx={{ py: 2, "&:last-child": { pb: 2 } }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
                       Profit/Loss
                     </Typography>
-                    <Typography variant="h3" fontWeight="bold">
+                    <Typography variant="h4" fontWeight="bold">
                       {formatCurrency(trade.closedPositionPL)}
                     </Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
                       Account Change
                     </Typography>
-                    <Typography variant="h3" fontWeight="bold">
+                    <Typography variant="h4" fontWeight="bold">
                       {trade.accountChangePercent
                         ? `${parseFloat(trade.accountChangePercent).toFixed(
                             2
@@ -156,71 +163,72 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
           )}
 
           {/* Main Trade Information */}
-          <Grid container spacing={3}>
+          <Grid container spacing={2}>
             {/* Entry Information Card */}
             <Grid item xs={12} md={6}>
-              <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+              <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
                 <Typography
-                  variant="h6"
+                  variant="subtitle1"
                   fontWeight="bold"
                   gutterBottom
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  <ShowChartIcon color="primary" />
+                  <ShowChartIcon color="primary" fontSize="small" />
                   Entry Details
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Stack spacing={2}>
+                <Divider sx={{ mb: 1.5 }} />
+                <Stack spacing={1.5}>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Entry Price
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold">
                       {formatPrice(trade.entryPrice)}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Position Size
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold">
                       {parseFloat(trade.positionSize).toFixed(4)}
                     </Typography>
                   </Box>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Account Balance
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold">
                       {formatCurrency(trade.accountBalance)}
                     </Typography>
                   </Box>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={1.5}>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Stop Loss
                       </Typography>
-                      <Typography variant="body1" fontWeight="medium">
+                      <Typography variant="body2" fontWeight="medium">
                         {formatPrice(trade.stopLossPrice)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Take Profit
                       </Typography>
-                      <Typography variant="body1" fontWeight="medium">
+                      <Typography variant="body2" fontWeight="medium">
                         {formatPrice(trade.takeProfitPrice)}
                       </Typography>
                     </Grid>
                   </Grid>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Risk:Reward Ratio
                     </Typography>
                     <Chip
                       label={trade.riskRewardRatio || "N/A"}
                       color="primary"
                       variant="outlined"
+                      size="small"
                       sx={{ mt: 0.5, fontWeight: "bold" }}
                     />
                   </Box>
@@ -230,24 +238,24 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
 
             {/* Exit Information Card */}
             <Grid item xs={12} md={6}>
-              <Paper elevation={2} sx={{ p: 3, height: "100%" }}>
+              <Paper elevation={2} sx={{ p: 2, height: "100%" }}>
                 <Typography
-                  variant="h6"
+                  variant="subtitle1"
                   fontWeight="bold"
                   gutterBottom
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  <AccountBalanceIcon color="secondary" />
+                  <AccountBalanceIcon color="secondary" fontSize="small" />
                   {trade.status === "closed" ? "Exit Details" : "Trade Status"}
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 1.5 }} />
                 {trade.status === "closed" ? (
-                  <Stack spacing={2}>
+                  <Stack spacing={1.5}>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Exit Date & Time
                       </Typography>
-                      <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                      <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
                         <Chip
                           icon={<CalendarTodayIcon />}
                           label={
@@ -265,27 +273,31 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                       </Stack>
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Exit Price
                       </Typography>
-                      <Typography variant="h6" fontWeight="bold">
+                      <Typography variant="body1" fontWeight="bold">
                         {formatPrice(trade.actualExitPrice)}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Trade Costs
                       </Typography>
-                      <Typography variant="h6" fontWeight="bold" color="error">
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        color="error"
+                      >
                         {formatCurrency(trade.tradeCosts)}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Net Profit/Loss
                       </Typography>
                       <Typography
-                        variant="h5"
+                        variant="h6"
                         fontWeight="bold"
                         color={
                           trade.closedPositionPL &&
@@ -299,16 +311,16 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                     </Box>
                   </Stack>
                 ) : (
-                  <Box
-                    sx={{
-                      textAlign: "center",
-                      py: 4,
-                    }}
-                  >
-                    <Typography variant="h6" color="warning.main" gutterBottom>
+                  <Box sx={{ textAlign: "center", py: 2 }}>
+                    <Typography
+                      variant="body1"
+                      color="warning.main"
+                      gutterBottom
+                      fontWeight="medium"
+                    >
                       Trade Still Open
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Exit details will be available once the trade is closed.
                     </Typography>
                   </Box>
@@ -318,16 +330,16 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
 
             {/* Trade Analysis Card */}
             <Grid item xs={12}>
-              <Paper elevation={2} sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+              <Paper elevation={2} sx={{ p: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Trade Analysis & Psychology
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={3}>
+                <Divider sx={{ mb: 1.5 }} />
+                <Grid container spacing={2}>
                   {trade.strategy && (
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={6} sm={3}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
                         gutterBottom
                       >
@@ -336,14 +348,15 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                       <Chip
                         label={trade.strategy}
                         color="primary"
+                        size="small"
                         sx={{ fontWeight: "medium" }}
                       />
                     </Grid>
                   )}
                   {trade.setup && (
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={6} sm={3}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
                         gutterBottom
                       >
@@ -352,14 +365,15 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                       <Chip
                         label={trade.setup}
                         color="secondary"
+                        size="small"
                         sx={{ fontWeight: "medium" }}
                       />
                     </Grid>
                   )}
                   {trade.emotionalState && (
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={6} sm={3}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
                         gutterBottom
                       >
@@ -368,27 +382,28 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                       <Chip
                         label={trade.emotionalState}
                         variant="outlined"
+                        size="small"
                         sx={{ fontWeight: "medium" }}
                       />
                     </Grid>
                   )}
                   {trade.disciplineRating && (
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid item xs={6} sm={3}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
                         gutterBottom
                       >
                         Discipline Rating
                       </Typography>
-                      <Box display="flex" alignItems="center" gap={1}>
+                      <Box display="flex" alignItems="center" gap={0.5}>
                         <Rating
                           value={trade.disciplineRating}
                           max={10}
                           readOnly
                           size="small"
                         />
-                        <Typography variant="body2" fontWeight="bold">
+                        <Typography variant="caption" fontWeight="bold">
                           {trade.disciplineRating}/10
                         </Typography>
                       </Box>
@@ -397,7 +412,7 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                   {trade.tradeNotes && (
                     <Grid item xs={12}>
                       <Typography
-                        variant="body2"
+                        variant="caption"
                         color="text.secondary"
                         gutterBottom
                       >
@@ -405,11 +420,12 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
                       </Typography>
                       <Box
                         sx={{
-                          p: 2,
+                          p: 1.5,
                           bgcolor: "background.default",
-                          borderRadius: 2,
+                          borderRadius: 1,
                           border: "1px solid",
                           borderColor: "divider",
+                          mt: 0.5,
                         }}
                       >
                         <Typography
@@ -428,25 +444,29 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
             {/* Chart Screenshot */}
             {trade.tradeScreenshot && (
               <Grid item xs={12}>
-                <Paper elevation={2} sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    gutterBottom
+                  >
                     Chart Screenshot
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider sx={{ mb: 1.5 }} />
                   <Box
                     sx={{
-                      mt: 2,
+                      mt: 1,
                       textAlign: "center",
                       bgcolor: "background.default",
-                      borderRadius: 2,
-                      p: 2,
+                      borderRadius: 1,
+                      p: 1.5,
                     }}
                   >
                     <Image
                       src={trade.tradeScreenshot}
                       alt="Trade Screenshot"
-                      width={800}
-                      height={500}
+                      width={700}
+                      height={400}
                       style={{
                         maxWidth: "100%",
                         height: "auto",
@@ -461,33 +481,37 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
             {/* Linked Analysis */}
             {trade.analysis && (
               <Grid item xs={12}>
-                <Paper elevation={2} sx={{ p: 3 }}>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Paper elevation={2} sx={{ p: 2 }}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    gutterBottom
+                  >
                     Linked Analysis
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider sx={{ mb: 1.5 }} />
                   <Box
                     sx={{
-                      p: 2,
+                      p: 1.5,
                       bgcolor: "primary.main",
                       color: "white",
-                      borderRadius: 2,
+                      borderRadius: 1,
                     }}
                   >
-                    <Grid container spacing={2}>
+                    <Grid container spacing={1.5}>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
                           Action
                         </Typography>
-                        <Typography variant="h6" fontWeight="bold">
+                        <Typography variant="body1" fontWeight="bold">
                           {trade.analysis.action}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
                           Confidence
                         </Typography>
-                        <Typography variant="h6" fontWeight="bold">
+                        <Typography variant="body1" fontWeight="bold">
                           {trade.analysis.confidence}%
                         </Typography>
                       </Grid>
@@ -499,8 +523,8 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
           </Grid>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} variant="outlined" size="large">
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} variant="outlined">
           Close
         </Button>
       </DialogActions>

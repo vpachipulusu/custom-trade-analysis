@@ -132,62 +132,91 @@ export default function JournalStats({ refreshTrigger }: Props) {
 
   return (
     <Box>
-      {/* Compact Account Summary & Key Metrics */}
-      <Grid container spacing={2}>
-        {/* Main Account Summary Card */}
+      <Grid container spacing={3}>
+        {/* Account Overview - Prominent Display */}
         <Grid item xs={12}>
-          <Card elevation={2}>
-            <CardContent>
-              <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} sm={3}>
-                  <Box textAlign="center">
-                    <Typography variant="caption" color="text.secondary">
+          <Card
+            elevation={3}
+            sx={{
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              color: "white",
+            }}
+          >
+            <CardContent sx={{ py: 3 }}>
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                gutterBottom
+                sx={{ mb: 3 }}
+              >
+                Account Overview
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={6} md={3}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        opacity: 0.9,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                      }}
+                    >
                       Starting Balance
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold">
+                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
                       {formatCurrency(settings.startingBalance)}
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Box textAlign="center">
-                    <Typography variant="caption" color="text.secondary">
+                <Grid item xs={6} md={3}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        opacity: 0.9,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                      }}
+                    >
                       Current Balance
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      color="primary.main"
-                    >
+                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
                       {formatCurrency(settings.currentBalance)}
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Box textAlign="center">
-                    <Typography variant="caption" color="text.secondary">
+                <Grid item xs={6} md={3}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        opacity: 0.9,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                      }}
+                    >
                       Total P/L
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      color={closedPL >= 0 ? "success.main" : "error.main"}
-                    >
+                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
                       {closedPL >= 0 ? "+" : ""}
                       {formatCurrency(closedPL)}
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Box textAlign="center">
-                    <Typography variant="caption" color="text.secondary">
+                <Grid item xs={6} md={3}>
+                  <Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        opacity: 0.9,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                      }}
+                    >
                       ROI
                     </Typography>
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                      color={roi >= 0 ? "success.main" : "error.main"}
-                    >
+                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
                       {roi >= 0 ? "+" : ""}
                       {roi.toFixed(2)}%
                     </Typography>
@@ -198,28 +227,36 @@ export default function JournalStats({ refreshTrigger }: Props) {
           </Card>
         </Grid>
 
-        {/* Trading Performance Metrics */}
-        <Grid item xs={12} md={6}>
-          <Card>
+        {/* Trading Performance */}
+        <Grid item xs={12} sm={6} lg={3}>
+          <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Trading Performance
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Total Trades
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    {stats.totalTrades}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <TrendingUpIcon color="primary" />
+                <Typography variant="subtitle1" fontWeight="600">
+                  Trading Performance
+                </Typography>
+              </Box>
+              <Box mb={3}>
+                <Typography variant="h3" fontWeight="bold">
+                  {stats.totalTrades}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Total Trades
+                </Typography>
+              </Box>
+              <Box mb={2}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={0.5}
+                >
+                  <Typography variant="body2" color="text.secondary">
                     Win Rate
                   </Typography>
                   <Typography
-                    variant="h5"
+                    variant="body1"
                     fontWeight="bold"
                     color={
                       stats.winRate >= 50 ? "success.main" : "warning.main"
@@ -227,13 +264,25 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   >
                     {formatPercent(stats.winRate)}
                   </Typography>
-                </Grid>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(stats.winRate, 100)}
+                  color={stats.winRate >= 50 ? "success" : "warning"}
+                  sx={{ height: 6, borderRadius: 1 }}
+                />
+              </Box>
+              <Grid container spacing={1} sx={{ mt: 1 }}>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Wins
                   </Typography>
                   <Typography
-                    variant="body1"
+                    variant="h6"
                     fontWeight="bold"
                     color="success.main"
                   >
@@ -241,23 +290,27 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Losses
                   </Typography>
-                  <Typography
-                    variant="body1"
-                    fontWeight="bold"
-                    color="error.main"
-                  >
+                  <Typography variant="h6" fontWeight="bold" color="error.main">
                     {stats.losingTrades}
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    Break-Even
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    B/E
                   </Typography>
                   <Typography
-                    variant="body1"
+                    variant="h6"
                     fontWeight="bold"
                     color="text.secondary"
                   >
@@ -269,16 +322,41 @@ export default function JournalStats({ refreshTrigger }: Props) {
           </Card>
         </Grid>
 
-        {/* P/L Metrics */}
-        <Grid item xs={12} md={6}>
-          <Card>
+        {/* P/L Analysis */}
+        <Grid item xs={12} sm={6} lg={3}>
+          <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                P/L Analysis
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <AccountBalanceWalletIcon color="primary" />
+                <Typography variant="subtitle1" fontWeight="600">
+                  P/L Analysis
+                </Typography>
+              </Box>
+              <Box mb={3}>
+                <Typography
+                  variant="h3"
+                  fontWeight="bold"
+                  color={
+                    stats.averagePLPerTrade >= 0 ? "success.main" : "error.main"
+                  }
+                >
+                  {stats.averagePLPerTrade >= 0 ? "+" : ""}
+                  {formatCurrency(stats.averagePLPerTrade)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Avg P/L Per Trade
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  mb: 2,
+                  pb: 2,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2" color="text.secondary">
                     Avg Win
                   </Typography>
                   <Typography
@@ -288,9 +366,9 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   >
                     {formatCurrency(stats.averageWin)}
                   </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">
                     Avg Loss
                   </Typography>
                   <Typography
@@ -300,9 +378,11 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   >
                     {formatCurrency(stats.averageLoss)}
                   </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+                </Box>
+              </Box>
+              <Box>
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2" color="text.secondary">
                     Largest Win
                   </Typography>
                   <Typography
@@ -312,9 +392,9 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   >
                     {formatCurrency(stats.largestWin)}
                   </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">
                     Largest Loss
                   </Typography>
                   <Typography
@@ -324,83 +404,70 @@ export default function JournalStats({ refreshTrigger }: Props) {
                   >
                     {formatCurrency(stats.largestLoss)}
                   </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="caption" color="text.secondary">
-                    Avg P/L Per Trade
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    color={
-                      stats.averagePLPerTrade >= 0
-                        ? "success.main"
-                        : "error.main"
-                    }
-                  >
-                    {stats.averagePLPerTrade >= 0 ? "+" : ""}
-                    {formatCurrency(stats.averagePLPerTrade)}
-                  </Typography>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
         {/* Risk Management */}
-        <Grid item xs={12} md={6}>
-          <Card>
+        <Grid item xs={12} sm={6} lg={3}>
+          <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Risk Management
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <TrendingDownIcon color="primary" />
+                <Typography variant="subtitle1" fontWeight="600">
+                  Risk Management
+                </Typography>
+              </Box>
+              <Box mb={3}>
+                <Typography variant="h3" fontWeight="bold" color="primary.main">
+                  {stats.avgRRRatio}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Risk:Reward Ratio
+                </Typography>
+              </Box>
+              <Box>
+                <Box display="flex" justifyContent="space-between" mb={2}>
+                  <Typography variant="body2" color="text.secondary">
                     Avg Risk/Trade
                   </Typography>
                   <Typography variant="body1" fontWeight="bold">
                     {formatPercent(stats.avgRisk)}
                   </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">
                     Avg Reward/Trade
                   </Typography>
                   <Typography variant="body1" fontWeight="bold">
                     {formatPercent(stats.avgReward)}
                   </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="caption" color="text.secondary">
-                    Avg Risk:Reward Ratio
-                  </Typography>
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    color="primary.main"
-                  >
-                    {stats.avgRRRatio}
-                  </Typography>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Costs */}
-        <Grid item xs={12} md={6}>
-          <Card>
+        {/* Trading Costs */}
+        <Grid item xs={12} sm={6} lg={3}>
+          <Card sx={{ height: "100%" }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Trading Costs
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Total Costs
-              </Typography>
-              <Typography variant="h5" fontWeight="bold" color="error.main">
-                {formatCurrency(stats.totalCosts)}
-              </Typography>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <AccountBalanceWalletIcon color="error" />
+                <Typography variant="subtitle1" fontWeight="600">
+                  Trading Costs
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" color="error.main">
+                  {formatCurrency(stats.totalCosts)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Total Costs (Fees & Commissions)
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

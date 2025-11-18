@@ -41,9 +41,18 @@ export default function EquityCurveChart({
   const { currency } = useJournal();
   const symbol = getCurrencySymbol(currency);
 
+  // Helper to safely convert Decimal/string to number
+  const toNum = (val: any) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") return parseFloat(val) || 0;
+    if (val.toNumber) return val.toNumber();
+    return 0;
+  };
+
   // Sort trades by date and time
   const sortedTrades = [...trades]
-    .filter((t) => t.status === "closed" && t.closedPositionPL !== null)
+    .filter((t) => t.status === "closed" && t.closedPositionPL !== null && t.closedPositionPL !== undefined)
     .sort((a, b) => {
       const dateA = new Date(`${a.exitDate || a.date}T${a.exitTime || a.time}`);
       const dateB = new Date(`${b.exitDate || b.date}T${b.exitTime || b.time}`);
@@ -64,11 +73,7 @@ export default function EquityCurveChart({
   });
 
   sortedTrades.forEach((trade) => {
-    // closedPositionPL is already a number from JSON serialization
-    const pl =
-      typeof trade.closedPositionPL === "number"
-        ? trade.closedPositionPL
-        : trade.closedPositionPL?.toNumber?.() || 0;
+    const pl = toNum(trade.closedPositionPL);
     runningBalance += pl;
 
     // Track peak for drawdown calculation

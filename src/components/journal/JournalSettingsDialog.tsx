@@ -20,6 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
@@ -37,6 +38,7 @@ export default function JournalSettingsDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -165,6 +167,43 @@ export default function JournalSettingsDialog({
     }
   };
 
+  const handleSeedData = async () => {
+    if (!confirm("This will create 30+ realistic sample trades spanning 3 months to test statistics and charts. This should only be used on a fresh account or after clearing all data. Continue?")) {
+      return;
+    }
+
+    setSeeding(true);
+    setError("");
+
+    try {
+      const token = await user?.getIdToken();
+      const res = await fetch("/api/journal/debug", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to seed data");
+      }
+
+      const result = await res.json();
+      setSuccess(`Successfully created ${result.stats.totalTrades} trades! Final balance: £${result.stats.finalBalance}`);
+      
+      // Wait a moment to show the success message, then reload
+      setTimeout(() => {
+        onSaved();
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to seed data");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Journal Settings</DialogTitle>
@@ -269,20 +308,30 @@ export default function JournalSettingsDialog({
         </Box>
       </DialogContent>
       <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
-        <Button
-          onClick={handleClearAllData}
-          color="error"
-          disabled={loading || deleting || saving}
-          startIcon={<DeleteIcon />}
-        >
-          {deleting ? "Clearing..." : "Clear All Data"}
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            onClick={handleSeedData}
+            color="success"
+            disabled={loading || deleting || saving || seeding}
+            startIcon={<AddIcon />}
+          >
+            {seeding ? "Seeding..." : "Seed Data"}
+          </Button>
+          <Button
+            onClick={handleClearAllData}
+            color="error"
+            disabled={loading || deleting || saving || seeding}
+            startIcon={<DeleteIcon />}
+          >
+            {deleting ? "Clearing..." : "Clear All Data"}
+          </Button>
+        </Box>
         <Box>
           <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={loading || saving || deleting}
+            disabled={loading || saving || deleting || seeding}
           >
             {saving ? "Saving..." : "Save"}
           </Button>

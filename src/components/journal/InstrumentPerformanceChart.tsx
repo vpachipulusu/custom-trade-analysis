@@ -210,7 +210,7 @@ export default function InstrumentPerformanceChart({
         Top {data.length} most traded instruments
       </Typography>
 
-      <Box sx={{ width: "100%", height: 400, mt: 2 }}>
+      <Box sx={{ width: "100%", height: 385, mt: 2 }}>
         <ResponsiveContainer>
           <BarChart data={data} layout="horizontal">
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />

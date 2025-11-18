@@ -192,7 +192,7 @@ export default function PLDistributionChart({
         ranges
       </Typography>
 
-      <Box sx={{ width: "100%", height: 350, mt: 2 }}>
+      <Box sx={{ width: "100%", height: 400, mt: 2 }}>
         <ResponsiveContainer>
           <BarChart data={buckets}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />

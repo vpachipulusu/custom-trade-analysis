@@ -136,10 +136,10 @@ export default function JournalStats({ refreshTrigger }: Props) {
         {/* Account Overview - Prominent Display */}
         <Grid item xs={12}>
           <Card
-            elevation={3}
+            elevation={2}
             sx={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              color: "white",
+              background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+              borderLeft: "4px solid #667eea",
             }}
           >
             <CardContent sx={{ py: 3 }}>
@@ -147,7 +147,7 @@ export default function JournalStats({ refreshTrigger }: Props) {
                 variant="h6"
                 fontWeight="bold"
                 gutterBottom
-                sx={{ mb: 3 }}
+                sx={{ mb: 3, color: "text.primary" }}
               >
                 Account Overview
               </Typography>
@@ -157,14 +157,19 @@ export default function JournalStats({ refreshTrigger }: Props) {
                     <Typography
                       variant="caption"
                       sx={{
-                        opacity: 0.9,
+                        color: "text.secondary",
                         textTransform: "uppercase",
                         letterSpacing: 1,
+                        fontWeight: 500,
                       }}
                     >
                       Starting Balance
                     </Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{ mt: 1, color: "text.primary" }}
+                    >
                       {formatCurrency(settings.startingBalance)}
                     </Typography>
                   </Box>
@@ -174,14 +179,19 @@ export default function JournalStats({ refreshTrigger }: Props) {
                     <Typography
                       variant="caption"
                       sx={{
-                        opacity: 0.9,
+                        color: "text.secondary",
                         textTransform: "uppercase",
                         letterSpacing: 1,
+                        fontWeight: 500,
                       }}
                     >
                       Current Balance
                     </Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{ mt: 1, color: "primary.main" }}
+                    >
                       {formatCurrency(settings.currentBalance)}
                     </Typography>
                   </Box>
@@ -191,14 +201,20 @@ export default function JournalStats({ refreshTrigger }: Props) {
                     <Typography
                       variant="caption"
                       sx={{
-                        opacity: 0.9,
+                        color: "text.secondary",
                         textTransform: "uppercase",
                         letterSpacing: 1,
+                        fontWeight: 500,
                       }}
                     >
                       Total P/L
                     </Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{ mt: 1 }}
+                      color={closedPL >= 0 ? "success.main" : "error.main"}
+                    >
                       {closedPL >= 0 ? "+" : ""}
                       {formatCurrency(closedPL)}
                     </Typography>
@@ -209,14 +225,20 @@ export default function JournalStats({ refreshTrigger }: Props) {
                     <Typography
                       variant="caption"
                       sx={{
-                        opacity: 0.9,
+                        color: "text.secondary",
                         textTransform: "uppercase",
                         letterSpacing: 1,
+                        fontWeight: 500,
                       }}
                     >
                       ROI
                     </Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{ mt: 1 }}
+                      color={roi >= 0 ? "success.main" : "error.main"}
+                    >
                       {roi >= 0 ? "+" : ""}
                       {roi.toFixed(2)}%
                     </Typography>

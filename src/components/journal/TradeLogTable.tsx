@@ -405,7 +405,7 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Account Number</InputLabel>
             <Select
               value={accountNumberFilter}
@@ -470,7 +470,10 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                           <ArrowDownwardIcon fontSize="small" />
                         )
                       ) : (
-                        <UnfoldMoreIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                        <UnfoldMoreIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.5 }}
+                        />
                       )}
                     </Box>
                   </TableCell>
@@ -489,7 +492,10 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                           <ArrowDownwardIcon fontSize="small" />
                         )
                       ) : (
-                        <UnfoldMoreIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                        <UnfoldMoreIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.5 }}
+                        />
                       )}
                     </Box>
                   </TableCell>
@@ -511,7 +517,10 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                           <ArrowDownwardIcon fontSize="small" />
                         )
                       ) : (
-                        <UnfoldMoreIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                        <UnfoldMoreIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.5 }}
+                        />
                       )}
                     </Box>
                   </TableCell>
@@ -529,7 +538,10 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                           <ArrowDownwardIcon fontSize="small" />
                         )
                       ) : (
-                        <UnfoldMoreIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                        <UnfoldMoreIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.5 }}
+                        />
                       )}
                     </Box>
                   </TableCell>
@@ -547,7 +559,10 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                           <ArrowDownwardIcon fontSize="small" />
                         )
                       ) : (
-                        <UnfoldMoreIcon fontSize="small" sx={{ opacity: 0.5 }} />
+                        <UnfoldMoreIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.5 }}
+                        />
                       )}
                     </Box>
                   </TableCell>

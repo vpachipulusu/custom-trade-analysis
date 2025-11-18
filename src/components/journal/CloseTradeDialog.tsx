@@ -145,7 +145,7 @@ export default function CloseTradeDialog({
             </Typography>
             <Grid container spacing={1}>
               <Grid item xs={6}>
-                <Typography variant="body2">Market:</Typography>
+                <Typography variant="body2">Instrument:</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="body2" fontWeight="bold">

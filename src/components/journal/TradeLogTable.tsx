@@ -197,7 +197,7 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
         </FormControl>
         <TextField
           size="small"
-          label="Market"
+          label="Instrument"
           value={marketFilter}
           onChange={(e) => setMarketFilter(e.target.value)}
           placeholder="e.g. GBPUSD"
@@ -226,7 +226,7 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                 <TableCell>Date</TableCell>
                 <TableCell>Time</TableCell>
                 <TableCell>Direction</TableCell>
-                <TableCell>Market</TableCell>
+                <TableCell>Instrument</TableCell>
                 <TableCell align="right">Entry Price</TableCell>
                 <TableCell align="right">Position Size</TableCell>
                 <TableCell align="right">Stop Loss</TableCell>

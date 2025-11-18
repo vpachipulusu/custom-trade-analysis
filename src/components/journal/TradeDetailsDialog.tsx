@@ -111,9 +111,9 @@ export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
             </Grid>
             <Grid item xs={6} sm={3}>
               <Typography variant="body2" color="text.secondary">
-                Market
+                Instrument
               </Typography>
-              <Typography variant="body1" fontWeight="bold">
+              <Typography variant="body1" fontWeight="medium">
                 {trade.market}
               </Typography>
             </Grid>

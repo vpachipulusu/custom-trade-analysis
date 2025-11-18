@@ -164,7 +164,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
     const missingFields = [];
     if (!date) missingFields.push("Date");
     if (!time) missingFields.push("Time");
-    if (!market) missingFields.push("Market");
+    if (!market) missingFields.push("Instrument");
     if (!entryPrice) missingFields.push("Entry Price");
     if (!accountBalance) missingFields.push("Account Balance");
     if (!positionSize) missingFields.push("Position Size");
@@ -299,7 +299,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Market / Symbol *"
+                label="Instrument / Symbol *"
                 value={market}
                 onChange={(e) => setMarket(e.target.value.toUpperCase())}
                 placeholder="e.g. GBPUSD, BTC, AAPL"

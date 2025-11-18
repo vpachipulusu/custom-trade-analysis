@@ -126,7 +126,7 @@ export default function OnboardingDialog({
                 </ListItemIcon>
                 <ListItemText
                   primary="Visual Charts"
-                  secondary="Equity curve, P/L distribution, market performance, and more"
+                  secondary="Equity curve, P/L distribution, instrument performance, and more"
                 />
               </ListItem>
               <ListItem>

@@ -7,7 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import EquityCurveChart from "./EquityCurveChart";
 import WinLossChart from "./WinLossChart";
 import PLDistributionChart from "./PLDistributionChart";
-import MarketPerformanceChart from "./MarketPerformanceChart";
+import InstrumentPerformanceChart from "./InstrumentPerformanceChart";
+import InstrumentPieChart from "./InstrumentPieChart";
 import DisciplineChart from "./DisciplineChart";
 import JournalStats from "./JournalStats";
 
@@ -104,17 +105,20 @@ export default function StatisticsTab({
           <EquityCurveChart trades={trades} startingBalance={startingBalance} />
         </Grid>
 
-        {/* Win/Loss and P/L Distribution */}
+        {/* Win/Loss and Instrument Pie Chart */}
         <Grid item xs={12} md={6}>
           <WinLossChart trades={trades} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <PLDistributionChart trades={trades} />
+          <InstrumentPieChart trades={trades} />
         </Grid>
 
-        {/* Market Performance - Full Width */}
-        <Grid item xs={12}>
-          <MarketPerformanceChart trades={trades} />
+        {/* P/L Distribution and Instrument Performance */}
+        <Grid item xs={12} md={6}>
+          <PLDistributionChart trades={trades} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <InstrumentPerformanceChart trades={trades} />
         </Grid>
 
         {/* Discipline Chart - Full Width */}

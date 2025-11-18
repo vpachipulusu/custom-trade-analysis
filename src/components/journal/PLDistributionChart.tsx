@@ -36,8 +36,20 @@ export default function PLDistributionChart({
   const symbol = getCurrencySymbol(currency);
 
   const closedTrades = trades.filter(
-    (t) => t.status === "closed" && t.closedPositionPL !== null
+    (t) =>
+      t.status === "closed" &&
+      t.closedPositionPL !== null &&
+      t.closedPositionPL !== undefined
   );
+
+  // Helper to safely convert Decimal/string to number
+  const toNum = (val: any) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") return parseFloat(val) || 0;
+    if (val.toNumber) return val.toNumber();
+    return 0;
+  };
 
   // Define P/L buckets with dynamic currency symbol
   const buckets: BucketData[] = [
@@ -87,10 +99,6 @@ export default function PLDistributionChart({
     },
     { range: `> ${symbol}500`, count: 0, minValue: 500, totalPL: 0 },
   ];
-
-  // Helper to safely convert Decimal to number
-  const toNum = (val: any) =>
-    typeof val === "number" ? val : val?.toNumber?.() || 0;
 
   // Categorize trades into buckets
   closedTrades.forEach((trade) => {

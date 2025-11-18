@@ -125,337 +125,281 @@ export default function JournalStats({ refreshTrigger }: Props) {
   }
 
   const closedPL = settings.currentBalance - settings.startingBalance;
+  const roi =
+    settings.startingBalance > 0
+      ? (closedPL / settings.startingBalance) * 100
+      : 0;
 
   return (
     <Box>
-      {/* Account Summary */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <AccountBalanceWalletIcon
-                  sx={{ mr: 1, color: "primary.main" }}
-                />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Starting Balance
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight="bold">
-                {formatCurrency(settings.startingBalance)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                {closedPL >= 0 ? (
-                  <TrendingUpIcon sx={{ mr: 1, color: "success.main" }} />
-                ) : (
-                  <TrendingDownIcon sx={{ mr: 1, color: "error.main" }} />
-                )}
-                <Typography variant="subtitle2" color="text.secondary">
-                  Closed Position P/L
-                </Typography>
-              </Box>
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                color={closedPL >= 0 ? "success.main" : "error.main"}
-              >
-                {formatCurrency(closedPL)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <AccountBalanceWalletIcon
-                  sx={{ mr: 1, color: "primary.main" }}
-                />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Current Balance
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight="bold">
-                {formatCurrency(settings.currentBalance)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Trading Statistics */}
-      <Grid container spacing={3}>
-        {/* Trade Counts */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Total Trades
-              </Typography>
-              <Typography variant="h4" fontWeight="bold">
-                {stats.totalTrades}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Winning Trades
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" color="success.main">
-                {stats.winningTrades}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Losing Trades
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" color="error.main">
-                {stats.losingTrades}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Break Even
-              </Typography>
-              <Typography variant="h4" fontWeight="bold" color="text.secondary">
-                {stats.breakEvenTrades}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Win Rate */}
+      {/* Compact Account Summary & Key Metrics */}
+      <Grid container spacing={2}>
+        {/* Main Account Summary Card */}
         <Grid item xs={12}>
+          <Card elevation={2}>
+            <CardContent>
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="caption" color="text.secondary">
+                      Starting Balance
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold">
+                      {formatCurrency(settings.startingBalance)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="caption" color="text.secondary">
+                      Current Balance
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color="primary.main"
+                    >
+                      {formatCurrency(settings.currentBalance)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="caption" color="text.secondary">
+                      Total P/L
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color={closedPL >= 0 ? "success.main" : "error.main"}
+                    >
+                      {closedPL >= 0 ? "+" : ""}
+                      {formatCurrency(closedPL)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="caption" color="text.secondary">
+                      ROI
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      color={roi >= 0 ? "success.main" : "error.main"}
+                    >
+                      {roi >= 0 ? "+" : ""}
+                      {roi.toFixed(2)}%
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Trading Performance Metrics */}
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={1}
-              >
-                <Typography variant="subtitle2" color="text.secondary">
-                  Win Rate
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {formatPercent(stats.winRate)}
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(stats.winRate, 100)}
-                sx={{ height: 8, borderRadius: 1 }}
-              />
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Trading Performance
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Total Trades
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold">
+                    {stats.totalTrades}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Win Rate
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    fontWeight="bold"
+                    color={
+                      stats.winRate >= 50 ? "success.main" : "warning.main"
+                    }
+                  >
+                    {formatPercent(stats.winRate)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">
+                    Wins
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="success.main"
+                  >
+                    {stats.winningTrades}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">
+                    Losses
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="error.main"
+                  >
+                    {stats.losingTrades}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">
+                    Break-Even
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="text.secondary"
+                  >
+                    {stats.breakEvenTrades}
+                  </Typography>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
 
         {/* P/L Metrics */}
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Average Win
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                P/L Analysis
               </Typography>
-              <Typography variant="h6" fontWeight="bold" color="success.main">
-                {formatCurrency(stats.averageWin)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Average Loss
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="error.main">
-                {formatCurrency(stats.averageLoss)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Average P/L Per Trade
-              </Typography>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                color={
-                  stats.averagePLPerTrade >= 0 ? "success.main" : "error.main"
-                }
-              >
-                {formatCurrency(stats.averagePLPerTrade)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Largest Win/Loss */}
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Largest Win
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="success.main">
-                {formatCurrency(stats.largestWin)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Largest Loss
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="error.main">
-                {formatCurrency(stats.largestLoss)}
-              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg Win
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="success.main"
+                  >
+                    {formatCurrency(stats.averageWin)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg Loss
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="error.main"
+                  >
+                    {formatCurrency(stats.averageLoss)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Largest Win
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="success.main"
+                  >
+                    {formatCurrency(stats.largestWin)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Largest Loss
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color="error.main"
+                  >
+                    {formatCurrency(stats.largestLoss)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg P/L Per Trade
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    color={
+                      stats.averagePLPerTrade >= 0
+                        ? "success.main"
+                        : "error.main"
+                    }
+                  >
+                    {stats.averagePLPerTrade >= 0 ? "+" : ""}
+                    {formatCurrency(stats.averagePLPerTrade)}
+                  </Typography>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Costs and ROI */}
-        <Grid item xs={12} sm={6}>
+        {/* Risk Management */}
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Total Trade Costs
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Risk Management
               </Typography>
-              <Typography variant="h6" fontWeight="bold">
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg Risk/Trade
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatPercent(stats.avgRisk)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg Reward/Trade
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatPercent(stats.avgReward)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="text.secondary">
+                    Avg Risk:Reward Ratio
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    color="primary.main"
+                  >
+                    {stats.avgRRRatio}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Costs */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Trading Costs
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Total Costs
+              </Typography>
+              <Typography variant="h5" fontWeight="bold" color="error.main">
                 {formatCurrency(stats.totalCosts)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Return On Investment
-              </Typography>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                color={stats.roi >= 0 ? "success.main" : "error.main"}
-              >
-                {formatPercent(stats.roi)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Risk/Reward */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Avg Risk Per Trade
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {formatPercent(stats.avgRisk)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Avg Reward Per Trade
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {formatPercent(stats.avgReward)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Avg Risk:Reward Ratio
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                {stats.avgRRRatio}
               </Typography>
             </CardContent>
           </Card>

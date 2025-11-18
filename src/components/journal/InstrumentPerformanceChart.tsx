@@ -47,12 +47,20 @@ export default function InstrumentPerformanceChart({
   const [viewMode, setViewMode] = React.useState<ViewMode>("pl");
 
   const closedTrades = trades.filter(
-    (t) => t.status === "closed" && t.closedPositionPL !== null
+    (t) =>
+      t.status === "closed" &&
+      t.closedPositionPL !== null &&
+      t.closedPositionPL !== undefined
   );
 
-  // Helper to safely convert Decimal to number
-  const toNum = (val: any) =>
-    typeof val === "number" ? val : val?.toNumber?.() || 0;
+  // Helper to safely convert Decimal/string to number
+  const toNum = (val: any) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") return parseFloat(val) || 0;
+    if (val.toNumber) return val.toNumber();
+    return 0;
+  };
 
   // Group trades by instrument
   const instrumentMap = new Map<string, InstrumentStats>();

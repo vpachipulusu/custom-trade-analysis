@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { verifyIdToken } from "@/lib/firebase/adminApp";
 import { prisma } from "@/lib/prisma";
+import { getLogger } from "../logging";
 
 export interface AuthenticatedUser {
   uid: string;
@@ -52,7 +53,11 @@ export async function authenticateRequest(
       userId: user.id,
     };
   } catch (error) {
-    console.error("Authentication error:", error);
+    const logger = getLogger();
+    logger.error("Authentication error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw new Error("Unauthorized");
   }
 }

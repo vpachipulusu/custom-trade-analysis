@@ -30,12 +30,14 @@ import TradeSetupCard from "./TradeSetupCard";
 import LinkToJournalButton from "./LinkToJournalButton";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
+import { getLogger } from "@/lib/logging";
 
 interface AnalysisDisplayProps {
   analysis: Analysis;
 }
 
 export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
+  const logger = getLogger();
   const router = useRouter();
   const createSnapshot = useCreateSnapshot();
   const createAnalysis = useCreateAnalysis();
@@ -52,7 +54,7 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
       const newAnalysis = await createAnalysis.mutateAsync(snapshot.id);
       router.push(`/analysis/${newAnalysis.id}`);
     } catch (error) {
-      console.error("Regeneration failed:", error);
+      logger.error("Regeneration failed", { error, layoutId: analysis.snapshot.layoutId });
       alert("Failed to regenerate analysis. Please try again.");
     } finally {
       setRegenerating(false);

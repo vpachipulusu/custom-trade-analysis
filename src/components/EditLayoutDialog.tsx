@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Layout, useUpdateLayout, UpdateLayoutData } from "@/hooks/useLayouts";
+import { getLogger } from "@/lib/logging";
 
 interface EditLayoutDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export default function EditLayoutDialog({
   onClose,
   onSuccess,
 }: EditLayoutDialogProps) {
+  const logger = getLogger();
   const [formData, setFormData] = useState<UpdateLayoutData>({
     layoutId: layout.layoutId || "",
     symbol: layout.symbol || "",
@@ -86,18 +88,18 @@ export default function EditLayoutDialog({
         }),
       };
 
-      console.log("Submitting layout update:", {
-        ...dataToSubmit,
-        sessionid: dataToSubmit.sessionid ? "[provided]" : undefined,
-        sessionidSign: dataToSubmit.sessionidSign ? "[provided]" : undefined,
+      logger.debug("Submitting layout update", {
+        layoutId: layout.id,
+        hasSessionId: !!dataToSubmit.sessionid,
+        hasSessionIdSign: !!dataToSubmit.sessionidSign,
       });
 
       await updateLayout.mutateAsync({ id: layout.id, data: dataToSubmit });
-      console.log("Layout update successful");
+      logger.info("Layout update successful", { layoutId: layout.id });
       handleClose();
       onSuccess();
     } catch (err: any) {
-      console.error("Layout update error:", err);
+      logger.error("Layout update error", { error: err, layoutId: layout.id });
       setError(err.response?.data?.error || "Failed to update layout");
     }
   };

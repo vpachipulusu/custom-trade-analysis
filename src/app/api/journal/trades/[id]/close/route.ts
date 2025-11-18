@@ -3,6 +3,7 @@ import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { getTradeById, closeTrade } from "@/lib/db/journal";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { Decimal } from "@prisma/client/runtime/library";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * POST /api/journal/trades/[id]/close
@@ -53,7 +54,11 @@ export async function POST(
     const positionSize = existingTrade.positionSize.toNumber();
     const tradeCosts = existingTrade.tradeCosts.toNumber();
 
-    console.log("Close trade calculation:", {
+    const logger = getLogger();
+    LogContext.set({ userId: authResult.user.userId });
+
+    logger.debug("Close trade calculation", {
+      tradeId: params.id,
       direction: existingTrade.direction,
       entryPrice,
       exitPrice,
@@ -69,7 +74,7 @@ export async function POST(
       closedPositionPL = (entryPrice - exitPrice) * positionSize - tradeCosts;
     }
 
-    console.log("Calculated P/L:", closedPositionPL);
+    logger.debug("Calculated P/L", { tradeId: params.id, pl: closedPositionPL });
 
     // Calculate account change %
     const accountBalance = existingTrade.accountBalance.toNumber();
@@ -105,13 +110,24 @@ export async function POST(
     const month = exitDateObj.getMonth() + 1;
     await recalculateMonthlyStats(authResult.user.userId, year, month);
 
+    const logger = getLogger();
+    logger.info("Trade closed successfully", {
+      tradeId: params.id,
+      pl: closedPositionPL,
+      accountChange: accountChangePercent
+    });
+
     return NextResponse.json({
       trade,
       calculatedPL: closedPositionPL,
       calculatedAccountChange: accountChangePercent,
     });
   } catch (error) {
-    console.error("Close trade error:", error);
+    const logger = getLogger();
+    logger.error("Close trade error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return createErrorResponse(error, "Failed to close trade");
   }
 }

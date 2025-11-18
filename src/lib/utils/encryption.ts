@@ -1,13 +1,16 @@
 import crypto from "crypto";
+import { getLogger } from "../logging";
 
 const ALGORITHM = "aes-256-cbc";
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "";
 const IV_LENGTH = 16;
 
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 64) {
-  console.warn(
-    "ENCRYPTION_KEY must be 64 characters (32 bytes hex). Generate with: openssl rand -hex 32"
-  );
+  const logger = getLogger();
+  logger.warn("Invalid encryption key", {
+    message: "ENCRYPTION_KEY must be 64 characters (32 bytes hex)",
+    hint: "Generate with: openssl rand -hex 32"
+  });
 }
 
 /**
@@ -28,7 +31,11 @@ export function encrypt(text: string): string {
 
     return `${iv.toString("hex")}:${encrypted}`;
   } catch (error) {
-    console.error("Encryption error:", error);
+    const logger = getLogger();
+    logger.error("Encryption error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw new Error("Failed to encrypt data");
   }
 }
@@ -57,7 +64,11 @@ export function decrypt(encryptedText: string): string {
 
     return decrypted;
   } catch (error) {
-    console.error("Decryption error:", error);
+    const logger = getLogger();
+    logger.error("Decryption error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw new Error("Failed to decrypt data");
   }
 }

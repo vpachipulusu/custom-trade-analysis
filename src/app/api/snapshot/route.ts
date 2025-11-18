@@ -7,17 +7,23 @@ import { captureWithPlaywright } from "@/lib/services/playwright-screenshot";
 import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { decrypt } from "@/lib/utils/encryption";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * POST /api/snapshot
  * Generate a new snapshot for a layout
  */
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const body = await request.json();
     const { layoutId } = body;
@@ -51,19 +57,25 @@ export async function POST(request: NextRequest) {
       if (layout.sessionid && layout.sessionid.includes(":")) {
         // Check if it's encrypted (format: iv:encryptedData)
         decryptedSessionId = decrypt(layout.sessionid);
-        console.log("Decrypted sessionid length:", decryptedSessionId.length);
+        logger.debug("Decrypted sessionid", {
+          sessionIdLength: decryptedSessionId.length,
+          layoutId
+        });
       } else {
-        console.log("Using plain sessionid (not encrypted)");
+        logger.debug("Using plain sessionid (not encrypted)", { layoutId });
       }
     } catch (error) {
-      console.error("Failed to decrypt sessionid:", error);
+      logger.error("Failed to decrypt sessionid", {
+        error: error instanceof Error ? error.message : String(error),
+        layoutId
+      });
       // If decryption fails, use as-is (might be plain text)
     }
 
     let snapshotResult: { url: string; expiresAt: Date };
 
     // Debug: Log what we have
-    console.log("Layout data:", {
+    logger.debug("Layout data for snapshot", {
       hasLayoutId: !!layout.layoutId,
       hasSessionid: !!layout.sessionid,
       hasSessionidSign: !!layout.sessionidSign,
@@ -72,6 +84,12 @@ export async function POST(request: NextRequest) {
 
     // Use Puppeteer ONLY - CHART-IMG is disabled
     if (!layout.layoutId || !decryptedSessionId || !layout.sessionidSign) {
+      logger.warn("Missing required credentials for Puppeteer screenshot", {
+        hasLayoutId: !!layout.layoutId,
+        hasSessionid: !!decryptedSessionId,
+        hasSessionidSign: !!layout.sessionidSign,
+        layoutId
+      });
       return NextResponse.json(
         {
           error:
@@ -81,10 +99,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      "Using Puppeteer to capture chart with layoutId:",
-      layout.layoutId
-    );
+    logger.info("Using Puppeteer to capture chart", {
+      layoutId: layout.layoutId
+    });
 
     const screenshotDataUrl = await captureWithPuppeteer({
       layoutId: layout.layoutId,
@@ -111,9 +128,17 @@ export async function POST(request: NextRequest) {
       snapshotResult.expiresAt
     );
 
+    logger.info("Snapshot created successfully", {
+      snapshotId: snapshot.id,
+      layoutId
+    });
+
     return NextResponse.json(snapshot, { status: 201 });
   } catch (error) {
-    console.error("Snapshot generation error:", error);
+    logger.error("Snapshot generation error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
 
     // Handle specific CHART-IMG errors
     if (error instanceof Error && error.message.includes("CHART-IMG")) {

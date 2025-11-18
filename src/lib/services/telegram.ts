@@ -1,6 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import { Analysis } from "@/hooks/useAnalyses";
 import fs from "fs";
+import { getLogger } from "../logging";
 
 interface TradeSetup {
   quality: "A" | "B" | "C";
@@ -71,12 +72,15 @@ interface TelegramAlertOptions {
 export async function sendTradingAlert(
   options: TelegramAlertOptions
 ): Promise<void> {
-  console.log(`\n📨 sendTradingAlert called:`);
-  console.log(`   Analysis ID: ${options.analysis?.id}`);
-  console.log(`   Chat ID: ${options.chatId}`);
-  console.log(`   Include Chart: ${options.includeChart}`);
-  console.log(`   Include Economic: ${options.includeEconomic}`);
-  console.log(`   Chart Path: ${options.chartImagePath}`);
+  const logger = getLogger();
+
+  logger.info('Sending trading alert', {
+    analysisId: options.analysis?.id,
+    chatId: options.chatId,
+    includeChart: options.includeChart,
+    includeEconomic: options.includeEconomic,
+    hasChartPath: !!options.chartImagePath
+  });
 
   const {
     analysis,
@@ -86,9 +90,9 @@ export async function sendTradingAlert(
     chartImagePath,
   } = options;
 
-  console.log(`   Initializing Telegram bot...`);
+  logger.debug('Initializing Telegram bot');
   const bot = initializeBot();
-  console.log(`   ✅ Bot initialized`);
+  logger.debug('Telegram bot initialized');
 
   // Build message
   let message = `🤖 *Trade Analysis Alert*\n\n`;
@@ -153,43 +157,58 @@ export async function sendTradingAlert(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   }/analysis/${analysis.id})`;
 
-  console.log(`\n📝 Message built (${message.length} chars)`);
-  console.log(`   First 200 chars: ${message.substring(0, 200)}...`);
+  logger.debug('Message built', {
+    messageLength: message.length,
+    preview: message.substring(0, 200)
+  });
 
   try {
     // Send chart image if available
     if (includeChart && chartImagePath && fs.existsSync(chartImagePath)) {
-      console.log(`   📷 Sending as PHOTO with caption`);
-      console.log(`   Image exists: ${fs.existsSync(chartImagePath)}`);
-      console.log(`   Image path: ${chartImagePath}`);
+      logger.debug('Sending Telegram photo with caption', {
+        chatId,
+        imagePath: chartImagePath
+      });
 
       await bot.sendPhoto(chatId, chartImagePath, {
         caption: message,
         parse_mode: "Markdown",
       });
 
-      console.log(`   ✅ Photo sent successfully`);
+      logger.info('Telegram photo sent successfully', {
+        chatId,
+        analysisId: analysis.id
+      });
     } else {
-      console.log(`   💬 Sending as TEXT message`);
-      console.log(
-        `   Reason: includeChart=${includeChart}, path=${chartImagePath}, exists=${
-          chartImagePath ? fs.existsSync(chartImagePath) : false
-        }`
-      );
+      logger.debug('Sending Telegram text message', {
+        chatId,
+        includeChart,
+        hasPath: !!chartImagePath,
+        pathExists: chartImagePath ? fs.existsSync(chartImagePath) : false
+      });
 
       await bot.sendMessage(chatId, message, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       });
 
-      console.log(`   ✅ Text message sent successfully`);
+      logger.info('Telegram text message sent successfully', {
+        chatId,
+        analysisId: analysis.id
+      });
     }
 
-    console.log(
-      `\n✅✅✅ TELEGRAM ALERT DELIVERED to ${chatId} for analysis ${analysis.id}`
-    );
+    logger.info('Telegram alert delivered', {
+      chatId,
+      analysisId: analysis.id
+    });
   } catch (error) {
-    console.error("❌ Failed to send Telegram alert:", error);
+    logger.error("Failed to send Telegram alert", {
+      chatId,
+      analysisId: analysis.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }
@@ -202,6 +221,7 @@ export async function testTelegramConnection(
   options: TestConnectionOptions
 ): Promise<boolean> {
   const { chatId } = options;
+  const logger = getLogger();
 
   try {
     const bot = initializeBot();
@@ -214,10 +234,14 @@ export async function testTelegramConnection(
       { parse_mode: "Markdown" }
     );
 
-    console.log(`✅ Test message sent to ${chatId}`);
+    logger.info('Telegram test message sent successfully', { chatId });
     return true;
   } catch (error) {
-    console.error("❌ Telegram connection test failed:", error);
+    logger.error("Telegram connection test failed", {
+      chatId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return false;
   }
 }
@@ -227,6 +251,8 @@ export async function sendErrorAlert(
   error: string,
   layoutName: string
 ): Promise<void> {
+  const logger = getLogger();
+
   try {
     const bot = initializeBot();
 
@@ -240,17 +266,28 @@ export async function sendErrorAlert(
       parse_mode: "Markdown",
     });
   } catch (err) {
-    console.error("❌ Failed to send error alert:", err);
+    logger.error("Failed to send error alert", {
+      chatId,
+      layoutName,
+      error: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined
+    });
   }
 }
 
 export async function getChatInfo(chatId: string): Promise<any> {
+  const logger = getLogger();
+
   try {
     const bot = initializeBot();
     const chat = await bot.getChat(chatId);
     return chat;
   } catch (error) {
-    console.error("❌ Failed to get chat info:", error);
+    logger.error("Failed to get chat info", {
+      chatId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }

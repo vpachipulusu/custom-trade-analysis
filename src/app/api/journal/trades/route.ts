@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { getUserTrades, createTrade } from "@/lib/db/journal";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/journal/trades
@@ -37,7 +38,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ trades });
   } catch (error) {
-    console.error("Get trades error:", error);
+    const logger = getLogger();
+    logger.error("Get trades error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return createErrorResponse(error, "Failed to get trades");
   }
 }
@@ -47,11 +51,16 @@ export async function GET(request: NextRequest) {
  * Create new trade
  */
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const body = await request.json();
     const {
@@ -139,9 +148,18 @@ export async function POST(request: NextRequest) {
       tags,
     });
 
+    logger.info("Trade created successfully", {
+      tradeId: trade.id,
+      market: trade.market,
+      direction: trade.direction
+    });
+
     return NextResponse.json({ trade }, { status: 201 });
   } catch (error) {
-    console.error("Create trade error:", error);
+    logger.error("Create trade error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return createErrorResponse(error, "Failed to create trade");
   }
 }

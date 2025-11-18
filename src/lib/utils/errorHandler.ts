@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLogger } from "../logging";
 
 export interface ApiError {
   message: string;
@@ -9,7 +10,11 @@ export interface ApiError {
  * Maps various error types to user-friendly messages
  */
 export function handleApiError(error: unknown): ApiError {
-  console.error("API Error:", error);
+  const logger = getLogger();
+  logger.error("API Error", {
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined
+  });
 
   if (error instanceof Error) {
     // Handle specific error types

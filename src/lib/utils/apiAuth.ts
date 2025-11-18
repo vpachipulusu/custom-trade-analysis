@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyIdToken } from "@/lib/firebase/adminApp";
 import { getOrCreateUser } from "@/lib/db/users";
+import { getLogger } from "../logging";
 
 export interface AuthenticatedUser {
   uid: string;
@@ -56,7 +57,11 @@ export async function authenticateRequest(
       },
     };
   } catch (error) {
-    console.error("Authentication error:", error);
+    const logger = getLogger();
+    logger.error("Authentication error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return {
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };

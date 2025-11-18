@@ -6,17 +6,23 @@ import {
 } from "@/lib/services/economicCalendar";
 import { upsertEconomicEvents } from "@/lib/db/economicEvents";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/economic-events
  * Fetch economic events with optional filters
  */
 export async function GET(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get("symbol");
@@ -71,9 +77,19 @@ export async function GET(request: NextRequest) {
     // Store events in database (background task - don't await)
     if (events.length > 0) {
       upsertEconomicEvents(events).catch((error) => {
-        console.error("[API] Error storing events in database:", error);
+        logger.error("Error storing events in database", {
+          error: error instanceof Error ? error.message : String(error),
+          eventCount: events.length
+        });
       });
     }
+
+    logger.info("Economic events fetched successfully", {
+      eventCount: events.length,
+      symbol,
+      countries,
+      currencies
+    });
 
     // Set cache headers (1 hour)
     return NextResponse.json(events, {
@@ -82,7 +98,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[API] Error in /api/economic-events:", error);
+    logger.error("Error in /api/economic-events", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return createErrorResponse(error, 500);
   }
 }

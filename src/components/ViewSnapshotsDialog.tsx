@@ -19,6 +19,7 @@ import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { getLogger } from "@/lib/logging";
 
 interface ViewSnapshotsDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export default function ViewSnapshotsDialog({
   layoutId,
   onClose,
 }: ViewSnapshotsDialogProps) {
+  const logger = getLogger();
   const { data: snapshots, isLoading, error } = useSnapshots(layoutId);
   const createAnalysis = useCreateAnalysis();
   const { getAuthToken } = useAuth();
@@ -53,7 +55,7 @@ export default function ViewSnapshotsDialog({
       router.push(`/analysis/${analysis.id}`);
       onClose();
     } catch (error) {
-      console.error("Analysis failed:", error);
+      logger.error("Analysis failed", { error, snapshotId });
       setActionLoading(null);
     }
   };
@@ -70,7 +72,7 @@ export default function ViewSnapshotsDialog({
       queryClient.invalidateQueries({ queryKey: ["layouts"] });
       setDeleteDialog({ open: false, snapshotId: null });
     } catch (error) {
-      console.error("Delete failed:", error);
+      logger.error("Delete failed", { error, snapshotId: deleteDialog.snapshotId });
     }
   };
 

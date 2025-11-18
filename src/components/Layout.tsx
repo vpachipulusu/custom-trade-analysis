@@ -24,6 +24,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import BookIcon from "@mui/icons-material/Book";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLogger } from "@/lib/logging";
 import styles from "./Layout.module.scss";
 
 interface LayoutProps {
@@ -31,6 +32,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const logger = getLogger();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openTradesCount, setOpenTradesCount] = useState(0);
@@ -62,7 +64,7 @@ export default function Layout({ children }: LayoutProps) {
         setOpenTradesCount(data.trades?.length || 0);
       }
     } catch (error) {
-      console.error("Failed to fetch open trades count:", error);
+      logger.error("Failed to fetch open trades count", { error });
     }
   };
 

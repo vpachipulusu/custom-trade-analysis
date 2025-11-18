@@ -3,6 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { getLogger } from "../logging";
 
 export interface CreateEconomicContextData {
   analysisId: string;
@@ -21,6 +22,7 @@ export interface CreateEconomicContextData {
  * Create a new economic context
  */
 export async function createEconomicContext(data: CreateEconomicContextData) {
+  const logger = getLogger();
   try {
     const context = await prisma.economicContext.create({
       data: {
@@ -37,12 +39,17 @@ export async function createEconomicContext(data: CreateEconomicContextData) {
       },
     });
 
-    console.log(
-      `[DB] Created economic context for analysis ${data.analysisId}`
-    );
+    logger.info("Created economic context", {
+      analysisId: data.analysisId,
+      symbol: data.symbol
+    });
     return context;
   } catch (error) {
-    console.error("[DB] Error creating economic context:", error);
+    logger.error("Error creating economic context", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      analysisId: data.analysisId
+    });
     throw error;
   }
 }
@@ -51,6 +58,7 @@ export async function createEconomicContext(data: CreateEconomicContextData) {
  * Get economic context by analysis ID
  */
 export async function getEconomicContextByAnalysisId(analysisId: string) {
+  const logger = getLogger();
   try {
     const context = await prisma.economicContext.findUnique({
       where: { analysisId },
@@ -58,7 +66,11 @@ export async function getEconomicContextByAnalysisId(analysisId: string) {
 
     return context;
   } catch (error) {
-    console.error("[DB] Error fetching economic context:", error);
+    logger.error("Error fetching economic context", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      analysisId
+    });
     return null;
   }
 }
@@ -70,6 +82,7 @@ export async function updateEconomicContext(
   id: string,
   data: Partial<CreateEconomicContextData>
 ) {
+  const logger = getLogger();
   try {
     const context = await prisma.economicContext.update({
       where: { id },
@@ -86,10 +99,14 @@ export async function updateEconomicContext(
       },
     });
 
-    console.log(`[DB] Updated economic context ${id}`);
+    logger.info("Updated economic context", { id });
     return context;
   } catch (error) {
-    console.error("[DB] Error updating economic context:", error);
+    logger.error("Error updating economic context", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      id
+    });
     throw error;
   }
 }
@@ -98,14 +115,19 @@ export async function updateEconomicContext(
  * Delete economic context
  */
 export async function deleteEconomicContext(id: string) {
+  const logger = getLogger();
   try {
     await prisma.economicContext.delete({
       where: { id },
     });
 
-    console.log(`[DB] Deleted economic context ${id}`);
+    logger.info("Deleted economic context", { id });
   } catch (error) {
-    console.error("[DB] Error deleting economic context:", error);
+    logger.error("Error deleting economic context", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      id
+    });
     throw error;
   }
 }

@@ -5,6 +5,7 @@ import {
   updateJournalSettings,
 } from "@/lib/db/journal";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/journal/settings
@@ -21,7 +22,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Get journal settings error:", error);
+    const logger = getLogger();
+    logger.error("Get journal settings error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return createErrorResponse(error, "Failed to get journal settings");
   }
 }
@@ -74,9 +78,14 @@ export async function PATCH(request: NextRequest) {
       defaultRiskPercent,
     });
 
+    const logger = getLogger();
+    logger.info("Journal settings updated successfully");
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error("Update journal settings error:", error);
+    const logger = getLogger();
+    logger.error("Update journal settings error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return createErrorResponse(error, "Failed to update journal settings");
   }
 }

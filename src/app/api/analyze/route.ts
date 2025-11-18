@@ -17,31 +17,49 @@ import {
   getEconomicContextByAnalysisId,
 } from "@/lib/db/economicContext";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
+import { performanceLogger } from "@/lib/logging/middleware/performanceLogger";
+import { logExternalAPI, logUserAction } from "@/lib/logging/helpers";
 
 /**
  * POST /api/analyze
  * Analyze a snapshot using AI
  */
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
 
+    // Set user context for all logs in this request
+    LogContext.set({
+      userId: authResult.user.userId,
+      userEmail: authResult.user.email
+    });
+
+    logger.info('Analysis request started', { userId: authResult.user.userId });
+
     const body = await request.json();
     const { snapshotId } = body;
 
     if (!snapshotId) {
+      logger.warn('Analysis request missing snapshotId', { userId: authResult.user.userId });
       return NextResponse.json(
         { error: "snapshotId is required" },
         { status: 400 }
       );
     }
 
+    // Log user action
+    logUserAction(authResult.user.userId, 'analyze_chart', { snapshotId });
+
     // Get snapshot and verify ownership
     const snapshot = await getSnapshotById(snapshotId);
     if (!snapshot) {
+      logger.warn('Snapshot not found', { snapshotId, userId: authResult.user.userId });
       return NextResponse.json(
         { error: "Snapshot not found" },
         { status: 404 }
@@ -52,6 +70,11 @@ export async function POST(request: NextRequest) {
       !snapshot.layout?.user ||
       !verifyOwnership(authResult.user.userId, snapshot.layout.user.id)
     ) {
+      logger.warn('Unauthorized snapshot access attempt', {
+        snapshotId,
+        userId: authResult.user.userId,
+        ownerId: snapshot.layout?.user?.id
+      });
       return NextResponse.json(
         { error: "You do not have permission to analyze this snapshot" },
         { status: 403 }
@@ -61,8 +84,20 @@ export async function POST(request: NextRequest) {
     // Check if analysis already exists
     const existingAnalysis = await getAnalysisBySnapshotId(snapshotId);
 
-    // Analyze chart using OpenAI
-    const analysisResult = await analyzeChart(snapshot.url);
+    // Analyze chart using OpenAI with performance tracking
+    const analysisResult = await performanceLogger.measure(
+      'openai_chart_analysis',
+      async () => {
+        const startTime = Date.now();
+        const result = await analyzeChart(snapshot.url);
+        const duration = Date.now() - startTime;
+
+        logExternalAPI('OpenAI', '/v1/chat/completions', 'POST', 200, duration);
+
+        return result;
+      },
+      { snapshotId }
+    );
 
     let analysis;
     if (existingAnalysis) {
@@ -91,7 +126,7 @@ export async function POST(request: NextRequest) {
       const symbol = snapshot.layout?.symbol;
 
       if (symbol) {
-        console.log(`[Analysis] Fetching economic context for ${symbol}`);
+        logger.info('Fetching economic context', { symbol, analysisId: analysis.id });
 
         // Parse symbol to get currencies/countries
         const { currencies, countries } = parseSymbolCurrencies(symbol);
@@ -118,9 +153,11 @@ export async function POST(request: NextRequest) {
 
         // Only create economic context if there are events
         if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-          console.log(
-            `[Analysis] Found ${upcomingEvents.length} upcoming and ${weeklyEvents.length} weekly events`
-          );
+          logger.info('Found economic events', {
+            symbol,
+            upcomingCount: upcomingEvents.length,
+            weeklyCount: weeklyEvents.length
+          });
 
           // Get AI analysis of economic impact
           const economicImpact = await analyzeEconomicImpact({
@@ -157,21 +194,30 @@ export async function POST(request: NextRequest) {
               recommendation: economicImpact.recommendation,
             });
 
-            console.log(
-              `[Analysis] Created economic context for analysis ${analysis.id}`
-            );
+            logger.info('Created economic context', {
+              analysisId: analysis.id,
+              symbol,
+              immediateRisk: economicImpact.immediateRisk
+            });
           }
         } else {
-          console.log(`[Analysis] No economic events found for ${symbol}`);
+          logger.debug('No economic events found', { symbol });
         }
       }
     } catch (economicError) {
       // Log error but don't fail the analysis
-      console.error(
-        "[Analysis] Error fetching economic context:",
-        economicError
-      );
+      logger.error('Error fetching economic context', {
+        error: economicError instanceof Error ? economicError.message : 'Unknown error',
+        stack: economicError instanceof Error ? economicError.stack : undefined
+      });
     }
+
+    logger.info('Analysis completed successfully', {
+      snapshotId,
+      action: analysis.action,
+      confidence: analysis.confidence,
+      hasEconomicContext: !!economicContext
+    });
 
     // Return analysis with economic context
     return NextResponse.json(
@@ -184,7 +230,10 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error("Analysis error:", error);
+    logger.error('Analysis failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
 
     // Handle specific OpenAI errors
     if (error instanceof Error && error.message.includes("OpenAI")) {

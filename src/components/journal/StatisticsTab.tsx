@@ -11,6 +11,7 @@ import InstrumentPerformanceChart from "./InstrumentPerformanceChart";
 import InstrumentPieChart from "./InstrumentPieChart";
 import DisciplineChart from "./DisciplineChart";
 import JournalStats from "./JournalStats";
+import { getLogger } from "@/lib/logging";
 
 interface StatisticsTabProps {
   refreshTrigger?: number;
@@ -19,6 +20,7 @@ interface StatisticsTabProps {
 export default function StatisticsTab({
   refreshTrigger = 0,
 }: StatisticsTabProps) {
+  const logger = getLogger();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function StatisticsTab({
       const settingsData = await settingsResponse.json();
       setSettings(settingsData);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      logger.error("Error fetching statistics data", { error: err });
       setError(
         err instanceof Error ? err.message : "Failed to load statistics"
       );

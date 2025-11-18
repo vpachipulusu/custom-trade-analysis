@@ -9,14 +9,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignature } from "@/lib/stripe";
 import { updateUser, getUserById } from "@/lib/db/users";
 import Stripe from "stripe";
+import { getLogger } from "@/lib/logging";
 
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     // Get raw body
     const body = await request.text();
     const signature = request.headers.get("stripe-signature");
 
     if (!signature) {
+      logger.warn("Stripe webhook missing signature header");
       return NextResponse.json(
         { error: "Missing stripe-signature header" },
         { status: 400 }
@@ -28,9 +32,13 @@ export async function POST(request: NextRequest) {
     try {
       event = verifyWebhookSignature(body, signature);
     } catch (err) {
-      console.error("Webhook signature verification failed:", err);
+      logger.error("Webhook signature verification failed", {
+        error: err instanceof Error ? err.message : String(err)
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
+
+    logger.info("Stripe webhook received", { eventType: event.type });
 
     // Handle event
     switch (event.type) {
@@ -66,12 +74,15 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug("Unhandled Stripe event type", { eventType: event.type });
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }
@@ -83,11 +94,14 @@ export async function POST(request: NextRequest) {
  * Handle checkout session completed
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const logger = getLogger();
   const userId = session.metadata?.userId;
   const tier = session.metadata?.tier;
 
   if (!userId || !tier) {
-    console.error("Missing userId or tier in session metadata");
+    logger.error("Missing userId or tier in session metadata", {
+      sessionId: session.id
+    });
     return;
   }
 
@@ -102,18 +116,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     subscriptionStatus: "active",
   });
 
-  console.log(`Checkout completed for user ${userId}, tier: ${tier}`);
+  logger.info("Checkout completed", {
+    userId,
+    tier,
+    subscriptionId,
+    customerId
+  });
 }
 
 /**
  * Handle subscription created/updated
  */
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  const logger = getLogger();
   const customerId = subscription.customer as string;
   const userId = subscription.metadata?.userId;
 
   if (!userId) {
-    console.error("Missing userId in subscription metadata");
+    logger.error("Missing userId in subscription metadata", {
+      subscriptionId: subscription.id
+    });
     return;
   }
 
@@ -139,19 +161,25 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     subscriptionStatus: status,
   });
 
-  console.log(
-    `Subscription updated for user ${userId}: ${status}, tier: ${tier}`
-  );
+  logger.info("Subscription updated", {
+    userId,
+    status,
+    tier,
+    subscriptionId: subscription.id
+  });
 }
 
 /**
  * Handle subscription deleted/canceled
  */
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const logger = getLogger();
   const userId = subscription.metadata?.userId;
 
   if (!userId) {
-    console.error("Missing userId in subscription metadata");
+    logger.error("Missing userId in subscription metadata", {
+      subscriptionId: subscription.id
+    });
     return;
   }
 
@@ -164,19 +192,23 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     subscriptionStatus: "canceled",
   });
 
-  console.log(`Subscription canceled for user ${userId}`);
+  logger.info("Subscription canceled", { userId, subscriptionId: subscription.id });
 }
 
 /**
  * Handle successful payment
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  const logger = getLogger();
   const subscriptionId = invoice.subscription as string;
   const customerId = invoice.customer as string;
 
-  console.log(
-    `Payment succeeded for customer ${customerId}, subscription ${subscriptionId}`
-  );
+  logger.info("Payment succeeded", {
+    customerId,
+    subscriptionId,
+    amount: invoice.amount_paid,
+    invoiceId: invoice.id
+  });
 
   // Optionally send email receipt or notification
 }
@@ -185,12 +217,16 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
  * Handle failed payment
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const logger = getLogger();
   const subscriptionId = invoice.subscription as string;
   const customerId = invoice.customer as string;
 
-  console.log(
-    `Payment failed for customer ${customerId}, subscription ${subscriptionId}`
-  );
+  logger.warn("Payment failed", {
+    customerId,
+    subscriptionId,
+    amount: invoice.amount_due,
+    invoiceId: invoice.id
+  });
 
   // Optionally send email notification to update payment method
   // Set subscription status to past_due

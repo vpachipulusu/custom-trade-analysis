@@ -20,6 +20,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useJournal } from "@/contexts/JournalContext";
 import { formatCurrency } from "@/lib/utils/currency";
+import { getLogger } from "@/lib/logging";
 
 interface Trade {
   id: string;
@@ -46,6 +47,7 @@ export default function CloseTradeDialog({
   onClose,
   onTradeClosed,
 }: Props) {
+  const logger = getLogger();
   const { user } = useAuth();
   const { currency } = useJournal();
   const [loading, setLoading] = useState(false);
@@ -115,14 +117,14 @@ export default function CloseTradeDialog({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: res.statusText }));
-        console.error("Close trade error:", data);
+        logger.error("Close trade error", { error: data, tradeId: trade.id });
         throw new Error(data.error || "Failed to close trade");
       }
 
       onClose();
       onTradeClosed();
     } catch (err) {
-      console.error("Close trade exception:", err);
+      logger.error("Close trade exception", { error: err, tradeId: trade.id });
       setError(err instanceof Error ? err.message : "Failed to close trade");
     } finally {
       setLoading(false);

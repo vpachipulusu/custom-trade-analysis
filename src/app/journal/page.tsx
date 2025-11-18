@@ -24,6 +24,7 @@ import AddTradeDialog from "@/components/journal/AddTradeDialog";
 import JournalSettingsDialog from "@/components/journal/JournalSettingsDialog";
 import StatisticsTab from "@/components/journal/StatisticsTab";
 import OnboardingDialog from "@/components/journal/OnboardingDialog";
+import { getLogger } from "@/lib/logging";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,6 +49,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function JournalPage() {
+  const logger = getLogger();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -90,7 +92,7 @@ export default function JournalPage() {
       }
       setLoading(false);
     } catch (err) {
-      console.error("Error checking first time:", err);
+      logger.error("Error checking first time", { error: err });
       setLoading(false);
     }
   };
@@ -114,7 +116,7 @@ export default function JournalPage() {
         setRefreshTrigger((prev) => prev + 1);
       }
     } catch (err) {
-      console.error("Error saving starting balance:", err);
+      logger.error("Error saving starting balance", { error: err });
     }
   };
 

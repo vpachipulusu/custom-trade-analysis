@@ -7,17 +7,23 @@ import {
 } from "@/lib/services/economicCalendar";
 import { analyzeEconomicImpact } from "@/lib/services/openai";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * POST /api/economic-impact
  * Analyze economic impact for a symbol
  */
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const body = await request.json();
     const { symbol, action, date } = body;
@@ -56,6 +62,13 @@ export async function POST(request: NextRequest) {
 
     // If action provided, call AI analysis
     if (action) {
+      logger.info("Analyzing economic impact with AI", {
+        symbol,
+        action,
+        upcomingEventsCount: upcomingEvents.length,
+        weeklyEventsCount: weeklyEvents.length
+      });
+
       const aiAnalysis = await analyzeEconomicImpact({
         symbol,
         action: action as "BUY" | "SELL" | "HOLD",
@@ -74,6 +87,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    logger.info("Economic impact data fetched", {
+      symbol,
+      upcomingEventsCount: upcomingEvents.length,
+      weeklyEventsCount: weeklyEvents.length
+    });
+
     // Return just the events without AI analysis
     return NextResponse.json({
       symbol,
@@ -82,7 +101,10 @@ export async function POST(request: NextRequest) {
       weeklyEvents,
     });
   } catch (error) {
-    console.error("[API] Error in /api/economic-impact:", error);
+    logger.error("Error in /api/economic-impact", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return createErrorResponse(error, 500);
   }
 }

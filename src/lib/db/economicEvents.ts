@@ -4,6 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { EconomicEvent } from "@/lib/services/economicCalendar";
+import { getLogger } from "../logging";
 
 /**
  * Upsert economic events (batch operation)
@@ -11,6 +12,7 @@ import { EconomicEvent } from "@/lib/services/economicCalendar";
 export async function upsertEconomicEvents(
   events: Partial<EconomicEvent>[]
 ): Promise<void> {
+  const logger = getLogger();
   try {
     for (const event of events) {
       await prisma.economicEvent.upsert({
@@ -45,9 +47,13 @@ export async function upsertEconomicEvents(
       });
     }
 
-    console.log(`[DB] Upserted ${events.length} economic events to database`);
+    logger.info("Upserted economic events", { count: events.length });
   } catch (error) {
-    console.error("[DB] Error upserting economic events:", error);
+    logger.error("Error upserting economic events", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      eventsCount: events.length
+    });
     throw error;
   }
 }
@@ -93,7 +99,13 @@ export async function getEventsByDateRange(
 
     return events;
   } catch (error) {
-    console.error("[DB] Error fetching events by date range:", error);
+    const logger = getLogger();
+    logger.error("Error fetching events by date range", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      startDate,
+      endDate
+    });
     return [];
   }
 }
@@ -120,7 +132,13 @@ export async function getEventsForSymbol(
       currencies: currencies.length > 0 ? currencies : undefined,
     });
   } catch (error) {
-    console.error("[DB] Error fetching events for symbol:", error);
+    const logger = getLogger();
+    logger.error("Error fetching events for symbol", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      symbol,
+      date
+    });
     return [];
   }
 }
@@ -129,6 +147,7 @@ export async function getEventsForSymbol(
  * Delete old events (cleanup)
  */
 export async function deleteOldEvents(daysOld: number = 30): Promise<number> {
+  const logger = getLogger();
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
@@ -141,10 +160,18 @@ export async function deleteOldEvents(daysOld: number = 30): Promise<number> {
       },
     });
 
-    console.log(`[DB] Deleted ${result.count} old economic events`);
+    logger.info("Deleted old economic events", {
+      count: result.count,
+      daysOld,
+      cutoffDate: cutoffDate.toISOString()
+    });
     return result.count;
   } catch (error) {
-    console.error("[DB] Error deleting old events:", error);
+    logger.error("Error deleting old events", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      daysOld
+    });
     return 0;
   }
 }

@@ -12,6 +12,7 @@ import {
   incrementRateLimit,
 } from "@/lib/utils/rateLimiter";
 import { generateMockEconomicEvents } from "./mockEconomicData";
+import { getLogger } from "../logging";
 
 // Types
 export interface EconomicEvent {
@@ -257,6 +258,7 @@ export async function fetchEconomicEvents(params: {
   countries?: string[];
   currencies?: string[];
 }): Promise<EconomicEvent[]> {
+  const logger = getLogger();
   const { startDate, endDate, countries, currencies } = params;
 
   // Check cache first
@@ -264,27 +266,30 @@ export async function fetchEconomicEvents(params: {
   const cached = eventCache.get(cacheKey);
 
   if (cached && Date.now() - cached.timestamp < cached.ttl) {
-    console.log(`[EconomicCalendar] Using cached events for ${cacheKey}`);
+    logger.debug("Using cached economic events", { cacheKey });
     return cached.data;
   }
 
   // Check rate limit
   if (!checkRateLimit("FMP", 250)) {
-    console.warn(
-      "[EconomicCalendar] Rate limit reached, using cached data if available"
-    );
+    logger.warn("Rate limit reached for FMP API", {
+      action: "using_cached_data",
+      cacheAvailable: !!cached
+    });
     // Return stale cache if available
     if (cached) {
       return cached.data;
     }
     // Return empty array if no cache
-    console.error("[EconomicCalendar] No cached data available");
+    logger.error("No cached data available and rate limit reached", {
+      cacheKey
+    });
     return [];
   }
 
   // NOTE: Using mock data since FMP economic calendar is a legacy endpoint
   // Economic calendar endpoint requires paid Finnhub plan or alternative API
-  console.log(`[EconomicCalendar] Using mock economic data for testing`);
+  logger.info("Using mock economic data for testing");
 
   try {
     // Generate mock events
@@ -320,15 +325,22 @@ export async function fetchEconomicEvents(params: {
       ttl,
     });
 
-    console.log(`[EconomicCalendar] Generated ${events.length} mock events`);
+    logger.info("Generated mock economic events", {
+      eventCount: events.length,
+      cacheKey
+    });
 
     return events;
   } catch (error) {
-    console.error("[EconomicCalendar] Error fetching events:", error);
+    logger.error("Error fetching economic events", {
+      error: error instanceof Error ? error.message : String(error),
+      cacheKey,
+      cacheAvailable: !!cached
+    });
 
     // Return cached data if available
     if (cached) {
-      console.log("[EconomicCalendar] Using stale cache due to error");
+      logger.info("Using stale cache due to error", { cacheKey });
       return cached.data;
     }
 

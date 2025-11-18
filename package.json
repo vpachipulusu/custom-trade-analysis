@@ -31,7 +31,10 @@
     "recharts": "^3.4.1",
     "sass": "^1.69.5",
     "stripe": "^14.9.0",
-    "supports-color": "^10.2.2"
+    "supports-color": "^10.2.2",
+    "uuid": "^13.0.0",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",

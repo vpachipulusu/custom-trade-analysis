@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getLogger } from "../logging";
 
 export interface GenerateSnapshotParams {
   symbol?: string;
@@ -23,6 +24,8 @@ const CHARTIMG_API_KEY = process.env.CHART_IMG_KEY;
 export async function generateSnapshot(
   params: GenerateSnapshotParams
 ): Promise<GenerateSnapshotResult> {
+  const logger = getLogger();
+
   try {
     if (!CHARTIMG_API_KEY) {
       throw new Error("CHART_IMG_KEY environment variable is not set");
@@ -48,15 +51,16 @@ export async function generateSnapshot(
     if (params.layoutId) {
       // Use layoutId for saved layouts - this captures the user's exact chart setup
       body.layout = params.layoutId;
-      console.log(
-        `Using layoutId=${params.layoutId} to capture user's chart with drawings`
-      );
+      logger.info("Using layoutId to capture user chart with drawings", {
+        layoutId: params.layoutId
+      });
 
       // TradingView session authentication is REQUIRED for private layouts
       if (!params.sessionid || !params.sessionidSign) {
-        console.warn(
-          "WARNING: layoutId provided without TradingView sessionid - API may return default chart instead of user's layout"
-        );
+        logger.warn("layoutId provided without TradingView sessionid", {
+          layoutId: params.layoutId,
+          message: "API may return default chart instead of user's layout"
+        });
       }
     } else if (params.symbol && params.interval) {
       // Fallback: Use symbol and interval for basic chart (no drawings)
@@ -69,9 +73,11 @@ export async function generateSnapshot(
           formattedSymbol = `FX:${formattedSymbol}`;
         } else {
           // For other symbols, default to FX or warn
-          console.warn(
-            `Symbol ${formattedSymbol} doesn't include exchange. Adding FX: prefix. For stocks, use format like NASDAQ:AAPL`
-          );
+          logger.warn("Symbol does not include exchange prefix", {
+            symbol: formattedSymbol,
+            action: "adding_fx_prefix",
+            message: "For stocks, use format like NASDAQ:AAPL"
+          });
           formattedSymbol = `FX:${formattedSymbol}`;
         }
       }
@@ -99,9 +105,11 @@ export async function generateSnapshot(
 
       body.symbol = formattedSymbol;
       body.interval = formattedInterval;
-      console.log(
-        `Using symbol=${formattedSymbol} and interval=${formattedInterval} for basic chart (no drawings)`
-      );
+      logger.info("Using symbol and interval for basic chart", {
+        symbol: formattedSymbol,
+        interval: formattedInterval,
+        note: "no drawings"
+      });
     } else {
       throw new Error(
         "Either layoutId OR both symbol and interval must be provided"
@@ -114,7 +122,7 @@ export async function generateSnapshot(
     body.height = 600;
 
     // Log request details for debugging
-    console.log("CHART-IMG API Request:", {
+    logger.debug("CHART-IMG API Request", {
       url: CHARTIMG_API_URL,
       body: body,
       hasApiKey: !!CHARTIMG_API_KEY,
@@ -128,10 +136,12 @@ export async function generateSnapshot(
       responseType: "arraybuffer", // Get binary data
     });
 
-    console.log("CHART-IMG API Response Status:", response.status);
-    console.log("CHART-IMG API Response Type:", typeof response.data);
-    console.log("CHART-IMG API Response Length:", response.data?.length || 0);
-    console.log("CHART-IMG API Response Headers:", response.headers);
+    logger.debug("CHART-IMG API Response received", {
+      status: response.status,
+      dataType: typeof response.data,
+      dataLength: response.data?.length || 0,
+      contentType: response.headers["content-type"]
+    });
 
     // CHART-IMG API returns the actual PNG image data, not a URL
     // We need to convert this to a base64 data URL
@@ -143,31 +153,39 @@ export async function generateSnapshot(
     const base64Image = Buffer.from(response.data).toString("base64");
     const imageUrl = `data:image/png;base64,${base64Image}`;
 
-    console.log(
-      "Successfully converted image to data URL, length:",
-      imageUrl.length
-    );
+    logger.debug("Converted image to data URL", {
+      dataUrlLength: imageUrl.length
+    });
 
     // Calculate expiration date (CHART-IMG hosted images typically expire in 30 days)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
-    console.log("Snapshot generated successfully:", imageUrl);
+    logger.info("Snapshot generated successfully", {
+      imageUrlLength: imageUrl.length,
+      expiresAt: expiresAt.toISOString()
+    });
 
     return {
       url: imageUrl,
       expiresAt,
     };
   } catch (error) {
-    console.error("CHART-IMG API Full Error:", error);
+    logger.error("CHART-IMG API error", {
+      error: error instanceof Error ? error.message : String(error),
+      params: {
+        layoutId: params.layoutId,
+        symbol: params.symbol,
+        interval: params.interval
+      }
+    });
 
     if (axios.isAxiosError(error)) {
       if (error.response) {
         // Log full response for debugging
-        console.error("CHART-IMG Error Response:", {
+        logger.error("CHART-IMG API error response", {
           status: error.response.status,
           statusText: error.response.statusText,
-          data: error.response.data,
           headers: error.response.headers,
         });
 
@@ -176,10 +194,12 @@ export async function generateSnapshot(
         if (Buffer.isBuffer(errorData)) {
           try {
             const decoded = errorData.toString("utf-8");
-            console.error("Decoded error message:", decoded);
+            logger.debug("Decoded error message from buffer", { decoded });
             errorData = JSON.parse(decoded);
           } catch (e) {
-            console.error("Failed to decode error buffer:", e);
+            logger.error("Failed to decode error buffer", {
+              error: e instanceof Error ? e.message : String(e)
+            });
           }
         }
 
@@ -196,7 +216,7 @@ export async function generateSnapshot(
           `CHART-IMG API error (${error.response.status}): ${errorMessage}`
         );
       } else if (error.request) {
-        console.error("No response received from CHART-IMG API");
+        logger.error("No response received from CHART-IMG API");
         throw new Error(
           "Failed to connect to CHART-IMG API. Please check your internet connection and API endpoint."
         );

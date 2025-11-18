@@ -13,16 +13,17 @@ if (process.env.NODE_ENV !== "development") {
 const nextConfig = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Completely ignore undici for client-side bundles
+      // Completely ignore undici and async_hooks for client-side bundles
       config.plugins.push(
         new (require("webpack").IgnorePlugin)({
-          resourceRegExp: /^undici$/,
+          resourceRegExp: /^(undici|async_hooks)$/,
         })
       );
 
       config.resolve.fallback = {
         ...config.resolve.fallback,
         undici: false,
+        async_hooks: false,
         fs: false,
         net: false,
         tls: false,

@@ -7,13 +7,19 @@ import {
   updateJournalSettings,
   recalculateMonthlyStats,
 } from "@/lib/db/journal";
+import { getLogger, LogContext } from "@/lib/logging";
 
 export async function POST(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const userId = authResult.user.userId;
 
@@ -110,12 +116,19 @@ export async function POST(request: NextRequest) {
       try {
         await recalculateMonthlyStats(userId, year, month);
       } catch (error) {
-        console.error(
-          `Failed to recalculate stats for ${year}-${month}:`,
-          error
-        );
+        logger.error("Failed to recalculate stats", {
+          year,
+          month,
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
     }
+
+    logger.info("Journal import completed", {
+      total: trades.length,
+      imported: importedCount,
+      failed: failedCount
+    });
 
     return NextResponse.json({
       success: true,
@@ -127,7 +140,10 @@ export async function POST(request: NextRequest) {
       errors: importErrors.length > 0 ? importErrors : undefined,
     });
   } catch (error) {
-    console.error("Import error:", error);
+    logger.error("Import error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       { error: "Failed to import journal" },
       { status: 500 }

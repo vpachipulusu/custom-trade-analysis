@@ -6,13 +6,19 @@ import {
   getOrCreateJournalSettings,
 } from "@/lib/db/journal";
 import { exportJournalToExcel } from "@/lib/utils/excelExport";
+import { getLogger, LogContext } from "@/lib/logging";
 
 export async function GET(request: NextRequest) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const userId = authResult.user.userId;
 
@@ -49,6 +55,11 @@ export async function GET(request: NextRequest) {
       new Date().toISOString().split("T")[0]
     }.xlsx`;
 
+    logger.info("Journal exported successfully", {
+      tradesCount: trades.length,
+      fileName
+    });
+
     return new NextResponse(buffer, {
       headers: {
         "Content-Type":
@@ -57,7 +68,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Export error:", error);
+    logger.error("Export error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json(
       { error: "Failed to export journal" },
       { status: 500 }

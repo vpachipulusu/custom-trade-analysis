@@ -30,6 +30,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLogger } from "@/lib/logging";
 
 interface Props {
   open: boolean;
@@ -49,6 +50,7 @@ const emotionalStates = [
 ];
 
 export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
+  const logger = getLogger();
   const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -115,7 +117,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
         setAccountBalance(String(data.currentBalance || ""));
       }
     } catch (err) {
-      console.error("Failed to fetch settings:", err);
+      logger.error("Failed to fetch settings", { error: err });
     }
   };
 

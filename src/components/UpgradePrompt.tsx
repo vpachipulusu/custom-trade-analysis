@@ -27,6 +27,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useState } from "react";
 import axios from "axios";
 import { SUBSCRIPTION_TIERS } from "@/lib/stripe";
+import { getLogger } from "@/lib/logging";
 
 interface UpgradePromptProps {
   open: boolean;
@@ -41,6 +42,7 @@ export default function UpgradePrompt({
   limitType,
   currentTier,
 }: UpgradePromptProps) {
+  const logger = getLogger();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleUpgrade = async (tier: "pro" | "enterprise") => {
@@ -57,7 +59,7 @@ export default function UpgradePrompt({
         window.location.href = response.data.url;
       }
     } catch (error) {
-      console.error("Error creating checkout session:", error);
+      logger.error("Error creating checkout session", { error, tier });
       alert("Failed to start checkout. Please try again.");
       setLoading(null);
     }

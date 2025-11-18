@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import { getLogger } from "../logging";
 
 interface PuppeteerScreenshotParams {
   layoutId: string;
@@ -11,10 +12,11 @@ interface PuppeteerScreenshotParams {
 export async function captureWithPuppeteer(
   params: PuppeteerScreenshotParams
 ): Promise<string> {
-  console.log(
-    "Puppeteer: Starting browser automation for layoutId:",
-    params.layoutId
-  );
+  const logger = getLogger();
+
+  logger.info("Starting Puppeteer browser automation", {
+    layoutId: params.layoutId
+  });
 
   const width = params.width || 1920;
   const height = params.height || 1080;
@@ -38,12 +40,10 @@ export async function captureWithPuppeteer(
     // Get browser context and set cookies before creating page
     const context = browser.defaultBrowserContext();
 
-    console.log("Puppeteer: Setting TradingView cookies");
-    console.log("Puppeteer: sessionid length:", params.sessionid?.length);
-    console.log(
-      "Puppeteer: sessionid_sign length:",
-      params.sessionidSign?.length
-    );
+    logger.debug("Setting TradingView cookies", {
+      sessionidLength: params.sessionid?.length,
+      sessionidSignLength: params.sessionidSign?.length
+    });
 
     // Set cookies at browser context level
     await context.setCookie(
@@ -71,29 +71,30 @@ export async function captureWithPuppeteer(
 
     // Verify cookies
     const cookies = await page.cookies();
-    console.log("Puppeteer: Cookies set:", cookies.length);
-    console.log(
-      "Puppeteer: Cookie names:",
-      cookies.map((c) => c.name).join(", ")
-    );
+    logger.debug("Cookies set in browser context", {
+      cookieCount: cookies.length,
+      cookieNames: cookies.map((c) => c.name).join(", ")
+    });
 
     // Now navigate to the actual chart
     const chartUrl = `https://www.tradingview.com/chart/${params.layoutId}/`;
-    console.log("Puppeteer: Navigating to chart:", chartUrl);
+    logger.info("Navigating to TradingView chart", { chartUrl });
 
     await page.goto(chartUrl, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
-    console.log("Puppeteer: Page loaded, URL:", page.url());
-    console.log("Puppeteer: Page title:", await page.title());
+    logger.debug("Page loaded", {
+      url: page.url(),
+      title: await page.title()
+    });
 
-    console.log("Puppeteer: Waiting for chart to load");
+    logger.debug("Waiting for chart to load");
 
     // Wait for the main chart container
     await page.waitForSelector("canvas", { timeout: 60000 });
-    console.log("Puppeteer: Canvas found, waiting for chart to fully render");
+    logger.debug("Canvas found, waiting for chart to fully render");
 
     // Wait longer for all indicators, drawings, and data to load
     await new Promise((resolve) => setTimeout(resolve, 15000));
@@ -101,17 +102,15 @@ export async function captureWithPuppeteer(
     // Additional wait to ensure all network requests for indicators are complete
     try {
       await page.waitForNetworkIdle({ timeout: 10000 });
-      console.log("Puppeteer: Network became idle");
+      logger.debug("Network became idle");
     } catch (e) {
-      console.log(
-        "Puppeteer: Network not idle, but continuing with screenshot"
-      );
+      logger.debug("Network not idle, continuing with screenshot");
     }
 
     // Final wait for any animations to complete
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    console.log("Puppeteer: Taking screenshot");
+    logger.debug("Taking screenshot");
 
     // Take screenshot
     const screenshot = await page.screenshot({
@@ -119,10 +118,9 @@ export async function captureWithPuppeteer(
       fullPage: false,
     });
 
-    console.log(
-      "Puppeteer: Screenshot captured successfully, length:",
-      screenshot.length
-    );
+    logger.info("Screenshot captured successfully", {
+      screenshotLength: screenshot.length
+    });
 
     // Convert buffer to base64 data URL
     const base64 = Buffer.from(screenshot).toString("base64");
@@ -130,7 +128,10 @@ export async function captureWithPuppeteer(
 
     return dataUrl;
   } catch (error) {
-    console.error("Puppeteer error:", error);
+    logger.error("Puppeteer screenshot failed", {
+      error: error instanceof Error ? error.message : String(error),
+      layoutId: params.layoutId
+    });
     throw new Error(
       `Puppeteer screenshot failed: ${
         error instanceof Error ? error.message : String(error)

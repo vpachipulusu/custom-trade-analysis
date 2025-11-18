@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { getTradeById, updateTrade, deleteTrade } from "@/lib/db/journal";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/journal/trades/[id]
@@ -30,7 +31,11 @@ export async function GET(
 
     return NextResponse.json({ trade });
   } catch (error) {
-    console.error("Get trade error:", error);
+    const logger = getLogger();
+    logger.error("Get trade error", {
+      error: error instanceof Error ? error.message : String(error),
+      tradeId: params.id
+    });
     return createErrorResponse(error, "Failed to get trade");
   }
 }
@@ -84,7 +89,11 @@ export async function PATCH(
 
     return NextResponse.json({ trade });
   } catch (error) {
-    console.error("Update trade error:", error);
+    const logger = getLogger();
+    logger.error("Update trade error", {
+      error: error instanceof Error ? error.message : String(error),
+      tradeId: params.id
+    });
     return createErrorResponse(error, "Failed to update trade");
   }
 }
@@ -117,7 +126,11 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete trade error:", error);
+    const logger = getLogger();
+    logger.error("Delete trade error", {
+      error: error instanceof Error ? error.message : String(error),
+      tradeId: params.id
+    });
     return createErrorResponse(error, "Failed to delete trade");
   }
 }

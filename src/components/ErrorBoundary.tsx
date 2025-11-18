@@ -3,6 +3,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Box, Typography, Button, Paper } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { getLogger } from "@/lib/logging";
 
 interface Props {
   children: ReactNode;
@@ -24,7 +25,11 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo);
+    const logger = getLogger();
+    logger.error("Error caught by boundary", {
+      error,
+      errorInfo: errorInfo.componentStack,
+    });
   }
 
   handleReload = () => {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { EconomicEvent, calculateImmediateRisk } from "./economicCalendar";
+import { getLogger } from "../logging";
 
 export interface AnalysisResult {
   action: "BUY" | "SELL" | "HOLD";
@@ -171,20 +172,26 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
 
     // Parse the JSON response
     const content = response.data.choices[0].message.content;
+    const logger = getLogger();
     let analysisResult: AnalysisResult;
 
     try {
       analysisResult = JSON.parse(content);
     } catch (parseError) {
-      console.error("Failed to parse OpenAI response:", content);
+      logger.error("Failed to parse OpenAI response", {
+        content: content.substring(0, 500),
+        error: parseError instanceof Error ? parseError.message : 'Unknown error'
+      });
       throw new Error("Failed to parse AI analysis result");
     }
 
     // Log the trade setup for debugging
-    console.log(
-      "[OpenAI] Analysis result:",
-      JSON.stringify(analysisResult, null, 2)
-    );
+    logger.debug("OpenAI analysis result", {
+      action: analysisResult.action,
+      confidence: analysisResult.confidence,
+      timeframe: analysisResult.timeframe,
+      hasTradeSetup: !!analysisResult.tradeSetup
+    });
 
     // Validate and warn about trade setup issues
     if (analysisResult.tradeSetup) {
@@ -195,17 +202,20 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
         const priceAvg = (entryPrice + stopLoss) / 2;
         const percentDiff = (priceDiff / priceAvg) * 100;
 
-        console.log(
-          `[OpenAI] Trade Setup - Entry: ${entryPrice}, Stop: ${stopLoss}, Diff: ${priceDiff.toFixed(
-            5
-          )} (${percentDiff.toFixed(2)}%)`
-        );
+        logger.debug("Trade setup calculated", {
+          entryPrice,
+          stopLoss,
+          priceDiff: priceDiff.toFixed(5),
+          percentDiff: percentDiff.toFixed(2)
+        });
 
         // Warn if entry and stop are too close (less than 0.1% difference)
         if (percentDiff < 0.1) {
-          console.warn(
-            "[OpenAI] WARNING: Entry and Stop Loss are nearly identical!"
-          );
+          logger.warn("Entry and Stop Loss are nearly identical", {
+            entryPrice,
+            stopLoss,
+            percentDiff
+          });
         }
       }
     }
@@ -217,7 +227,11 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
 
     return analysisResult;
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    const logger = getLogger();
+    logger.error("OpenAI API error", {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
 
     if (axios.isAxiosError(error)) {
       if (error.response) {
@@ -381,7 +395,11 @@ If no events exist, return NONE risk and NEUTRAL outlook with message about clea
 
     return result;
   } catch (error: any) {
-    console.error("[OpenAI] Error analyzing economic impact:", error.message);
+    const logger = getLogger();
+    logger.error("Error analyzing economic impact", {
+      error: error.message,
+      stack: error.stack
+    });
 
     // Return safe fallback
     const immediateRisk = calculateImmediateRisk(params.upcomingEvents);

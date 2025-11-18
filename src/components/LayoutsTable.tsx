@@ -26,6 +26,7 @@ import EditLayoutDialog from "./EditLayoutDialog";
 import ViewSnapshotsDialog from "./ViewSnapshotsDialog";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
+import { getLogger } from "@/lib/logging";
 
 interface LayoutsTableProps {
   layouts: Layout[];
@@ -36,6 +37,7 @@ export default function LayoutsTable({
   layouts,
   onRefresh,
 }: LayoutsTableProps) {
+  const logger = getLogger();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
@@ -69,7 +71,7 @@ export default function LayoutsTable({
         await deleteLayout.mutateAsync(deleteDialog.layoutId);
         setDeleteDialog({ open: false, layoutId: null });
       } catch (error) {
-        console.error("Delete failed:", error);
+        logger.error("Delete failed", { error, layoutId: deleteDialog.layoutId });
       }
     }
   };
@@ -78,7 +80,7 @@ export default function LayoutsTable({
     try {
       await createSnapshot.mutateAsync(layoutId);
     } catch (error) {
-      console.error("Snapshot generation failed:", error);
+      logger.error("Snapshot generation failed", { error, layoutId });
     }
   };
 

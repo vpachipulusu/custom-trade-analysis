@@ -3,6 +3,7 @@ import { authenticateRequest } from "@/lib/utils/apiAuth";
 import prisma from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { recalculateMonthlyStats } from "@/lib/db/journal";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/journal/debug
@@ -43,7 +44,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Debug error:", error);
+    const logger = getLogger();
+    logger.error("Debug error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
@@ -81,9 +85,14 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
+    const logger = getLogger();
+    logger.info("All journal data cleared");
     return NextResponse.json({ success: true, message: "All data cleared" });
   } catch (error) {
-    console.error("Debug delete error:", error);
+    const logger = getLogger();
+    logger.error("Debug delete error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
@@ -864,7 +873,11 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Seed error:", error);
+    const logger = getLogger();
+    logger.error("Seed error", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

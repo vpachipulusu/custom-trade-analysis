@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { getMonthlyStats, getAllTimeStats } from "@/lib/db/journal";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * GET /api/journal/stats
@@ -41,7 +42,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ stats, type: "alltime" });
     }
   } catch (error) {
-    console.error("Get stats error:", error);
+    const logger = getLogger();
+    logger.error("Get stats error", {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return createErrorResponse(error, "Failed to get statistics");
   }
 }

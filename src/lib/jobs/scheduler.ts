@@ -1,38 +1,46 @@
 import * as cron from "node-cron";
 import { runScheduledJobs } from "./autoAnalysis";
+import { getLogger } from "../logging";
 
 let schedulerInitialized = false;
 let cronJob: cron.ScheduledTask | null = null;
 
 export function initializeScheduler(): void {
+  const logger = getLogger();
+
   if (schedulerInitialized) {
-    console.log("⏭️ Scheduler already initialized");
+    logger.info("Scheduler already initialized");
     return;
   }
 
   // Run every 5 minutes to check for due jobs
   // This checks the database for schedules that need to run
   cronJob = cron.schedule("*/5 * * * *", async () => {
-    console.log(`\n⏰ Cron job triggered: ${new Date().toISOString()}`);
+    logger.debug('Cron job triggered', { timestamp: new Date().toISOString() });
     try {
       await runScheduledJobs();
     } catch (error) {
-      console.error("❌ Cron job error:", error);
+      logger.error('Cron job error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   });
 
   schedulerInitialized = true;
-  console.log("✅ Automation scheduler initialized (runs every 5 minutes)");
-  console.log(
-    "🤖 The scheduler will check for due automation jobs and process them"
-  );
+  logger.info('Automation scheduler initialized', {
+    interval: '5 minutes',
+    description: 'Scheduler will check for due automation jobs and process them'
+  });
 }
 
 export function stopScheduler(): void {
+  const logger = getLogger();
+
   if (cronJob) {
     cronJob.stop();
     schedulerInitialized = false;
-    console.log("🛑 Automation scheduler stopped");
+    logger.info('Automation scheduler stopped');
   }
 }
 
@@ -42,12 +50,17 @@ export function isSchedulerRunning(): boolean {
 
 // Manual trigger for testing
 export async function triggerSchedulerNow(): Promise<void> {
-  console.log("🔄 Manual scheduler trigger");
+  const logger = getLogger();
+
+  logger.info('Manual scheduler trigger');
   try {
     await runScheduledJobs();
-    console.log("✅ Manual trigger completed");
+    logger.info('Manual trigger completed');
   } catch (error) {
-    console.error("❌ Manual trigger error:", error);
+    logger.error('Manual trigger error', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   }
 }

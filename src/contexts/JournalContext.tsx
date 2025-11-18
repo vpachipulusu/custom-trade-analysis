@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { getLogger } from "@/lib/logging";
 
 interface JournalSettings {
   currency: string;
@@ -22,6 +23,7 @@ interface JournalContextType {
 const JournalContext = createContext<JournalContextType | undefined>(undefined);
 
 export function JournalProvider({ children }: { children: React.ReactNode }) {
+  const logger = getLogger();
   const { user } = useAuth();
   const [currency, setCurrency] = useState<string>("GBP");
   const [settings, setSettings] = useState<JournalSettings | null>(null);
@@ -45,7 +47,7 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
         setCurrency(data.settings.currency || "GBP");
       }
     } catch (error) {
-      console.error("Error fetching journal settings:", error);
+      logger.error("Error fetching journal settings", { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }

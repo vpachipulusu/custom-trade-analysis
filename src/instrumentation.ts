@@ -4,18 +4,21 @@
  */
 
 import { initializeScheduler } from "./lib/jobs/scheduler";
+import { getLogger } from "./lib/logging";
+
+const logger = getLogger();
 
 // Initialize automation scheduler only in production or when explicitly enabled
 if (
   process.env.ENABLE_AUTOMATION === "true" ||
   process.env.NODE_ENV === "production"
 ) {
-  console.log("🚀 Initializing automation scheduler...");
+  logger.info("Initializing automation scheduler");
   initializeScheduler();
 } else {
-  console.log(
-    "⏭️ Automation scheduler disabled (set ENABLE_AUTOMATION=true to enable)"
-  );
+  logger.info("Automation scheduler disabled", {
+    message: "Set ENABLE_AUTOMATION=true to enable"
+  });
 }
 
 export {};

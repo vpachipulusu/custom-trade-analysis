@@ -4,6 +4,8 @@
  * Tracks daily usage and prevents exceeding limits
  */
 
+import { getLogger } from "../logging";
+
 interface RateLimitState {
   count: number;
   resetTime: number; // Midnight UTC timestamp
@@ -51,9 +53,12 @@ export function checkRateLimit(apiName: string, limit: number = 250): boolean {
 
   // Check if limit reached
   if (state.count >= limit) {
-    console.warn(
-      `[RateLimiter] ${apiName} daily limit reached (${state.count}/${limit})`
-    );
+    const logger = getLogger();
+    logger.warn("Rate limit reached", {
+      apiName,
+      count: state.count,
+      limit
+    });
     return false;
   }
 
@@ -65,18 +70,25 @@ export function checkRateLimit(apiName: string, limit: number = 250): boolean {
  * @param apiName - Name of the API
  */
 export function incrementRateLimit(apiName: string): void {
+  const logger = getLogger();
   const state = rateLimiters.get(apiName);
   if (state) {
     state.count++;
 
     // Log warning at 80% capacity
     if (state.count === Math.floor(250 * 0.8)) {
-      console.warn(
-        `[RateLimiter] ${apiName} approaching daily limit (${state.count}/250)`
-      );
+      logger.warn("Approaching rate limit", {
+        apiName,
+        count: state.count,
+        limit: 250
+      });
     }
 
-    console.log(`[RateLimiter] ${apiName} requests today: ${state.count}/250`);
+    logger.debug("Rate limit increment", {
+      apiName,
+      count: state.count,
+      limit: 250
+    });
   }
 }
 

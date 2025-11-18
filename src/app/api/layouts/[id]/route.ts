@@ -3,6 +3,7 @@ import { authenticateRequest, verifyOwnership } from "@/lib/utils/apiAuth";
 import { getLayoutById, updateLayout, deleteLayout } from "@/lib/db/layouts";
 import { validateLayoutData } from "@/lib/utils/validation";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getLogger, LogContext } from "@/lib/logging";
 
 /**
  * PATCH /api/layouts/[id]
@@ -12,11 +13,16 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const { id } = params;
 
@@ -35,7 +41,10 @@ export async function PATCH(
 
     const body = await request.json();
 
-    console.log("Update layout request body:", JSON.stringify(body, null, 2));
+    logger.debug("Update layout request", {
+      layoutId: id,
+      bodyKeys: Object.keys(body)
+    });
 
     // Validate layout data
     const validation = validateLayoutData(body);
@@ -47,15 +56,15 @@ export async function PATCH(
     let sessionIdValue = undefined;
     if (body.sessionid) {
       // User provided a new sessionid value - store it as-is
-      console.log("Storing new sessionid (plain text)");
+      logger.debug("Storing new sessionid", { layoutId: id });
       sessionIdValue = body.sessionid;
     } else if (body.sessionid === null || body.sessionid === "") {
       // User explicitly wants to clear the sessionid
-      console.log("Clearing sessionid");
+      logger.debug("Clearing sessionid", { layoutId: id });
       sessionIdValue = null;
     } else {
       // sessionid not provided in update - keep existing value
-      console.log("Keeping existing sessionid");
+      logger.debug("Keeping existing sessionid", { layoutId: id });
       sessionIdValue = layout.sessionid;
     }
 
@@ -88,15 +97,16 @@ export async function PATCH(
       updateData.sessionidSign = layout.sessionidSign;
     }
 
-    console.log("Update data being sent to database:", {
-      ...updateData,
-      sessionid: updateData.sessionid ? "[encrypted]" : updateData.sessionid,
+    logger.debug("Updating layout in database", {
+      layoutId: id,
+      updateKeys: Object.keys(updateData),
+      hasSessionId: !!updateData.sessionid
     });
 
     // Update layout
     const updatedLayout = await updateLayout(id, updateData);
 
-    console.log("Layout updated successfully");
+    logger.info("Layout updated successfully", { layoutId: id });
 
     return NextResponse.json(updatedLayout);
   } catch (error) {
@@ -112,11 +122,16 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const logger = getLogger();
+
   try {
     const authResult = await authenticateRequest(request);
     if (authResult.error) {
       return authResult.error;
     }
+
+    // Set user context for logging
+    LogContext.set({ userId: authResult.user.userId });
 
     const { id } = params;
 
@@ -136,11 +151,17 @@ export async function DELETE(
     // Delete layout (cascades to snapshots and analyses)
     await deleteLayout(id);
 
+    logger.info("Layout deleted successfully", { layoutId: id });
+
     return NextResponse.json(
       { message: "Layout deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
+    logger.error("Error deleting layout", {
+      error: error instanceof Error ? error.message : String(error),
+      layoutId: id
+    });
     return createErrorResponse(error, 500);
   }
 }

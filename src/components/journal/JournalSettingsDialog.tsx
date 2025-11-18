@@ -16,7 +16,10 @@ import {
   Alert,
   CircularProgress,
   Box,
+  Divider,
+  Typography,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
@@ -33,7 +36,9 @@ export default function JournalSettingsDialog({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const [startingBalance, setStartingBalance] = useState("");
   const [currentBalance, setCurrentBalance] = useState("");
@@ -124,6 +129,42 @@ export default function JournalSettingsDialog({
     }
   };
 
+  const handleClearAllData = async () => {
+    if (!confirm("⚠️ WARNING: This will permanently delete ALL your trading journal data including all trades, statistics, and monthly reports. Your settings (starting balance, currency, etc.) will be preserved, and your balance will be reset to your starting balance. This action CANNOT be undone. Are you absolutely sure you want to continue?")) {
+      return;
+    }
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      const token = await user?.getIdToken();
+      const res = await fetch("/api/journal/debug", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to clear data");
+      }
+
+      setSuccess("All journal data has been cleared successfully!");
+      
+      // Wait a moment to show the success message, then reload
+      setTimeout(() => {
+        onSaved();
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear data");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Journal Settings</DialogTitle>
@@ -138,6 +179,12 @@ export default function JournalSettingsDialog({
               {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {error}
+                </Alert>
+              )}
+              
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  {success}
                 </Alert>
               )}
 
@@ -221,15 +268,25 @@ export default function JournalSettingsDialog({
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+      <DialogActions sx={{ justifyContent: "space-between", px: 3, py: 2 }}>
         <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={loading || saving}
+          onClick={handleClearAllData}
+          color="error"
+          disabled={loading || deleting || saving}
+          startIcon={<DeleteIcon />}
         >
-          {saving ? "Saving..." : "Save"}
+          {deleting ? "Clearing..." : "Clear All Data"}
         </Button>
+        <Box>
+          <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            disabled={loading || saving || deleting}
+          >
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

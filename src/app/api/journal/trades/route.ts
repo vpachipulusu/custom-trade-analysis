@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       stopLossPrice,
       takeProfitPrice,
       tradeCosts,
+      riskRewardRatio,
       tradeNotes,
       disciplineRating,
       emotionalState,
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
         ? parseFloat(takeProfitPrice)
         : undefined,
       tradeCosts: tradeCosts ? parseFloat(tradeCosts) : 0,
+      riskRewardRatio,
       tradeNotes,
       disciplineRating: disciplineRating
         ? parseInt(disciplineRating)

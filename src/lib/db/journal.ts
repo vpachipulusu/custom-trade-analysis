@@ -76,6 +76,7 @@ export async function createTrade(
     stopLossPrice?: number;
     takeProfitPrice?: number;
     tradeCosts?: number;
+    riskRewardRatio?: string;
     tradeNotes?: string;
     disciplineRating?: number;
     emotionalState?: string;
@@ -105,6 +106,7 @@ export async function createTrade(
       tradeCosts: tradeData.tradeCosts
         ? new Decimal(tradeData.tradeCosts)
         : new Decimal(0),
+      riskRewardRatio: tradeData.riskRewardRatio,
       tradeNotes: tradeData.tradeNotes,
       disciplineRating: tradeData.disciplineRating,
       emotionalState: tradeData.emotionalState,

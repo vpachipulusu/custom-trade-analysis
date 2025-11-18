@@ -334,8 +334,8 @@ model MonthlyStats {
   totalTradeCosts           Decimal  @db.Decimal(15, 2) @default(0)
   
   // Risk/Reward
-  averageRiskPerTrade       Decimal? @db.Decimal(5, 4)
-  averageRewardPerTrade     Decimal? @db.Decimal(5, 4)
+  averageRiskPerTrade       Decimal? @db.Decimal(8, 4)
+  averageRewardPerTrade     Decimal? @db.Decimal(8, 4)
   averageRiskRewardRatio    String?  // "1:1.5" format
   
   // ROI

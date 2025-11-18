@@ -34,23 +34,21 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
     (t) => t.status === "closed" && t.closedPositionPL !== null
   );
 
+  // Helper to safely convert Decimal to number
+  const toNum = (val: any) =>
+    typeof val === "number" ? val : val?.toNumber?.() || 0;
+
   // Calculate statistics
-  const wins = closedTrades.filter(
-    (t) => (t.closedPositionPL?.toNumber() || 0) > 0
-  );
-  const losses = closedTrades.filter(
-    (t) => (t.closedPositionPL?.toNumber() || 0) < 0
-  );
-  const breakeven = closedTrades.filter(
-    (t) => (t.closedPositionPL?.toNumber() || 0) === 0
-  );
+  const wins = closedTrades.filter((t) => toNum(t.closedPositionPL) > 0);
+  const losses = closedTrades.filter((t) => toNum(t.closedPositionPL) < 0);
+  const breakeven = closedTrades.filter((t) => toNum(t.closedPositionPL) === 0);
 
   const totalWinAmount = wins.reduce(
-    (sum, t) => sum + (t.closedPositionPL?.toNumber() || 0),
+    (sum, t) => sum + toNum(t.closedPositionPL),
     0
   );
   const totalLossAmount = Math.abs(
-    losses.reduce((sum, t) => sum + (t.closedPositionPL?.toNumber() || 0), 0)
+    losses.reduce((sum, t) => sum + toNum(t.closedPositionPL), 0)
   );
 
   const data =

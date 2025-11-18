@@ -46,12 +46,16 @@ export default function MarketPerformanceChart({
     (t) => t.status === "closed" && t.closedPositionPL !== null
   );
 
+  // Helper to safely convert Decimal to number
+  const toNum = (val: any) =>
+    typeof val === "number" ? val : val?.toNumber?.() || 0;
+
   // Group trades by market
   const marketMap = new Map<string, MarketStats>();
 
   closedTrades.forEach((trade) => {
     const market = trade.market;
-    const pl = trade.closedPositionPL?.toNumber() || 0;
+    const pl = toNum(trade.closedPositionPL);
 
     if (!marketMap.has(market)) {
       marketMap.set(market, {

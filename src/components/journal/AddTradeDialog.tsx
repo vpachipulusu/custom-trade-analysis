@@ -207,6 +207,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
             ? parseFloat(takeProfitPrice)
             : undefined,
           tradeCosts: parseFloat(tradeCosts),
+          riskRewardRatio: riskReward,
           tradeNotes,
           disciplineRating,
           emotionalState,

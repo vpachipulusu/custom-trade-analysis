@@ -48,9 +48,13 @@ export default function PLDistributionChart({
     { range: "> $500", count: 0, minValue: 500, totalPL: 0 },
   ];
 
+  // Helper to safely convert Decimal to number
+  const toNum = (val: any) =>
+    typeof val === "number" ? val : val?.toNumber?.() || 0;
+
   // Categorize trades into buckets
   closedTrades.forEach((trade) => {
-    const pl = trade.closedPositionPL?.toNumber() || 0;
+    const pl = toNum(trade.closedPositionPL);
 
     if (pl < -500) {
       buckets[0].count++;

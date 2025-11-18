@@ -59,7 +59,11 @@ export default function EquityCurveChart({
   });
 
   sortedTrades.forEach((trade) => {
-    const pl = trade.closedPositionPL?.toNumber() || 0;
+    // closedPositionPL is already a number from JSON serialization
+    const pl =
+      typeof trade.closedPositionPL === "number"
+        ? trade.closedPositionPL
+        : trade.closedPositionPL?.toNumber?.() || 0;
     runningBalance += pl;
 
     // Track peak for drawdown calculation

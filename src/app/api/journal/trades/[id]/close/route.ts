@@ -53,6 +53,14 @@ export async function POST(
     const positionSize = existingTrade.positionSize.toNumber();
     const tradeCosts = existingTrade.tradeCosts.toNumber();
 
+    console.log("Close trade calculation:", {
+      direction: existingTrade.direction,
+      entryPrice,
+      exitPrice,
+      positionSize,
+      tradeCosts,
+    });
+
     let closedPositionPL: number;
     if (existingTrade.direction === "Long") {
       closedPositionPL = (exitPrice - entryPrice) * positionSize - tradeCosts;
@@ -60,6 +68,8 @@ export async function POST(
       // Short
       closedPositionPL = (entryPrice - exitPrice) * positionSize - tradeCosts;
     }
+
+    console.log("Calculated P/L:", closedPositionPL);
 
     // Calculate account change %
     const accountBalance = existingTrade.accountBalance.toNumber();

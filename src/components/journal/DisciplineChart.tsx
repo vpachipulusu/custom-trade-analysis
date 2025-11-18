@@ -36,6 +36,10 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
       return dateA.getTime() - dateB.getTime();
     });
 
+  // Helper to safely convert Decimal to number
+  const toNum = (val: any) =>
+    typeof val === "number" ? val : val?.toNumber?.() || 0;
+
   // Build data points
   const data: DataPoint[] = closedTrades.map((trade) => ({
     date: new Date(trade.exitDate || trade.date).toLocaleDateString("en-US", {
@@ -43,7 +47,7 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
       day: "numeric",
     }),
     disciplineRating: trade.disciplineRating,
-    pl: trade.closedPositionPL?.toNumber() || 0,
+    pl: toNum(trade.closedPositionPL),
     fullDate: new Date(trade.exitDate || trade.date),
   }));
 

@@ -15,6 +15,8 @@ import {
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
 import { Trade } from "@prisma/client";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface PLDistributionChartProps {
   trades: Trade[];
@@ -30,22 +32,60 @@ interface BucketData {
 export default function PLDistributionChart({
   trades,
 }: PLDistributionChartProps) {
+  const { currency } = useJournal();
+  const symbol = getCurrencySymbol(currency);
+
   const closedTrades = trades.filter(
     (t) => t.status === "closed" && t.closedPositionPL !== null
   );
 
-  // Define P/L buckets
+  // Define P/L buckets with dynamic currency symbol
   const buckets: BucketData[] = [
-    { range: "< -$500", count: 0, minValue: -Infinity, totalPL: 0 },
-    { range: "-$500 to -$250", count: 0, minValue: -500, totalPL: 0 },
-    { range: "-$250 to -$100", count: 0, minValue: -250, totalPL: 0 },
-    { range: "-$100 to -$50", count: 0, minValue: -100, totalPL: 0 },
-    { range: "-$50 to $0", count: 0, minValue: -50, totalPL: 0 },
-    { range: "$0 to $50", count: 0, minValue: 0, totalPL: 0 },
-    { range: "$50 to $100", count: 0, minValue: 50, totalPL: 0 },
-    { range: "$100 to $250", count: 0, minValue: 100, totalPL: 0 },
-    { range: "$250 to $500", count: 0, minValue: 250, totalPL: 0 },
-    { range: "> $500", count: 0, minValue: 500, totalPL: 0 },
+    { range: `< -${symbol}500`, count: 0, minValue: -Infinity, totalPL: 0 },
+    {
+      range: `-${symbol}500 to -${symbol}250`,
+      count: 0,
+      minValue: -500,
+      totalPL: 0,
+    },
+    {
+      range: `-${symbol}250 to -${symbol}100`,
+      count: 0,
+      minValue: -250,
+      totalPL: 0,
+    },
+    {
+      range: `-${symbol}100 to -${symbol}50`,
+      count: 0,
+      minValue: -100,
+      totalPL: 0,
+    },
+    {
+      range: `-${symbol}50 to ${symbol}0`,
+      count: 0,
+      minValue: -50,
+      totalPL: 0,
+    },
+    { range: `${symbol}0 to ${symbol}50`, count: 0, minValue: 0, totalPL: 0 },
+    {
+      range: `${symbol}50 to ${symbol}100`,
+      count: 0,
+      minValue: 50,
+      totalPL: 0,
+    },
+    {
+      range: `${symbol}100 to ${symbol}250`,
+      count: 0,
+      minValue: 100,
+      totalPL: 0,
+    },
+    {
+      range: `${symbol}250 to ${symbol}500`,
+      count: 0,
+      minValue: 250,
+      totalPL: 0,
+    },
+    { range: `> ${symbol}500`, count: 0, minValue: 500, totalPL: 0 },
   ];
 
   // Helper to safely convert Decimal to number

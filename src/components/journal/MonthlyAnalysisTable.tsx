@@ -19,6 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useAuth } from "@/contexts/AuthContext";
+import { useJournal } from "@/contexts/JournalContext";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/utils/currency";
 
 interface MonthlyStats {
   month: number;
@@ -60,6 +62,7 @@ const monthNames = [
 
 export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
   const { user } = useAuth();
+  const { currency } = useJournal();
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,8 +104,7 @@ export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
   };
 
   const formatCurrency = (value: string | undefined | null) => {
-    if (!value) return "-";
-    return `£${parseFloat(value).toFixed(2)}`;
+    return formatCurrencyUtil(value, currency);
   };
 
   const formatPercent = (value: string | undefined | null) => {

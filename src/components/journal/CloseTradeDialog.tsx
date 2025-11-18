@@ -18,6 +18,8 @@ import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useAuth } from "@/contexts/AuthContext";
+import { useJournal } from "@/contexts/JournalContext";
+import { formatCurrency } from "@/lib/utils/currency";
 
 interface Trade {
   id: string;
@@ -45,6 +47,7 @@ export default function CloseTradeDialog({
   onTradeClosed,
 }: Props) {
   const { user } = useAuth();
+  const { currency } = useJournal();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exitDate, setExitDate] = useState<Date | null>(new Date());
@@ -231,7 +234,7 @@ export default function CloseTradeDialog({
                 align="center"
                 sx={{ color: plResult.pl >= 0 ? "success.dark" : "error.dark" }}
               >
-                P/L: £{plResult.pl.toFixed(2)}
+                P/L: {formatCurrency(plResult.pl, currency)}
               </Typography>
               <Typography
                 variant="body2"

@@ -20,6 +20,8 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { Trade } from "@prisma/client";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface MarketPerformanceChartProps {
   trades: Trade[];
@@ -40,6 +42,8 @@ interface MarketStats {
 export default function MarketPerformanceChart({
   trades,
 }: MarketPerformanceChartProps) {
+  const { currency } = useJournal();
+  const symbol = getCurrencySymbol(currency);
   const [viewMode, setViewMode] = React.useState<ViewMode>("pl");
 
   const closedTrades = trades.filter(
@@ -103,7 +107,7 @@ export default function MarketPerformanceChart({
   const getYAxisFormatter = (value: number) => {
     switch (viewMode) {
       case "pl":
-        return `$${value.toFixed(0)}`;
+        return `${symbol}${value.toFixed(0)}`;
       case "winrate":
         return `${value.toFixed(0)}%`;
       case "count":
@@ -135,14 +139,18 @@ export default function MarketPerformanceChart({
             variant="body2"
             color={data.totalPL >= 0 ? "success.main" : "error.main"}
           >
-            Total P/L: {data.totalPL >= 0 ? "+" : ""}${data.totalPL.toFixed(2)}
+            Total P/L: {data.totalPL >= 0 ? "+" : ""}
+            {symbol}
+            {data.totalPL.toFixed(2)}
           </Typography>
           <Typography variant="body2">Trades: {data.tradeCount}</Typography>
           <Typography variant="body2">
             Win Rate: {data.winRate.toFixed(1)}%
           </Typography>
           <Typography variant="body2">
-            Avg P/L: {data.avgPL >= 0 ? "+" : ""}${data.avgPL.toFixed(2)}
+            Avg P/L: {data.avgPL >= 0 ? "+" : ""}
+            {symbol}
+            {data.avgPL.toFixed(2)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {data.wins}W / {data.losses}L

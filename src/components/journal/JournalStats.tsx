@@ -15,6 +15,8 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { useAuth } from "@/contexts/AuthContext";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface StatsData {
   totalTrades: number;
@@ -94,12 +96,7 @@ export default function JournalStats({ refreshTrigger }: Props) {
   };
 
   const formatCurrency = (value: number) => {
-    const symbol =
-      settings?.currency === "USD"
-        ? "$"
-        : settings?.currency === "EUR"
-        ? "€"
-        : "£";
+    const symbol = getCurrencySymbol(settings?.currency || "GBP");
     return `${symbol}${value.toFixed(2)}`;
   };
 

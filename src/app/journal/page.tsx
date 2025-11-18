@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useAuth } from "@/contexts/AuthContext";
+import { JournalProvider } from "@/contexts/JournalContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -154,83 +155,89 @@ export default function JournalPage() {
 
   return (
     <ProtectedRoute>
-      <Layout>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
-          <Typography variant="h4" component="h1" fontWeight="bold">
-            Trading Journal
-          </Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button variant="outlined" onClick={() => setSettingsOpen(true)}>
-              Settings
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setAddTradeOpen(true)}
-            >
-              Add Trade
-            </Button>
-          </Box>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="journal tabs"
+      <JournalProvider>
+        <Layout>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 3,
+            }}
           >
-            <Tab label="Trade Log" />
-            <Tab label="Statistics" />
-            <Tab label="Month Analysis" />
-          </Tabs>
-        </Box>
+            <Typography variant="h4" component="h1" fontWeight="bold">
+              Trading Journal
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button variant="outlined" onClick={() => setSettingsOpen(true)}>
+                Settings
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setAddTradeOpen(true)}
+              >
+                Add Trade
+              </Button>
+            </Box>
+          </Box>
 
-        <TabPanel value={tabValue} index={0}>
-          <TradeLogTable
-            refreshTrigger={refreshTrigger}
-            onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 3 }}
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              aria-label="journal tabs"
+            >
+              <Tab label="Trade Log" />
+              <Tab label="Statistics" />
+              <Tab label="Month Analysis" />
+            </Tabs>
+          </Box>
+
+          <TabPanel value={tabValue} index={0}>
+            <TradeLogTable
+              refreshTrigger={refreshTrigger}
+              onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
+            />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={1}>
+            <StatisticsTab refreshTrigger={refreshTrigger} />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
+            <MonthlyAnalysisTable refreshTrigger={refreshTrigger} />
+          </TabPanel>
+
+          <AddTradeDialog
+            open={addTradeOpen}
+            onClose={() => setAddTradeOpen(false)}
+            onTradeAdded={handleTradeAdded}
           />
-        </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
-          <StatisticsTab refreshTrigger={refreshTrigger} />
-        </TabPanel>
+          <JournalSettingsDialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            onSaved={handleSettingsSaved}
+          />
 
-        <TabPanel value={tabValue} index={2}>
-          <MonthlyAnalysisTable refreshTrigger={refreshTrigger} />
-        </TabPanel>
-
-        <AddTradeDialog
-          open={addTradeOpen}
-          onClose={() => setAddTradeOpen(false)}
-          onTradeAdded={handleTradeAdded}
-        />
-
-        <JournalSettingsDialog
-          open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-          onSaved={handleSettingsSaved}
-        />
-
-        <OnboardingDialog
-          open={onboardingOpen}
-          onClose={() => setOnboardingOpen(false)}
-          onComplete={handleOnboardingComplete}
-        />
-      </Layout>
+          <OnboardingDialog
+            open={onboardingOpen}
+            onClose={() => setOnboardingOpen(false)}
+            onComplete={handleOnboardingComplete}
+          />
+        </Layout>
+      </JournalProvider>
     </ProtectedRoute>
   );
 }

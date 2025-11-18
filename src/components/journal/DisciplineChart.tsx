@@ -15,6 +15,8 @@ import {
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
 import { Trade } from "@prisma/client";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface DisciplineChartProps {
   trades: Trade[];
@@ -28,6 +30,9 @@ interface DataPoint {
 }
 
 export default function DisciplineChart({ trades }: DisciplineChartProps) {
+  const { currency } = useJournal();
+  const symbol = getCurrencySymbol(currency);
+
   const closedTrades = trades
     .filter((t) => t.status === "closed" && t.closedPositionPL !== null)
     .sort((a, b) => {
@@ -98,7 +103,9 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
             variant="body2"
             color={data.pl >= 0 ? "success.main" : "error.main"}
           >
-            P/L: {data.pl >= 0 ? "+" : ""}${data.pl.toFixed(2)}
+            P/L: {data.pl >= 0 ? "+" : ""}
+            {symbol}
+            {data.pl.toFixed(2)}
           </Typography>
         </Paper>
       );
@@ -161,8 +168,12 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
               yAxisId="right"
               orientation="right"
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `$${value}`}
-              label={{ value: "P/L ($)", angle: 90, position: "insideRight" }}
+              tickFormatter={(value) => `${symbol}${value}`}
+              label={{
+                value: `P/L (${symbol})`,
+                angle: 90,
+                position: "insideRight",
+              }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />

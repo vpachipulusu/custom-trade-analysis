@@ -15,6 +15,8 @@ import {
 } from "@mui/material";
 import { format } from "date-fns";
 import Image from "next/image";
+import { useJournal } from "@/contexts/JournalContext";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/utils/currency";
 
 interface Trade {
   id: string;
@@ -52,9 +54,10 @@ interface Props {
 }
 
 export default function TradeDetailsDialog({ open, trade, onClose }: Props) {
+  const { currency } = useJournal();
+
   const formatCurrency = (value: string | undefined) => {
-    if (!value) return "N/A";
-    return `£${parseFloat(value).toFixed(2)}`;
+    return formatCurrencyUtil(value, currency);
   };
 
   const formatPrice = (value: string | undefined) => {

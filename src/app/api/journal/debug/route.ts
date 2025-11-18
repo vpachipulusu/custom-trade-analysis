@@ -824,7 +824,7 @@ export async function POST(request: NextRequest) {
               ? 3
               : null,
           setup: tradeData.setup || null,
-          tags: tradeData.outcome ? [tradeData.outcome] : null,
+          tags: tradeData.outcome ? [tradeData.outcome] : undefined,
         },
       });
     }

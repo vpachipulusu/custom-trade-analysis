@@ -17,6 +17,8 @@ import {
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
 import { Trade } from "@prisma/client";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface EquityCurveChartProps {
   trades: Trade[];
@@ -36,6 +38,9 @@ export default function EquityCurveChart({
   trades,
   startingBalance,
 }: EquityCurveChartProps) {
+  const { currency } = useJournal();
+  const symbol = getCurrencySymbol(currency);
+
   // Sort trades by date and time
   const sortedTrades = [...trades]
     .filter((t) => t.status === "closed" && t.closedPositionPL !== null)
@@ -98,19 +103,23 @@ export default function EquityCurveChart({
             {data.date}
           </Typography>
           <Typography variant="body2" color="primary">
-            Balance: ${data.balance.toFixed(2)}
+            Balance: {symbol}
+            {data.balance.toFixed(2)}
           </Typography>
           {data.pl !== undefined && (
             <Typography
               variant="body2"
               color={data.pl >= 0 ? "success.main" : "error.main"}
             >
-              Trade P/L: {data.pl >= 0 ? "+" : ""}${data.pl.toFixed(2)}
+              Trade P/L: {data.pl >= 0 ? "+" : ""}
+              {symbol}
+              {data.pl.toFixed(2)}
             </Typography>
           )}
           {data.drawdown > 0 && (
             <Typography variant="body2" color="warning.main">
-              Drawdown: -${data.drawdown.toFixed(2)}
+              Drawdown: -{symbol}
+              {data.drawdown.toFixed(2)}
             </Typography>
           )}
         </Paper>
@@ -173,7 +182,7 @@ export default function EquityCurveChart({
             />
             <YAxis
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) => `$${value.toFixed(0)}`}
+              tickFormatter={(value) => `${symbol}${value.toFixed(0)}`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />

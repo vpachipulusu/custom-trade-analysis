@@ -28,6 +28,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { useJournal } from "@/contexts/JournalContext";
+import { formatCurrency } from "@/lib/utils/currency";
 import TradeDetailsDialog from "./TradeDetailsDialog";
 import CloseTradeDialog from "./CloseTradeDialog";
 
@@ -61,6 +63,7 @@ interface Props {
 
 export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
   const { user } = useAuth();
+  const { currency } = useJournal();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -156,12 +159,6 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
       setError(err instanceof Error ? err.message : "Failed to delete trade");
       handleMenuClose();
     }
-  };
-
-  const formatCurrency = (value: string | undefined) => {
-    if (!value) return "N/A";
-    const num = parseFloat(value);
-    return `£${num.toFixed(2)}`;
   };
 
   const formatPercent = (value: string | undefined) => {
@@ -289,7 +286,7 @@ export default function TradeLogTable({ refreshTrigger, onRefresh }: Props) {
                         : "inherit",
                     }}
                   >
-                    {formatCurrency(trade.closedPositionPL)}
+                    {formatCurrency(trade.closedPositionPL, currency)}
                   </TableCell>
                   <TableCell
                     align="right"

@@ -22,6 +22,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatCurrency } from "@/lib/utils/currency";
 
 interface Props {
   open: boolean;
@@ -132,7 +133,11 @@ export default function JournalSettingsDialog({
   };
 
   const handleClearAllData = async () => {
-    if (!confirm("⚠️ WARNING: This will permanently delete ALL your trading journal data including all trades, statistics, and monthly reports. Your settings (starting balance, currency, etc.) will be preserved, and your balance will be reset to your starting balance. This action CANNOT be undone. Are you absolutely sure you want to continue?")) {
+    if (
+      !confirm(
+        "⚠️ WARNING: This will permanently delete ALL your trading journal data including all trades, statistics, and monthly reports. Your settings (starting balance, currency, etc.) will be preserved, and your balance will be reset to your starting balance. This action CANNOT be undone. Are you absolutely sure you want to continue?"
+      )
+    ) {
       return;
     }
 
@@ -154,7 +159,7 @@ export default function JournalSettingsDialog({
       }
 
       setSuccess("All journal data has been cleared successfully!");
-      
+
       // Wait a moment to show the success message, then reload
       setTimeout(() => {
         onSaved();
@@ -168,7 +173,11 @@ export default function JournalSettingsDialog({
   };
 
   const handleSeedData = async () => {
-    if (!confirm("This will create 30+ realistic sample trades spanning 3 months to test statistics and charts. This should only be used on a fresh account or after clearing all data. Continue?")) {
+    if (
+      !confirm(
+        "This will create 30+ realistic sample trades spanning 3 months to test statistics and charts. This should only be used on a fresh account or after clearing all data. Continue?"
+      )
+    ) {
       return;
     }
 
@@ -190,8 +199,15 @@ export default function JournalSettingsDialog({
       }
 
       const result = await res.json();
-      setSuccess(`Successfully created ${result.stats.totalTrades} trades! Final balance: £${result.stats.finalBalance}`);
-      
+      setSuccess(
+        `Successfully created ${
+          result.stats.totalTrades
+        } trades! Final balance: ${formatCurrency(
+          result.stats.finalBalance,
+          currency
+        )}`
+      );
+
       // Wait a moment to show the success message, then reload
       setTimeout(() => {
         onSaved();
@@ -220,7 +236,7 @@ export default function JournalSettingsDialog({
                   {error}
                 </Alert>
               )}
-              
+
               {success && (
                 <Alert severity="success" sx={{ mb: 2 }}>
                   {success}
@@ -327,7 +343,9 @@ export default function JournalSettingsDialog({
           </Button>
         </Box>
         <Box>
-          <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
+          <Button onClick={onClose} sx={{ mr: 1 }}>
+            Cancel
+          </Button>
           <Button
             onClick={handleSave}
             variant="contained"

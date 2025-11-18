@@ -20,6 +20,8 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { Trade } from "@prisma/client";
+import { useJournal } from "@/contexts/JournalContext";
+import { getCurrencySymbol } from "@/lib/utils/currency";
 
 interface WinLossChartProps {
   trades: Trade[];
@@ -28,6 +30,7 @@ interface WinLossChartProps {
 type ViewMode = "count" | "amount";
 
 export default function WinLossChart({ trades }: WinLossChartProps) {
+  const { currency } = useJournal();
   const [viewMode, setViewMode] = React.useState<ViewMode>("count");
 
   const closedTrades = trades.filter(
@@ -74,7 +77,7 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
           <Typography variant="body2" color="primary">
             {viewMode === "count"
               ? `${data.value} trades`
-              : `$${data.value.toFixed(2)}`}
+              : `${getCurrencySymbol(currency)}${data.value.toFixed(2)}`}
           </Typography>
         </Paper>
       );
@@ -131,7 +134,9 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
             <YAxis
               tick={{ fontSize: 12 }}
               tickFormatter={(value) =>
-                viewMode === "count" ? value.toString() : `$${value}`
+                viewMode === "count"
+                  ? value.toString()
+                  : `${getCurrencySymbol(currency)}${value}`
               }
             />
             <Tooltip content={<CustomTooltip />} />

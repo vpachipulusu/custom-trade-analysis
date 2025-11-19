@@ -39,7 +39,7 @@ export async function createLayout(
 /**
  * Get all layouts for a user
  */
-export async function getLayoutsByUserId(userId: string): Promise<Layout[]> {
+export async function getLayoutsByUserId(userId: string) {
   return await prisma.layout.findMany({
     where: { userId },
     include: {
@@ -102,7 +102,7 @@ export async function deleteLayout(id: string): Promise<void> {
 export async function getLayoutsBySymbol(
   userId: string,
   symbol: string
-): Promise<Layout[]> {
+) {
   return await prisma.layout.findMany({
     where: {
       userId,

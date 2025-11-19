@@ -13,7 +13,10 @@ import { stripe } from "@/lib/stripe";
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const firebaseUid = await authenticateRequest(request);
+    const authResult = await authenticateRequest(request);
+    if (authResult.error) {
+      return authResult.error;
+    }
 
     // Get request body
     const body = await request.json();
@@ -28,11 +31,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user from database
-    const user = await getUserByFirebaseUid(firebaseUid);
+    const user = await getUserByFirebaseUid(authResult.user.firebaseUid);
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
 
     // Get price ID for tier
-    const priceId =
-      SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS].priceId;
+    const tierConfig = SUBSCRIPTION_TIERS[tier as keyof typeof SUBSCRIPTION_TIERS];
+    const priceId = 'priceId' in tierConfig ? tierConfig.priceId : null;
 
     if (!priceId) {
       return NextResponse.json(

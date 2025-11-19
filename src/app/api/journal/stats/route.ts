@@ -46,6 +46,6 @@ export async function GET(request: NextRequest) {
     logger.error("Get stats error", {
       error: error instanceof Error ? error.message : String(error)
     });
-    return createErrorResponse(error, "Failed to get statistics");
+    return createErrorResponse(error, 500);
   }
 }

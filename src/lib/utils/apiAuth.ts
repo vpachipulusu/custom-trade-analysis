@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   uid: string;
   email: string;
   userId: string; // Database user ID
+  firebaseUid: string; // Firebase UID (same as uid)
 }
 
 /**
@@ -54,6 +55,7 @@ export async function authenticateRequest(
         uid: decodedToken.uid,
         email: decodedToken.email,
         userId: dbUser.id,
+        firebaseUid: decodedToken.uid,
       },
     };
   } catch (error) {

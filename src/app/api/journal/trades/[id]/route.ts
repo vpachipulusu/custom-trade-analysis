@@ -36,7 +36,7 @@ export async function GET(
       error: error instanceof Error ? error.message : String(error),
       tradeId: params.id
     });
-    return createErrorResponse(error, "Failed to get trade");
+    return createErrorResponse(error, 500);
   }
 }
 
@@ -94,7 +94,7 @@ export async function PATCH(
       error: error instanceof Error ? error.message : String(error),
       tradeId: params.id
     });
-    return createErrorResponse(error, "Failed to update trade");
+    return createErrorResponse(error, 500);
   }
 }
 
@@ -131,6 +131,6 @@ export async function DELETE(
       error: error instanceof Error ? error.message : String(error),
       tradeId: params.id
     });
-    return createErrorResponse(error, "Failed to delete trade");
+    return createErrorResponse(error, 500);
   }
 }

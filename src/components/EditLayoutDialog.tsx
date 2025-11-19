@@ -77,9 +77,9 @@ export default function EditLayoutDialog({
 
     try {
       const dataToSubmit: UpdateLayoutData = {
-        layoutId: formData.layoutId || null,
-        symbol: formData.symbol || null,
-        interval: formData.interval || null,
+        layoutId: formData.layoutId || undefined,
+        symbol: formData.symbol || undefined,
+        interval: formData.interval || undefined,
         // Only send sessionid/sessionidSign if user typed something
         // Empty string means keep existing, so don't send it
         ...(formData.sessionid && { sessionid: formData.sessionid }),

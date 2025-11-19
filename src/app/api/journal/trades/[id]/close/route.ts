@@ -110,7 +110,6 @@ export async function POST(
     const month = exitDateObj.getMonth() + 1;
     await recalculateMonthlyStats(authResult.user.userId, year, month);
 
-    const logger = getLogger();
     logger.info("Trade closed successfully", {
       tradeId: params.id,
       pl: closedPositionPL,
@@ -128,6 +127,6 @@ export async function POST(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-    return createErrorResponse(error, "Failed to close trade");
+    return createErrorResponse(error, 500);
   }
 }

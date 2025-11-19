@@ -21,7 +21,7 @@ export async function createSnapshot(
 /**
  * Get snapshot by ID
  */
-export async function getSnapshotById(id: string): Promise<Snapshot | null> {
+export async function getSnapshotById(id: string) {
   return await prisma.snapshot.findUnique({
     where: { id },
     include: {

@@ -21,6 +21,7 @@ export interface Analysis {
     id: string;
     layoutId: string;
     url: string;
+    imageData?: string;
     layout: {
       symbol: string | null;
       interval: string | null;
@@ -29,9 +30,9 @@ export interface Analysis {
   economicContext?: {
     symbol: string;
     upcomingEvents: any[];
-    immediateRisk: string;
+    immediateRisk: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXTREME";
     weeklyEvents: any[];
-    weeklyOutlook: string;
+    weeklyOutlook: "BULLISH" | "BEARISH" | "NEUTRAL" | "VOLATILE";
     impactSummary: string;
     warnings: string[];
     opportunities: string[];

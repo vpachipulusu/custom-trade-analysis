@@ -160,7 +160,7 @@ export async function DELETE(
   } catch (error) {
     logger.error("Error deleting layout", {
       error: error instanceof Error ? error.message : String(error),
-      layoutId: id
+      layoutId: params.id
     });
     return createErrorResponse(error, 500);
   }

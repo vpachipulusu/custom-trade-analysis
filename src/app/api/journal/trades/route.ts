@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     logger.error("Get trades error", {
       error: error instanceof Error ? error.message : String(error)
     });
-    return createErrorResponse(error, "Failed to get trades");
+    return createErrorResponse(error, 500);
   }
 }
 
@@ -160,6 +160,6 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-    return createErrorResponse(error, "Failed to create trade");
+    return createErrorResponse(error, 500);
   }
 }

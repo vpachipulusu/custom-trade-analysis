@@ -45,7 +45,17 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
   const [activeTab, setActiveTab] = useState(0);
 
   const hasEconomicContext = !!analysis.economicContext;
-  const isMultiLayout = !!analysis.multiLayoutSnapshots && analysis.multiLayoutSnapshots.length > 1;
+  const isMultiLayout =
+    !!analysis.multiLayoutSnapshots && analysis.multiLayoutSnapshots.length > 1;
+
+  // Debug logging
+  console.log("Analysis data:", {
+    hasMultiLayoutSnapshots: !!analysis.multiLayoutSnapshots,
+    snapshotsLength: analysis.multiLayoutSnapshots?.length,
+    layoutsAnalyzed: analysis.layoutsAnalyzed,
+    intervals: analysis.intervals,
+    isMultiLayout,
+  });
 
   const handleRegenerate = async () => {
     try {
@@ -55,7 +65,10 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
       const newAnalysis = await createAnalysis.mutateAsync(snapshot.id);
       router.push(`/analysis/${newAnalysis.id}`);
     } catch (error) {
-      logger.error("Regeneration failed", { error, layoutId: analysis.snapshot.layoutId });
+      logger.error("Regeneration failed", {
+        error: error instanceof Error ? error.message : String(error),
+        layoutId: analysis.snapshot.layoutId,
+      });
       alert("Failed to regenerate analysis. Please try again.");
     } finally {
       setRegenerating(false);

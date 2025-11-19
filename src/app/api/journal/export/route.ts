@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       fileName
     });
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as any, {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

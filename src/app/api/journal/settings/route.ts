@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     logger.error("Get journal settings error", {
       error: error instanceof Error ? error.message : String(error)
     });
-    return createErrorResponse(error, "Failed to get journal settings");
+    return createErrorResponse(error, 500);
   }
 }
 
@@ -86,6 +86,6 @@ export async function PATCH(request: NextRequest) {
     logger.error("Update journal settings error", {
       error: error instanceof Error ? error.message : String(error)
     });
-    return createErrorResponse(error, "Failed to update journal settings");
+    return createErrorResponse(error, 500);
   }
 }

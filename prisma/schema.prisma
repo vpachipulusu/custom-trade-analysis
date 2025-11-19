@@ -15,7 +15,17 @@ model User {
   firebaseUid           String     @unique
   email                 String     @unique
   createdAt             DateTime   @default(now())
-  
+  updatedAt             DateTime   @default(now()) @updatedAt
+
+  // Profile fields
+  displayName           String?
+  photoURL              String?
+  bio                   String?    @db.Text
+  phoneNumber           String?
+  location              String?
+  website               String?
+  lastLoginAt           DateTime?
+
   // Subscription fields
   stripeCustomerId      String?    @unique
   stripeSubscriptionId  String?    @unique
@@ -23,16 +33,21 @@ model User {
   stripeCurrentPeriodEnd DateTime?
   subscriptionTier      String     @default("free") // free, pro, enterprise
   subscriptionStatus    String     @default("inactive") // inactive, active, canceled, past_due
-  
+
   layouts               Layout[]
   analyses              Analysis[]
   automationSchedules   AutomationSchedule[]
   telegramConfig        TelegramConfig?
-  
+
   // Trading Journal
   journalSettings       JournalSettings?
   trades                Trade[]
   monthlyStats          MonthlyStats[]
+
+  // Profile features
+  settings              UserSettings?
+  notifications         Notification[]
+  loginHistory          LoginHistory[]
 }
 
 model Layout {
@@ -349,5 +364,61 @@ model MonthlyStats {
   
   @@unique([userId, year, month])
   @@index([userId, year, month])
+}
+
+// ==================== USER PROFILE & SETTINGS MODELS ====================
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Notification Preferences
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(true)
+  marketingEmails       Boolean  @default(false)
+  securityAlerts        Boolean  @default(true)
+  notificationFrequency String   @default("instant") // instant, daily, weekly
+
+  // Security Settings
+  twoFactorEnabled      Boolean  @default(false)
+  lastPasswordChange    DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String    // "info", "success", "warning", "error", "security"
+  title       String
+  message     String    @db.Text
+  read        Boolean   @default(false)
+  actionUrl   String?   // Optional link for the notification
+
+  createdAt   DateTime  @default(now())
+  readAt      DateTime?
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model LoginHistory {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  location    String?  // City, Country
+  device      String?  // Device type (Desktop, Mobile, etc.)
+  browser     String?  // Browser name
+
+  loginAt     DateTime @default(now())
+
+  @@index([userId, loginAt])
 }
 

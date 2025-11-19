@@ -23,8 +23,10 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import BookIcon from "@mui/icons-material/Book";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLogger } from "@/lib/logging";
+import { useUnreadCount } from "@/hooks/useNotifications";
 import styles from "./Layout.module.scss";
 
 interface LayoutProps {
@@ -37,6 +39,7 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openTradesCount, setOpenTradesCount] = useState(0);
   const { user, logout } = useAuth();
+  const { data: unreadCount = 0 } = useUnreadCount();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -113,6 +116,9 @@ export default function Layout({ children }: LayoutProps) {
         <ListItem button onClick={() => router.push("/economic-calendar")}>
           <ListItemText primary="Economic Calendar" />
         </ListItem>
+        <ListItem button onClick={() => router.push("/profile")}>
+          <ListItemText primary="Profile Settings" />
+        </ListItem>
       </List>
     </Box>
   );
@@ -173,13 +179,23 @@ export default function Layout({ children }: LayoutProps) {
           <Box sx={{ flexGrow: 1 }} />
 
           {user && (
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Typography
                 variant="body2"
-                sx={{ mr: 2, display: { xs: "none", sm: "block" } }}
+                sx={{ mr: 1, display: { xs: "none", sm: "block" } }}
               >
                 {user.email}
               </Typography>
+              <IconButton
+                size="large"
+                aria-label="notifications"
+                onClick={() => router.push("/profile/notifications")}
+                color="inherit"
+              >
+                <Badge badgeContent={unreadCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
               <IconButton
                 size="large"
                 aria-label="account of current user"
@@ -207,6 +223,14 @@ export default function Layout({ children }: LayoutProps) {
               >
                 <MenuItem disabled>
                   <Typography variant="body2">{user.email}</Typography>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleClose();
+                    router.push("/profile");
+                  }}
+                >
+                  Profile Settings
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>

@@ -74,16 +74,19 @@ IMPORTANT ANALYSIS REQUIREMENTS:
 - Include trend analysis, support/resistance, indicators, and patterns
 - Mention specific price levels visible on the chart
 
-PRICE PRECISION BY INSTRUMENT (CRITICAL):
+PRICE PRECISION BY INSTRUMENT (CRITICAL - NO ROUNDING):
 - BTC/BTCUSD: TENS OF THOUSANDS range (80,000-100,000+)
-  ✓ CORRECT: 90327.00, 92658.00, 88450.75
+  ✓ CORRECT: 90327.00, 91330.00, 92658.50, 88450.75, 95000.00
   ✗ WRONG: 90.327, 92.658, 88.450 (THESE ARE NOT BITCOIN PRICES!)
+  ✗ WRONG: 91000 (ROUNDED - should be 91330)
+  ✗ WRONG: 89000 (ROUNDED - should be 89189 or exact value from chart)
 - Gold/XAUUSD: THOUSANDS range (2,000-3,000)
   ✓ CORRECT: 2658.50, 2635.00, 2680.75
   ✗ WRONG: 2.658, 2.635, 2.680 (THESE ARE NOT GOLD PRICES!)
+  ✗ WRONG: 2660 (ROUNDED - use exact value like 2658.50)
 - Forex pairs (EUR/USD, GBP/USD): Use 4-5 decimals (e.g., 1.15920, NOT 1.16)
 - JPY pairs (USD/JPY): Use 2-3 decimals (e.g., 149.875)
-- Read EXACT values from the right side price scale
+- Read EXACT values from the right side price scale - DO NOT ROUND TO NEAREST THOUSAND
 
 STOP LOSS PLACEMENT RULES:
 - For SELL: Stop Loss MUST be ABOVE entry (at resistance or swing high)
@@ -92,10 +95,12 @@ STOP LOSS PLACEMENT RULES:
 - Never place entry and stop at the same price level
 - Stop should be at a logical technical level (support/resistance, swing point)
 
-TRADE SETUP REQUIREMENTS (ALL FIELDS REQUIRED - NO NULL VALUES):
-- entryPrice: Current market price with full precision (e.g., 1.1592 for EUR/USD) - REQUIRED
-- stopLoss: Swing high/low or S/R level with proper distance from entry - REQUIRED
-- targetPrice: Next major S/R level or measured move target - REQUIRED, NEVER null
+TRADE SETUP REQUIREMENTS (ALL FIELDS REQUIRED - NO NULL VALUES, NO ROUNDING):
+- entryPrice: EXACT current market price with full precision - REQUIRED, DO NOT ROUND
+  * For BTC at 91,330: Use 91330.00 NOT 91000
+  * For BTC at 89,189: Use 89189.00 NOT 89000
+- stopLoss: EXACT swing high/low or S/R level - REQUIRED, DO NOT ROUND
+- targetPrice: EXACT next major S/R level or measured move target - REQUIRED, DO NOT ROUND
 - riskRewardRatio: Must be calculated correctly - (target-entry)/(entry-stop) for SELL - REQUIRED
 - setupDescription: Multi-sentence explanation covering:
   * Why enter at this specific price
@@ -127,9 +132,17 @@ EXAMPLE for EUR/USD at 1.1592:
   }
 }
 
-IMPORTANT: ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) must have numeric values.
-Only set tradeSetup to null/undefined if the chart is completely unreadable.
-If you can see the chart and prices, you MUST provide all four numeric values.`;
+CRITICAL FINAL INSTRUCTIONS:
+1. ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) must have EXACT numeric values
+2. DO NOT ROUND prices to nearest thousand (e.g., don't use 91000 when chart shows 91330)
+3. Read the EXACT price from the chart's right-side price scale
+4. Use the SAME precise prices in both the JSON fields AND the setupDescription
+5. Only set tradeSetup to null/undefined if the chart is completely unreadable
+
+Example of CORRECT precision:
+- If chart shows 91,330: Use "entryPrice": 91330 (NOT 91000)
+- If chart shows 89,189: Use "stopLoss": 89189 (NOT 89000)
+- If chart shows 95,400: Use "targetPrice": 95400 (NOT 95000)`;
 
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o
@@ -884,9 +897,18 @@ EXAMPLE for BTCUSD at 90327 (Daily + 4H charts):
   }
 }
 
-CRITICAL: ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) MUST have numeric values.
-Never use null for these fields - always provide actual numbers based on chart analysis.
-Only omit tradeSetup entirely if charts are completely unreadable.
+CRITICAL FINAL INSTRUCTIONS:
+1. ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) MUST have EXACT numeric values
+2. DO NOT ROUND prices to nearest thousand (e.g., don't use 91000 when chart shows 91330)
+3. Read the EXACT price from each chart's right-side price scale
+4. Use the SAME precise prices in both the JSON fields AND the setupDescription
+5. Never use null for these fields - always provide actual numbers based on chart analysis
+6. Only omit tradeSetup entirely if charts are completely unreadable
+
+Example of CORRECT precision for BTC:
+- If chart shows 91,330: Use "entryPrice": 91330 (NOT 91000)
+- If chart shows 89,189: Use "stopLoss": 89189 (NOT 89000)
+- If chart shows 95,400: Use "targetPrice": 95400 (NOT 95000)
 
 Provide ONLY valid JSON output. No additional text or formatting.`;
 

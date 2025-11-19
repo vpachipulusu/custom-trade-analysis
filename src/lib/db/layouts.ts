@@ -5,16 +5,12 @@ export interface CreateLayoutData {
   layoutId?: string | null;
   symbol?: string | null;
   interval?: string | null;
-  sessionid?: string | null;
-  sessionidSign?: string | null;
 }
 
 export interface UpdateLayoutData {
   layoutId?: string | null;
   symbol?: string | null;
   interval?: string | null;
-  sessionid?: string | null;
-  sessionidSign?: string | null;
 }
 
 /**
@@ -30,8 +26,6 @@ export async function createLayout(
       layoutId: data.layoutId,
       symbol: data.symbol,
       interval: data.interval,
-      sessionid: data.sessionid,
-      sessionidSign: data.sessionidSign,
     },
   });
 }
@@ -81,8 +75,6 @@ export async function updateLayout(
       layoutId: data.layoutId,
       symbol: data.symbol,
       interval: data.interval,
-      sessionid: data.sessionid,
-      sessionidSign: data.sessionidSign,
     },
   });
 }

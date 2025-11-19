@@ -44,8 +44,6 @@ export default function AddLayoutDialog({
     layoutId: "",
     symbol: "",
     interval: "60",
-    sessionid: "",
-    sessionidSign: "",
   });
   const [error, setError] = useState("");
 
@@ -66,8 +64,6 @@ export default function AddLayoutDialog({
         layoutId: formData.layoutId || undefined,
         symbol: formData.symbol || undefined,
         interval: formData.interval || undefined,
-        sessionid: formData.sessionid || undefined,
-        sessionidSign: formData.sessionidSign || undefined,
       };
 
       await createLayout.mutateAsync(dataToSubmit);
@@ -83,8 +79,6 @@ export default function AddLayoutDialog({
       layoutId: "",
       symbol: "",
       interval: "60",
-      sessionid: "",
-      sessionidSign: "",
     });
     setError("");
     onClose();
@@ -151,40 +145,9 @@ export default function AddLayoutDialog({
             ))}
           </TextField>
 
-          <Accordion sx={{ mt: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Advanced Options</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mb: 2, display: "block" }}
-              >
-                For private charts with session authentication
-              </Typography>
-              <TextField
-                label="Session ID"
-                fullWidth
-                margin="normal"
-                value={formData.sessionid}
-                onChange={(e) =>
-                  setFormData({ ...formData, sessionid: e.target.value })
-                }
-                type="password"
-              />
-              <TextField
-                label="Session ID Sign"
-                fullWidth
-                margin="normal"
-                value={formData.sessionidSign}
-                onChange={(e) =>
-                  setFormData({ ...formData, sessionidSign: e.target.value })
-                }
-                type="password"
-              />
-            </AccordionDetails>
-          </Accordion>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
+            Note: TradingView session credentials are now managed globally in your Profile settings.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

@@ -15,8 +15,6 @@ export interface CreateLayoutData {
   layoutId?: string;
   symbol?: string;
   interval?: string;
-  sessionid?: string;
-  sessionidSign?: string;
 }
 
 export interface UpdateLayoutData extends CreateLayoutData {}

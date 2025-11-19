@@ -48,8 +48,6 @@ export default function EditLayoutDialog({
     layoutId: layout.layoutId || "",
     symbol: layout.symbol || "",
     interval: layout.interval || "60",
-    sessionid: "",
-    sessionidSign: "",
   });
   const [error, setError] = useState("");
 
@@ -60,8 +58,6 @@ export default function EditLayoutDialog({
       layoutId: layout.layoutId || "",
       symbol: layout.symbol || "",
       interval: layout.interval || "60",
-      sessionid: "",
-      sessionidSign: "",
     });
   }, [layout]);
 
@@ -80,18 +76,10 @@ export default function EditLayoutDialog({
         layoutId: formData.layoutId || undefined,
         symbol: formData.symbol || undefined,
         interval: formData.interval || undefined,
-        // Only send sessionid/sessionidSign if user typed something
-        // Empty string means keep existing, so don't send it
-        ...(formData.sessionid && { sessionid: formData.sessionid }),
-        ...(formData.sessionidSign && {
-          sessionidSign: formData.sessionidSign,
-        }),
       };
 
       logger.debug("Submitting layout update", {
         layoutId: layout.id,
-        hasSessionId: !!dataToSubmit.sessionid,
-        hasSessionIdSign: !!dataToSubmit.sessionidSign,
       });
 
       await updateLayout.mutateAsync({ id: layout.id, data: dataToSubmit });
@@ -166,66 +154,9 @@ export default function EditLayoutDialog({
             ))}
           </TextField>
 
-          <Accordion sx={{ mt: 2 }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>Advanced Options</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mb: 2, display: "block" }}
-              >
-                <strong>Required for snapshot generation:</strong> TradingView
-                session credentials allow the snapshot API to access your saved
-                chart layouts with drawings.
-              </Typography>
-              <Typography
-                variant="caption"
-                color="info.main"
-                sx={{
-                  mb: 2,
-                  display: "block",
-                  fontFamily: "monospace",
-                  fontSize: "0.75rem",
-                }}
-              >
-                📋 How to get credentials:
-                <br />
-                1. Go to tradingview.com (logged in)
-                <br />
-                2. Open browser DevTools (F12)
-                <br />
-                3. Go to Application → Cookies → tradingview.com
-                <br />
-                4. Copy "sessionid" value → paste below
-                <br />
-                5. Copy "sessionid_sign" value → paste below
-              </Typography>
-              <TextField
-                label="Session ID"
-                fullWidth
-                margin="normal"
-                value={formData.sessionid}
-                onChange={(e) =>
-                  setFormData({ ...formData, sessionid: e.target.value })
-                }
-                placeholder="Paste sessionid cookie value"
-                helperText="Leave blank to keep existing value"
-              />
-              <TextField
-                label="Session ID Sign"
-                fullWidth
-                margin="normal"
-                value={formData.sessionidSign}
-                onChange={(e) =>
-                  setFormData({ ...formData, sessionidSign: e.target.value })
-                }
-                placeholder="Paste sessionid_sign cookie value"
-                helperText="Leave blank to keep existing value"
-              />
-            </AccordionDetails>
-          </Accordion>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
+            Note: TradingView session credentials are now managed globally in your Profile settings.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

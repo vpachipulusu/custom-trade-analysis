@@ -34,6 +34,10 @@ model User {
   subscriptionTier      String     @default("free") // free, pro, enterprise
   subscriptionStatus    String     @default("inactive") // inactive, active, canceled, past_due
 
+  // TradingView session credentials (shared across all layouts)
+  tvSessionId           String?
+  tvSessionIdSign       String?
+
   layouts               Layout[]
   analyses              Analysis[]
   automationSchedules   AutomationSchedule[]
@@ -57,8 +61,6 @@ model Layout {
   layoutId       String?
   symbol         String?
   interval       String?
-  sessionid      String?
-  sessionidSign  String?
   createdAt      DateTime   @default(now())
   snapshots      Snapshot[]
   automationSchedule AutomationSchedule?

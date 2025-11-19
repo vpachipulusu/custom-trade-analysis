@@ -51,12 +51,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user's TradingView session credentials
+    const { getUserById } = await import("@/lib/db/users");
+    const user = await getUserById(authResult.user.userId);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Decrypt sessionid (it's encrypted in the database)
-    let decryptedSessionId = layout.sessionid;
+    let decryptedSessionId = user.tvSessionId;
     try {
-      if (layout.sessionid && layout.sessionid.includes(":")) {
+      if (user.tvSessionId && user.tvSessionId.includes(":")) {
         // Check if it's encrypted (format: iv:encryptedData)
-        decryptedSessionId = decrypt(layout.sessionid);
+        decryptedSessionId = decrypt(user.tvSessionId);
         logger.debug("Decrypted sessionid", {
           sessionIdLength: decryptedSessionId.length,
           layoutId
@@ -75,25 +83,25 @@ export async function POST(request: NextRequest) {
     let snapshotResult: { url: string; expiresAt: Date };
 
     // Debug: Log what we have
-    logger.debug("Layout data for snapshot", {
+    logger.debug("Layout and user data for snapshot", {
       hasLayoutId: !!layout.layoutId,
-      hasSessionid: !!layout.sessionid,
-      hasSessionidSign: !!layout.sessionidSign,
+      hasTvSessionId: !!user.tvSessionId,
+      hasTvSessionIdSign: !!user.tvSessionIdSign,
       layoutId: layout.layoutId,
     });
 
     // Use Puppeteer ONLY - CHART-IMG is disabled
-    if (!layout.layoutId || !decryptedSessionId || !layout.sessionidSign) {
+    if (!layout.layoutId || !decryptedSessionId || !user.tvSessionIdSign) {
       logger.warn("Missing required credentials for Puppeteer screenshot", {
         hasLayoutId: !!layout.layoutId,
         hasSessionid: !!decryptedSessionId,
-        hasSessionidSign: !!layout.sessionidSign,
+        hasSessionidSign: !!user.tvSessionIdSign,
         layoutId
       });
       return NextResponse.json(
         {
           error:
-            "Missing required credentials (layoutId, sessionid, or sessionidSign) for Puppeteer screenshot",
+            "Missing TradingView session credentials. Please update your session credentials in Profile > TradingView Session.",
         },
         { status: 400 }
       );
@@ -106,7 +114,7 @@ export async function POST(request: NextRequest) {
     const screenshotDataUrl = await captureWithPuppeteer({
       layoutId: layout.layoutId,
       sessionid: decryptedSessionId,
-      sessionidSign: layout.sessionidSign,
+      sessionidSign: user.tvSessionIdSign,
       width: 1920,
       height: 1080,
     });

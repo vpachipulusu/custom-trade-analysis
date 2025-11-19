@@ -95,3 +95,32 @@ export async function deleteLayout(id: string): Promise<void> {
     where: { id },
   });
 }
+
+/**
+ * Get all layouts for a specific symbol by user
+ */
+export async function getLayoutsBySymbol(
+  userId: string,
+  symbol: string
+): Promise<Layout[]> {
+  return await prisma.layout.findMany({
+    where: {
+      userId,
+      symbol: {
+        equals: symbol,
+        mode: "insensitive", // Case-insensitive search
+      },
+    },
+    include: {
+      snapshots: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1, // Get only the latest snapshot
+      },
+    },
+    orderBy: {
+      interval: "asc", // Order by timeframe (D, 240, 60, etc.)
+    },
+  });
+}

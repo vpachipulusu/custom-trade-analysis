@@ -12,12 +12,14 @@ import {
   Box,
   Chip,
   Typography,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
 import { format } from "date-fns";
 import { Layout } from "@/hooks/useLayouts";
 import { useDeleteLayout } from "@/hooks/useLayouts";
@@ -26,6 +28,7 @@ import EditLayoutDialog from "./EditLayoutDialog";
 import ViewSnapshotsDialog from "./ViewSnapshotsDialog";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
+import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
 
 interface LayoutsTableProps {
@@ -63,6 +66,7 @@ export default function LayoutsTable({
 
   const deleteLayout = useDeleteLayout();
   const createSnapshot = useCreateSnapshot();
+  const createSymbolAnalysis = useCreateSymbolAnalysis();
   const router = useRouter();
 
   const handleDelete = async () => {
@@ -71,7 +75,10 @@ export default function LayoutsTable({
         await deleteLayout.mutateAsync(deleteDialog.layoutId);
         setDeleteDialog({ open: false, layoutId: null });
       } catch (error) {
-        logger.error("Delete failed", { error, layoutId: deleteDialog.layoutId });
+        logger.error("Delete failed", {
+          error,
+          layoutId: deleteDialog.layoutId,
+        });
       }
     }
   };
@@ -83,6 +90,29 @@ export default function LayoutsTable({
       logger.error("Snapshot generation failed", { error, layoutId });
     }
   };
+
+  const handleAnalyzeSymbol = async (symbol: string) => {
+    try {
+      const analysis = await createSymbolAnalysis.mutateAsync(symbol);
+      logger.info("Symbol analysis completed", {
+        symbol,
+        analysisId: analysis.id,
+      });
+      router.push(`/analysis/${analysis.id}`);
+    } catch (error) {
+      logger.error("Symbol analysis failed", { error, symbol });
+    }
+  };
+
+  // Group layouts by symbol to show multi-layout analyze option
+  const layoutsBySymbol = layouts.reduce((acc, layout) => {
+    const symbol = layout.symbol || "Unknown";
+    if (!acc[symbol]) {
+      acc[symbol] = [];
+    }
+    acc[symbol].push(layout);
+    return acc;
+  }, {} as Record<string, Layout[]>);
 
   if (layouts.length === 0) {
     return (
@@ -135,71 +165,102 @@ export default function LayoutsTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {layouts.map((layout) => (
-              <TableRow key={layout.id}>
-                <TableCell>{layout.symbol || "-"}</TableCell>
-                <TableCell>{layout.interval || "-"}</TableCell>
-                <TableCell>
-                  {layout.layoutId ? (
-                    <Chip label={layout.layoutId} size="small" />
-                  ) : (
-                    "-"
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={layout.snapshotCount}
-                    size="small"
-                    color="primary"
-                  />
-                </TableCell>
-                <TableCell>
-                  {format(new Date(layout.createdAt), "MMM dd, yyyy")}
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    title="Generate Snapshot"
-                    onClick={() => handleGenerateSnapshot(layout.id)}
-                    disabled={createSnapshot.isPending}
-                  >
-                    <CameraAltIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="info"
-                    title="View Snapshots"
-                    onClick={() =>
-                      setViewSnapshotsDialog({
-                        open: true,
-                        layoutId: layout.id,
-                      })
-                    }
-                  >
-                    <PhotoLibraryIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="secondary"
-                    title="Edit"
-                    onClick={() => setEditDialog({ open: true, layout })}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    title="Delete"
-                    onClick={() =>
-                      setDeleteDialog({ open: true, layoutId: layout.id })
-                    }
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+            {layouts.map((layout) => {
+              const symbolLayoutCount = layout.symbol
+                ? layoutsBySymbol[layout.symbol]?.length || 0
+                : 0;
+              const hasMultipleLayouts = symbolLayoutCount > 1;
+
+              return (
+                <TableRow key={layout.id}>
+                  <TableCell>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {layout.symbol || "-"}
+                      {hasMultipleLayouts && (
+                        <Chip
+                          label={`${symbolLayoutCount} layouts`}
+                          size="small"
+                          color="secondary"
+                          variant="outlined"
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>{layout.interval || "-"}</TableCell>
+                  <TableCell>
+                    {layout.layoutId ? (
+                      <Chip label={layout.layoutId} size="small" />
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={layout.snapshotCount}
+                      size="small"
+                      color="primary"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(layout.createdAt), "MMM dd, yyyy")}
+                  </TableCell>
+                  <TableCell align="right">
+                    {hasMultipleLayouts && layout.symbol && (
+                      <Tooltip title="Analyze all layouts for this symbol">
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleAnalyzeSymbol(layout.symbol!)}
+                          disabled={createSymbolAnalysis.isPending}
+                        >
+                          <AnalyticsIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      title="Generate Snapshot"
+                      onClick={() => handleGenerateSnapshot(layout.id)}
+                      disabled={createSnapshot.isPending}
+                    >
+                      <CameraAltIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="info"
+                      title="View Snapshots"
+                      onClick={() =>
+                        setViewSnapshotsDialog({
+                          open: true,
+                          layoutId: layout.id,
+                        })
+                      }
+                    >
+                      <PhotoLibraryIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="secondary"
+                      title="Edit"
+                      onClick={() => setEditDialog({ open: true, layout })}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      title="Delete"
+                      onClick={() =>
+                        setDeleteDialog({ open: true, layoutId: layout.id })
+                      }
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

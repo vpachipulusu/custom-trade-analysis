@@ -111,3 +111,30 @@ export function useCreateAnalysis() {
     },
   });
 }
+
+// Create analysis from symbol (analyzes all layouts for that symbol)
+export function useCreateSymbolAnalysis() {
+  const { getAuthToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (symbol: string) => {
+      const token = await getAuthToken();
+      const response = await axios.post(
+        "/api/analyze",
+        { symbol },
+        {
+          headers: { Authorization: token },
+        }
+      );
+      return response.data as Analysis & {
+        layoutsAnalyzed: number;
+        intervals: string[];
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analyses"] });
+      queryClient.invalidateQueries({ queryKey: ["snapshots"] });
+    },
+  });
+}

@@ -6,7 +6,12 @@ import {
   getAnalysisBySnapshotId,
   updateAnalysis,
 } from "@/lib/db/analyses";
-import { analyzeChart, analyzeEconomicImpact } from "@/lib/services/openai";
+import {
+  analyzeChart,
+  analyzeEconomicImpact,
+  analyzeMultiTimeframeCharts,
+  analyzeMultipleLayouts,
+} from "@/lib/services/openai";
 import {
   fetchEconomicEvents,
   filterEventsByTimeframe,
@@ -20,10 +25,12 @@ import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { getLogger, LogContext } from "@/lib/logging";
 import { performanceLogger } from "@/lib/logging/middleware/performanceLogger";
 import { logExternalAPI, logUserAction } from "@/lib/logging/helpers";
+import { getLayoutsBySymbol } from "@/lib/db/layouts";
+import { createSnapshot } from "@/lib/db/snapshots";
 
 /**
  * POST /api/analyze
- * Analyze a snapshot using AI
+ * Analyze a snapshot using AI, or analyze all layouts for a symbol
  */
 export async function POST(request: NextRequest) {
   const logger = getLogger();
@@ -37,16 +44,262 @@ export async function POST(request: NextRequest) {
     // Set user context for all logs in this request
     LogContext.set({
       userId: authResult.user.userId,
-      userEmail: authResult.user.email
+      userEmail: authResult.user.email,
     });
 
-    logger.info('Analysis request started', { userId: authResult.user.userId });
+    logger.info("Analysis request started", { userId: authResult.user.userId });
 
     const body = await request.json();
-    const { snapshotId } = body;
+    const { snapshotId, symbol } = body;
 
+    // Two modes: single snapshot analysis OR symbol-based multi-layout analysis
+    if (!snapshotId && !symbol) {
+      logger.warn("Analysis request missing both snapshotId and symbol", {
+        userId: authResult.user.userId,
+      });
+      return NextResponse.json(
+        { error: "Either snapshotId or symbol is required" },
+        { status: 400 }
+      );
+    }
+
+    // Mode 1: Analyze multiple layouts for a symbol
+    if (symbol) {
+      try {
+        logger.info("Symbol-based multi-layout analysis requested", {
+          symbol,
+          userId: authResult.user.userId,
+        });
+
+        logUserAction(authResult.user.userId, "analyze_symbol", { symbol });
+
+        // Get all layouts for this symbol
+        const layouts = await getLayoutsBySymbol(
+          authResult.user.userId,
+          symbol
+        );
+
+        if (!layouts || layouts.length === 0) {
+          logger.warn("No layouts found for symbol", {
+            symbol,
+            userId: authResult.user.userId,
+          });
+          return NextResponse.json(
+            { error: `No layouts found for symbol ${symbol}` },
+            { status: 404 }
+          );
+        }
+
+        logger.info("Found layouts for symbol", {
+          symbol,
+          layoutCount: layouts.length,
+          intervals: layouts.map((l) => l.interval).join(", "),
+        });
+
+        // Get the latest snapshot for each layout
+        // Cast to any to work around Prisma type limitations
+        logger.debug("Processing layouts for snapshots", {
+          symbol,
+          layoutsCount: layouts.length,
+        });
+
+        const layoutsWithSnapshots = (layouts as any[])
+          .filter((layout) => layout.snapshots && layout.snapshots.length > 0)
+          .map((layout) => ({
+            layoutId: layout.id,
+            interval: layout.interval || "Unknown",
+            imageUrl: layout.snapshots[0].url,
+            snapshotId: layout.snapshots[0].id,
+          }));
+
+        logger.debug("Filtered layouts with snapshots", {
+          symbol,
+          layoutsWithSnapshotsCount: layoutsWithSnapshots.length,
+          snapshots: layoutsWithSnapshots.map((l) => ({
+            interval: l.interval,
+            hasImageUrl: !!l.imageUrl,
+          })),
+        });
+
+        if (layoutsWithSnapshots.length === 0) {
+          logger.warn("No snapshots found for any layout of symbol", {
+            symbol,
+            userId: authResult.user.userId,
+          });
+          return NextResponse.json(
+            {
+              error: `No snapshots found for layouts of ${symbol}. Please generate snapshots first.`,
+            },
+            { status: 404 }
+          );
+        }
+
+        logger.info("Analyzing multiple layouts", {
+          symbol,
+          layoutCount: layoutsWithSnapshots.length,
+          intervals: layoutsWithSnapshots.map((l) => l.interval).join(", "),
+        });
+
+        // Analyze multiple layouts together
+        const analysisResult = await performanceLogger.measure(
+          "openai_multi_layout_analysis",
+          async () => {
+            const startTime = Date.now();
+            const result = await analyzeMultipleLayouts(layoutsWithSnapshots);
+            const duration = Date.now() - startTime;
+
+            logExternalAPI(
+              "OpenAI",
+              "/v1/chat/completions",
+              "POST",
+              200,
+              duration
+            );
+
+            return result;
+          },
+          { symbol, layoutCount: layoutsWithSnapshots.length }
+        );
+
+        // Use the most recent snapshot for storing the analysis
+        const primarySnapshotId = layoutsWithSnapshots[0].snapshotId;
+
+        // Check if analysis already exists for this snapshot
+        const existingAnalysis = await getAnalysisBySnapshotId(
+          primarySnapshotId
+        );
+
+        let analysis;
+        if (existingAnalysis) {
+          analysis = await updateAnalysis(existingAnalysis.id, {
+            action: analysisResult.action,
+            confidence: analysisResult.confidence,
+            timeframe: analysisResult.timeframe,
+            reasons: analysisResult.reasons,
+            tradeSetup: analysisResult.tradeSetup,
+          });
+        } else {
+          analysis = await createAnalysis(
+            authResult.user.userId,
+            primarySnapshotId,
+            {
+              action: analysisResult.action,
+              confidence: analysisResult.confidence,
+              timeframe: analysisResult.timeframe,
+              reasons: analysisResult.reasons,
+              tradeSetup: analysisResult.tradeSetup,
+            }
+          );
+        }
+
+        // Fetch and analyze economic context
+        let economicContext = null;
+        try {
+          logger.info("Fetching economic context", {
+            symbol,
+            analysisId: analysis.id,
+          });
+
+          const { currencies, countries } = parseSymbolCurrencies(symbol);
+
+          const now = new Date();
+          const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
+          const sevenDaysAhead = new Date(
+            now.getTime() + 7 * 24 * 60 * 60 * 1000
+          );
+
+          const allEvents = await fetchEconomicEvents({
+            startDate: oneHourBefore,
+            endDate: sevenDaysAhead,
+            countries: countries.length > 0 ? countries : undefined,
+            currencies: currencies.length > 0 ? currencies : undefined,
+          });
+
+          const { upcomingEvents, weeklyEvents } = filterEventsByTimeframe(
+            allEvents,
+            now
+          );
+
+          if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
+            const economicImpact = await analyzeEconomicImpact({
+              symbol,
+              action: analysisResult.action,
+              confidence: analysisResult.confidence,
+              upcomingEvents,
+              weeklyEvents,
+            });
+
+            const existingContext = await getEconomicContextByAnalysisId(
+              analysis.id
+            );
+
+            if (!existingContext) {
+              economicContext = await createEconomicContext({
+                analysisId: analysis.id,
+                symbol,
+                upcomingEvents: upcomingEvents.map((e) => ({
+                  ...e,
+                  date: e.date.toISOString(),
+                })),
+                weeklyEvents: weeklyEvents.map((e) => ({
+                  ...e,
+                  date: e.date.toISOString(),
+                })),
+                immediateRisk: economicImpact.immediateRisk,
+                weeklyOutlook: economicImpact.weeklyOutlook,
+                impactSummary: economicImpact.impactSummary,
+                warnings: economicImpact.warnings,
+                opportunities: economicImpact.opportunities,
+                recommendation: economicImpact.recommendation,
+              });
+            }
+          }
+        } catch (economicError) {
+          logger.error("Error fetching economic context", {
+            error:
+              economicError instanceof Error
+                ? economicError.message
+                : "Unknown error",
+          });
+        }
+
+        logger.info("Multi-layout analysis completed", {
+          symbol,
+          layoutCount: layoutsWithSnapshots.length,
+          action: analysis.action,
+          confidence: analysis.confidence,
+        });
+
+        return NextResponse.json(
+          {
+            ...analysis,
+            economicContext,
+            layoutsAnalyzed: layoutsWithSnapshots.length,
+            intervals: layoutsWithSnapshots.map((l) => l.interval),
+          },
+          { status: existingAnalysis ? 200 : 201 }
+        );
+      } catch (symbolAnalysisError) {
+        logger.error("Symbol-based analysis failed", {
+          error:
+            symbolAnalysisError instanceof Error
+              ? symbolAnalysisError.message
+              : "Unknown error",
+          stack:
+            symbolAnalysisError instanceof Error
+              ? symbolAnalysisError.stack
+              : undefined,
+          symbol,
+        });
+        return createErrorResponse(symbolAnalysisError, 500);
+      }
+    }
+
+    // Mode 2: Single snapshot analysis (original behavior)
     if (!snapshotId) {
-      logger.warn('Analysis request missing snapshotId', { userId: authResult.user.userId });
+      logger.warn("Analysis request missing snapshotId", {
+        userId: authResult.user.userId,
+      });
       return NextResponse.json(
         { error: "snapshotId is required" },
         { status: 400 }
@@ -54,26 +307,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Log user action
-    logUserAction(authResult.user.userId, 'analyze_chart', { snapshotId });
+    logUserAction(authResult.user.userId, "analyze_chart", { snapshotId });
 
     // Get snapshot and verify ownership
     const snapshot = await getSnapshotById(snapshotId);
     if (!snapshot) {
-      logger.warn('Snapshot not found', { snapshotId, userId: authResult.user.userId });
+      logger.warn("Snapshot not found", {
+        snapshotId,
+        userId: authResult.user.userId,
+      });
       return NextResponse.json(
         { error: "Snapshot not found" },
         { status: 404 }
       );
     }
 
+    // Cast to any to work around Prisma type limitations
+    const snapshotWithLayout = snapshot as any;
+
     if (
-      !snapshot.layout?.user ||
-      !verifyOwnership(authResult.user.userId, snapshot.layout.user.id)
+      !snapshotWithLayout.layout?.user ||
+      !verifyOwnership(
+        authResult.user.userId,
+        snapshotWithLayout.layout.user.id
+      )
     ) {
-      logger.warn('Unauthorized snapshot access attempt', {
+      logger.warn("Unauthorized snapshot access attempt", {
         snapshotId,
         userId: authResult.user.userId,
-        ownerId: snapshot.layout?.user?.id
+        ownerId: snapshotWithLayout.layout?.user?.id,
       });
       return NextResponse.json(
         { error: "You do not have permission to analyze this snapshot" },
@@ -86,13 +348,13 @@ export async function POST(request: NextRequest) {
 
     // Analyze chart using OpenAI with performance tracking
     const analysisResult = await performanceLogger.measure(
-      'openai_chart_analysis',
+      "openai_chart_analysis",
       async () => {
         const startTime = Date.now();
         const result = await analyzeChart(snapshot.url);
         const duration = Date.now() - startTime;
 
-        logExternalAPI('OpenAI', '/v1/chat/completions', 'POST', 200, duration);
+        logExternalAPI("OpenAI", "/v1/chat/completions", "POST", 200, duration);
 
         return result;
       },
@@ -123,10 +385,13 @@ export async function POST(request: NextRequest) {
     // Fetch and analyze economic context if symbol is available
     let economicContext = null;
     try {
-      const symbol = snapshot.layout?.symbol;
+      const symbol = snapshotWithLayout.layout?.symbol;
 
       if (symbol) {
-        logger.info('Fetching economic context', { symbol, analysisId: analysis.id });
+        logger.info("Fetching economic context", {
+          symbol,
+          analysisId: analysis.id,
+        });
 
         // Parse symbol to get currencies/countries
         const { currencies, countries } = parseSymbolCurrencies(symbol);
@@ -153,10 +418,10 @@ export async function POST(request: NextRequest) {
 
         // Only create economic context if there are events
         if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-          logger.info('Found economic events', {
+          logger.info("Found economic events", {
             symbol,
             upcomingCount: upcomingEvents.length,
-            weeklyCount: weeklyEvents.length
+            weeklyCount: weeklyEvents.length,
           });
 
           // Get AI analysis of economic impact
@@ -194,29 +459,32 @@ export async function POST(request: NextRequest) {
               recommendation: economicImpact.recommendation,
             });
 
-            logger.info('Created economic context', {
+            logger.info("Created economic context", {
               analysisId: analysis.id,
               symbol,
-              immediateRisk: economicImpact.immediateRisk
+              immediateRisk: economicImpact.immediateRisk,
             });
           }
         } else {
-          logger.debug('No economic events found', { symbol });
+          logger.debug("No economic events found", { symbol });
         }
       }
     } catch (economicError) {
       // Log error but don't fail the analysis
-      logger.error('Error fetching economic context', {
-        error: economicError instanceof Error ? economicError.message : 'Unknown error',
-        stack: economicError instanceof Error ? economicError.stack : undefined
+      logger.error("Error fetching economic context", {
+        error:
+          economicError instanceof Error
+            ? economicError.message
+            : "Unknown error",
+        stack: economicError instanceof Error ? economicError.stack : undefined,
       });
     }
 
-    logger.info('Analysis completed successfully', {
+    logger.info("Analysis completed successfully", {
       snapshotId,
       action: analysis.action,
       confidence: analysis.confidence,
-      hasEconomicContext: !!economicContext
+      hasEconomicContext: !!economicContext,
     });
 
     // Return analysis with economic context
@@ -230,9 +498,9 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    logger.error('Analysis failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+    logger.error("Analysis failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     // Handle specific OpenAI errors

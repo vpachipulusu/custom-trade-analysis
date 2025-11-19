@@ -32,12 +32,18 @@ const OPENAI_API_KEY = process.env.OPENAI_KEY;
 const ANALYSIS_PROMPT = `You are an expert technical analyst and professional trader. Analyze the TradingView chart image and return ONLY valid JSON.
 
 CRITICAL PRICE READING INSTRUCTIONS:
-1. Look at the price scale on the RIGHT EDGE of the chart - these are the ACTUAL prices
+1. **READ THE RIGHT EDGE PRICE SCALE CAREFULLY** - Look at the actual numbers on the RIGHT side
 2. Read the current price from the TOP LEFT corner (ticker info area)
-3. Identify support/resistance levels from horizontal lines drawn on the chart
-4. Use 4-5 decimal places for forex pairs (e.g., 1.1592, not 1.16)
+3. **USE THE CORRECT PRICE MAGNITUDE** based on the instrument:
+   - BTC/BTCUSD: TENS OF THOUSANDS (e.g., 90327.00 NOT 90.327)
+   - Gold/XAUUSD: THOUSANDS (e.g., 2658.75 NOT 2.658)
+   - Forex pairs: Use 4-5 decimals (e.g., 1.15920)
+4. Identify support/resistance levels from horizontal lines drawn on the chart
 5. Entry and Stop Loss MUST be different prices with meaningful distance
-6. Stop Loss should be at least 20-50 pips away from entry for forex
+6. Minimum distances:
+   - BTC: 200-500 points (e.g., Entry 90327, Stop 89800)
+   - Gold: 10-20 points (e.g., Entry 2658.75, Stop 2645.00)
+   - Forex: 20-50 pips (e.g., Entry 1.0850, Stop 1.0830)
 
 JSON Format:
 {
@@ -54,10 +60,10 @@ JSON Format:
   ],
   "tradeSetup": {
     "quality": "A" | "B" | "C",
-    "entryPrice": <ACTUAL number with proper decimals>,
-    "stopLoss": <ACTUAL number meaningfully different from entry>,
-    "targetPrice": <ACTUAL number from chart>,
-    "riskRewardRatio": <calculated ratio>,
+    "entryPrice": <ACTUAL number with proper decimals - REQUIRED, never null>,
+    "stopLoss": <ACTUAL number meaningfully different from entry - REQUIRED, never null>,
+    "targetPrice": <ACTUAL number from chart - REQUIRED, never null>,
+    "riskRewardRatio": <calculated ratio - REQUIRED, never null>,
     "setupDescription": "detailed multi-sentence explanation with specific prices and risk management"
   }
 }
@@ -68,11 +74,15 @@ IMPORTANT ANALYSIS REQUIREMENTS:
 - Include trend analysis, support/resistance, indicators, and patterns
 - Mention specific price levels visible on the chart
 
-PRICE PRECISION BY INSTRUMENT:
+PRICE PRECISION BY INSTRUMENT (CRITICAL):
+- BTC/BTCUSD: TENS OF THOUSANDS range (80,000-100,000+)
+  ✓ CORRECT: 90327.00, 92658.00, 88450.75
+  ✗ WRONG: 90.327, 92.658, 88.450 (THESE ARE NOT BITCOIN PRICES!)
+- Gold/XAUUSD: THOUSANDS range (2,000-3,000)
+  ✓ CORRECT: 2658.50, 2635.00, 2680.75
+  ✗ WRONG: 2.658, 2.635, 2.680 (THESE ARE NOT GOLD PRICES!)
 - Forex pairs (EUR/USD, GBP/USD): Use 4-5 decimals (e.g., 1.15920, NOT 1.16)
 - JPY pairs (USD/JPY): Use 2-3 decimals (e.g., 149.875)
-- BTC/BTCUSD: Use whole numbers or 2 decimals (e.g., 92658.00)
-- Gold/XAUUSD: Use 2 decimals (e.g., 2658.50)
 - Read EXACT values from the right side price scale
 
 STOP LOSS PLACEMENT RULES:
@@ -82,11 +92,11 @@ STOP LOSS PLACEMENT RULES:
 - Never place entry and stop at the same price level
 - Stop should be at a logical technical level (support/resistance, swing point)
 
-TRADE SETUP REQUIREMENTS:
-- entryPrice: Current market price with full precision (e.g., 1.1592 for EUR/USD)
-- stopLoss: Swing high/low or S/R level with proper distance from entry
-- targetPrice: Next major S/R level or measured move target
-- riskRewardRatio: Must be calculated correctly - (target-entry)/(entry-stop) for SELL
+TRADE SETUP REQUIREMENTS (ALL FIELDS REQUIRED - NO NULL VALUES):
+- entryPrice: Current market price with full precision (e.g., 1.1592 for EUR/USD) - REQUIRED
+- stopLoss: Swing high/low or S/R level with proper distance from entry - REQUIRED
+- targetPrice: Next major S/R level or measured move target - REQUIRED, NEVER null
+- riskRewardRatio: Must be calculated correctly - (target-entry)/(entry-stop) for SELL - REQUIRED
 - setupDescription: Multi-sentence explanation covering:
   * Why enter at this specific price
   * Where stop is placed and why (swing level, S/R)
@@ -117,7 +127,9 @@ EXAMPLE for EUR/USD at 1.1592:
   }
 }
 
-If chart is unreadable or prices unclear, set tradeSetup values to null.`;
+IMPORTANT: ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) must have numeric values.
+Only set tradeSetup to null/undefined if the chart is completely unreadable.
+If you can see the chart and prices, you MUST provide all four numeric values.`;
 
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o
@@ -184,6 +196,14 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
           parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI analysis result");
+    }
+
+    // Correct price magnitudes if needed
+    if (analysisResult.tradeSetup) {
+      analysisResult.tradeSetup = validateAndCorrectTradeSetup(
+        analysisResult.tradeSetup,
+        logger
+      );
     }
 
     // Log the trade setup for debugging
@@ -444,6 +464,117 @@ EXAMPLE Multi-TF Analysis:
 }
 
 /**
+ * Detects and corrects incorrect price magnitudes (e.g., 90.327 -> 90327.00 for BTC)
+ */
+function correctPriceMagnitude(
+  price: number | null,
+  logger: any
+): number | null {
+  if (price === null || price === undefined) return null;
+
+  // Detect if price looks like it's missing magnitude (too small)
+  // BTC should be 80,000-100,000, but AI might return 80-100
+  // Only correct if price is clearly in the wrong magnitude (less than 1000 but looks like BTC/Gold)
+  if (price > 50 && price < 500) {
+    // Check if this looks like a divided-by-1000 error
+    // E.g., 90.397 should be 90397, 88.000 should be 88000
+    const correctedPrice = price * 1000;
+
+    // Only apply correction if the corrected price is in reasonable ranges
+    // BTC: 80,000-100,000, Gold: 2,000-3,000
+    if ((correctedPrice >= 80000 && correctedPrice <= 100000) ||
+        (correctedPrice >= 2000 && correctedPrice <= 3000)) {
+      logger.warn("Detected incorrect price magnitude, correcting", {
+        originalPrice: price,
+        correctedPrice,
+        multiplier: 1000,
+      });
+      return correctedPrice;
+    }
+  }
+
+  return price;
+}
+
+/**
+ * Validates and corrects trade setup prices
+ */
+function validateAndCorrectTradeSetup(
+  tradeSetup: any,
+  logger: any
+): any {
+  if (!tradeSetup) return tradeSetup;
+
+  const corrected = { ...tradeSetup };
+
+  // Log original values for debugging
+  logger.debug("Trade setup before correction", {
+    entryPrice: tradeSetup.entryPrice,
+    stopLoss: tradeSetup.stopLoss,
+    targetPrice: tradeSetup.targetPrice,
+    riskRewardRatio: tradeSetup.riskRewardRatio,
+  });
+
+  // Correct price magnitudes
+  if (tradeSetup.entryPrice !== null && tradeSetup.entryPrice !== undefined) {
+    corrected.entryPrice = correctPriceMagnitude(tradeSetup.entryPrice, logger);
+  }
+
+  if (tradeSetup.stopLoss !== null && tradeSetup.stopLoss !== undefined) {
+    corrected.stopLoss = correctPriceMagnitude(tradeSetup.stopLoss, logger);
+  }
+
+  if (tradeSetup.targetPrice !== null && tradeSetup.targetPrice !== undefined) {
+    corrected.targetPrice = correctPriceMagnitude(tradeSetup.targetPrice, logger);
+  }
+
+  // Always recalculate risk-reward ratio if we have all three prices
+  if (
+    corrected.entryPrice !== null &&
+    corrected.entryPrice !== undefined &&
+    corrected.stopLoss !== null &&
+    corrected.stopLoss !== undefined &&
+    corrected.targetPrice !== null &&
+    corrected.targetPrice !== undefined
+  ) {
+    const risk = Math.abs(corrected.entryPrice - corrected.stopLoss);
+    const reward = Math.abs(corrected.targetPrice - corrected.entryPrice);
+    if (risk > 0) {
+      const newRatio = reward / risk;
+      corrected.riskRewardRatio = newRatio;
+      logger.debug("Recalculated risk-reward ratio", {
+        entry: corrected.entryPrice,
+        stop: corrected.stopLoss,
+        target: corrected.targetPrice,
+        risk,
+        reward,
+        oldRatio: tradeSetup.riskRewardRatio,
+        newRatio,
+      });
+    }
+  } else {
+    // Log warning if any values are missing
+    logger.warn("Cannot calculate risk-reward ratio - missing prices", {
+      hasEntry: corrected.entryPrice !== null && corrected.entryPrice !== undefined,
+      hasStop: corrected.stopLoss !== null && corrected.stopLoss !== undefined,
+      hasTarget: corrected.targetPrice !== null && corrected.targetPrice !== undefined,
+      entryPrice: corrected.entryPrice,
+      stopLoss: corrected.stopLoss,
+      targetPrice: corrected.targetPrice,
+    });
+  }
+
+  logger.debug("Trade setup after correction", {
+    entryPrice: corrected.entryPrice,
+    stopLoss: corrected.stopLoss,
+    targetPrice: corrected.targetPrice,
+    riskRewardRatio: corrected.riskRewardRatio,
+  });
+
+  return corrected;
+}
+
+/**
  * Validates the analysis result structure
  */
 function validateAnalysisResult(result: any): result is AnalysisResult {
@@ -664,21 +795,32 @@ ANALYSIS METHODOLOGY:
 6. Synthesize all technical observations into one cohesive educational analysis
 
 TECHNICAL PRICE READING GUIDELINES:
-- Read ACTUAL price values from the RIGHT EDGE price scale of each chart
-- Current market price shown in TOP LEFT ticker information area  
-- **CRITICAL**: Use the EXACT price magnitude from the chart
-  * BTC/BTCUSD: Typically 80000-100000+ range (e.g., 92658.50 NOT 92.658)
-  * Gold/XAUUSD: Typically 2000-3000 range (e.g., 2658.75 NOT 2.658)
+- **CRITICAL - READ THE RIGHT EDGE PRICE SCALE CAREFULLY**: Look at the numbers on the RIGHT side of the chart
+- Current market price shown in TOP LEFT ticker information area
+- **DO NOT USE ROUNDED OR SIMPLIFIED NUMBERS**: Use the EXACT price magnitude from the chart
+  * BTC/BTCUSD: Prices are in TENS OF THOUSANDS range (80,000-100,000+)
+    ✓ CORRECT: 92658.50, 90327.00, 88450.75
+    ✗ WRONG: 92.658, 90.327, 88.450 (These are NOT Bitcoin prices!)
+  * Gold/XAUUSD: Prices are in THOUSANDS range (2000-3000)
+    ✓ CORRECT: 2658.75, 2635.00, 2680.50
+    ✗ WRONG: 2.658, 2.635, 2.680 (These are NOT Gold prices!)
   * Forex pairs: 0.5-2.0 range with 4-5 decimals (e.g., 1.15920)
   * JPY pairs: 100-160 range with 2-3 decimals (e.g., 149.875)
   * Stocks: Varies by stock (e.g., AAPL 175.50, TSLA 250.00)
-- Entry and stop loss must be MEANINGFULLY different (hundreds for BTC, not just a few points)
+- Entry and stop loss must be MEANINGFULLY different
+  * For BTC: At least 200-500 points difference (e.g., Entry 90327, Stop 89800)
+  * For Gold: At least 10-20 points difference (e.g., Entry 2658.75, Stop 2645.00)
+  * For Forex: At least 20-50 pips difference (e.g., Entry 1.0850, Stop 1.0830)
 
-PRICE EXAMPLES BY INSTRUMENT TYPE:
-- BTCUSD trading at 92500: Entry=92500, Stop=91800, Target=94200 (NOT Entry=92.5, Stop=91.8)
-- EURUSD trading at 1.0850: Entry=1.08500, Stop=1.08350, Target=1.09200
-- XAUUSD trading at 2650: Entry=2650.00, Stop=2635.00, Target=2680.00
-- USDJPY trading at 149.50: Entry=149.500, Stop=149.200, Target=150.200
+PRICE EXAMPLES BY INSTRUMENT TYPE (READ CAREFULLY):
+- BTCUSD at 90327: Entry=90327.00, Stop=89800.00, Target=91500.00
+  ✗ NEVER write: Entry=90.327, Stop=88.000, Target=94.000 (WRONG!)
+- BTCUSD at 92500: Entry=92500.00, Stop=91800.00, Target=94200.00
+  ✗ NEVER write: Entry=92.5, Stop=91.8 (WRONG!)
+- EURUSD at 1.0850: Entry=1.08500, Stop=1.08350, Target=1.09200
+- XAUUSD at 2650: Entry=2650.00, Stop=2635.00, Target=2680.00
+  ✗ NEVER write: Entry=2.650, Stop=2.635 (WRONG!)
+- USDJPY at 149.50: Entry=149.500, Stop=149.200, Target=150.200
 
 TECHNICAL ANALYSIS OUTPUT FORMAT (JSON):
 {
@@ -700,10 +842,10 @@ TECHNICAL ANALYSIS OUTPUT FORMAT (JSON):
   ],
   "tradeSetup": {
     "quality": "A" | "B" | "C",
-    "entryPrice": <number with appropriate decimals>,
-    "stopLoss": <number with meaningful distance from entry>,
-    "targetPrice": <number based on technical levels>,
-    "riskRewardRatio": <calculated ratio>,
+    "entryPrice": <number with appropriate decimals - REQUIRED, never null>,
+    "stopLoss": <number with meaningful distance from entry - REQUIRED, never null>,
+    "targetPrice": <number based on technical levels - REQUIRED, never null>,
+    "riskRewardRatio": <calculated ratio - REQUIRED, never null>,
     "setupDescription": "Educational multi-layout setup explanation: Higher timeframe [trend/bias details], Medium timeframe [key level analysis], Lower timeframe [entry timing]. Stop placement at [technical level] based on [timeframe], Target at [technical level] from [timeframe analysis]. Combined technical view supporting [confidence reasoning]."
   }
 }
@@ -719,28 +861,32 @@ CONFIDENCE ASSESSMENT:
 - Medium confidence (60-79%): Most charts agree with minor divergences
 - Lower confidence (40-59%): Charts show conflicting technical signals
 
-EXAMPLE for BTCUSD at 92500 (Daily + 4H charts):
+EXAMPLE for BTCUSD at 90327 (Daily + 4H charts):
 {
   "action": "BUY",
-  "confidence": 85,
+  "confidence": 82,
   "timeframe": "swing",
   "reasons": [
-    "Daily chart: Strong uptrend with price above 20 EMA at 90000, bullish momentum intact",
-    "4H chart: Pullback to support zone at 92000-92500, holding above previous resistance",
-    "Daily RSI at 60 showing strength without being overbought",
-    "4H chart forming higher lows, confirming uptrend continuation pattern",
-    "Volume increasing on bounces from 92000 support on both timeframes",
+    "Daily chart: Bullish falling wedge pattern breaking out, price at 90327.00",
+    "4H chart: Price holding above support at 89800.00, showing strength",
+    "Daily RSI at 55 showing bullish momentum building",
+    "4H chart forming higher lows from 89500 to 90000, confirming uptrend",
+    "Volume increasing on moves above 90000 support on both timeframes",
     "Multi-timeframe confluence: Both daily and 4H showing bullish structure"
   ],
   "tradeSetup": {
     "quality": "A",
-    "entryPrice": 92500,
-    "stopLoss": 91800,
-    "targetPrice": 94200,
-    "riskRewardRatio": 2.43,
-    "setupDescription": "Daily uptrend provides bullish bias with price above key EMAs. 4H chart shows pullback to 92000-92500 support zone with bullish rejection. Enter long at 92500 with stop below 4H swing low at 91800 (700 point risk). Target next resistance at 94200 (1700 point reward), giving 2.43:1 risk-reward. Multi-timeframe alignment and volume confirmation support high-probability setup."
+    "entryPrice": 90327.00,
+    "stopLoss": 89800.00,
+    "targetPrice": 91500.00,
+    "riskRewardRatio": 2.23,
+    "setupDescription": "Daily falling wedge breakout provides bullish bias. 4H chart shows support holding at 89800-90000 zone. Enter long at 90327 with stop below 4H swing low at 89800 (527 point risk). Target next resistance at 91500 (1173 point reward), giving 2.23:1 risk-reward. Multi-timeframe alignment confirms high-probability setup."
   }
 }
+
+CRITICAL: ALL tradeSetup fields (entryPrice, stopLoss, targetPrice, riskRewardRatio) MUST have numeric values.
+Never use null for these fields - always provide actual numbers based on chart analysis.
+Only omit tradeSetup entirely if charts are completely unreadable.
 
 Provide ONLY valid JSON output. No additional text or formatting.`;
 
@@ -852,6 +998,14 @@ Provide ONLY valid JSON output. No additional text or formatting.`;
           parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI multi-layout analysis result");
+    }
+
+    // Correct price magnitudes if needed
+    if (analysisResult.tradeSetup) {
+      analysisResult.tradeSetup = validateAndCorrectTradeSetup(
+        analysisResult.tradeSetup,
+        logger
+      );
     }
 
     logger.info("Multi-layout analysis completed", {

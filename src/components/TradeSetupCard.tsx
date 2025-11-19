@@ -33,19 +33,35 @@ const TradeSetupCard: React.FC<TradeSetupCardProps> = ({
   // Smart price formatting based on magnitude
   const formatPrice = (price: number | null): string => {
     if (!price && price !== 0) return "N/A";
+
+    let formatted: string;
     if (price >= 10000) {
-      // BTC, large numbers - 2 decimals
-      return price.toFixed(2);
+      // BTC, large numbers - 2 decimals with thousand separators
+      formatted = price.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     } else if (price >= 1000) {
-      // Gold, medium numbers - 2 decimals
-      return price.toFixed(2);
+      // Gold, medium numbers - 2 decimals with thousand separator
+      formatted = price.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     } else if (price >= 10) {
       // Stocks, some forex - 3 decimals
-      return price.toFixed(3);
+      formatted = price.toLocaleString('en-US', {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      });
     } else {
       // Forex pairs - 5 decimals
-      return price.toFixed(5);
+      formatted = price.toLocaleString('en-US', {
+        minimumFractionDigits: 5,
+        maximumFractionDigits: 5
+      });
     }
+
+    return formatted;
   };
 
   const getQualityColor = (quality: string) => {

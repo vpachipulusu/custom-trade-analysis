@@ -36,6 +36,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onTradeAdded: () => void;
+  linkedAnalysisId?: string | null;
 }
 
 const emotionalStates = [
@@ -49,7 +50,7 @@ const emotionalStates = [
   "Uncertain",
 ];
 
-export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
+export default function AddTradeDialog({ open, onClose, onTradeAdded, linkedAnalysisId }: Props) {
   const logger = getLogger();
   const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
@@ -218,6 +219,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded }: Props) {
           emotionalState,
           strategy,
           setup,
+          analysisId: linkedAnalysisId || undefined,
         }),
       });
 

@@ -57,6 +57,7 @@ export default function JournalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addTradeOpen, setAddTradeOpen] = useState(false);
+  const [linkedAnalysisId, setLinkedAnalysisId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -70,6 +71,7 @@ export default function JournalPage() {
       // Check if we need to open add trade dialog for analysis linking
       const linkAnalysisId = searchParams.get("linkAnalysis");
       if (linkAnalysisId) {
+        setLinkedAnalysisId(linkAnalysisId);
         setAddTradeOpen(true);
       }
     }
@@ -126,7 +128,13 @@ export default function JournalPage() {
 
   const handleTradeAdded = () => {
     setAddTradeOpen(false);
+    setLinkedAnalysisId(null);
     setRefreshTrigger((prev) => prev + 1);
+  };
+
+  const handleAddTradeClose = () => {
+    setAddTradeOpen(false);
+    setLinkedAnalysisId(null);
   };
 
   const handleSettingsSaved = () => {
@@ -223,8 +231,9 @@ export default function JournalPage() {
 
           <AddTradeDialog
             open={addTradeOpen}
-            onClose={() => setAddTradeOpen(false)}
+            onClose={handleAddTradeClose}
             onTradeAdded={handleTradeAdded}
+            linkedAnalysisId={linkedAnalysisId}
           />
 
           <JournalSettingsDialog

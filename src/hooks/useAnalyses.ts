@@ -37,6 +37,15 @@ export interface Analysis {
     opportunities: string[];
     recommendation: string;
   } | null;
+  // Multi-layout analysis data
+  layoutsAnalyzed?: number;
+  intervals?: string[];
+  multiLayoutSnapshots?: Array<{
+    interval: string;
+    layoutId: string;
+    snapshotId: string;
+    imageUrl: string;
+  }>;
 }
 
 export interface AnalysesResponse {

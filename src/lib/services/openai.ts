@@ -664,12 +664,21 @@ ANALYSIS METHODOLOGY:
 6. Synthesize all technical observations into one cohesive educational analysis
 
 TECHNICAL PRICE READING GUIDELINES:
-- Read price values from the RIGHT EDGE price scale of each chart
-- Current market price shown in TOP LEFT ticker information area
-- For forex pairs: Use 4-5 decimal precision (e.g., 1.15920)
-- For JPY pairs: Use 2-3 decimal precision (e.g., 149.875)
-- For BTC/crypto: Use appropriate precision (e.g., 92658.00)
-- Entry and stop loss levels should have meaningful separation
+- Read ACTUAL price values from the RIGHT EDGE price scale of each chart
+- Current market price shown in TOP LEFT ticker information area  
+- **CRITICAL**: Use the EXACT price magnitude from the chart
+  * BTC/BTCUSD: Typically 80000-100000+ range (e.g., 92658.50 NOT 92.658)
+  * Gold/XAUUSD: Typically 2000-3000 range (e.g., 2658.75 NOT 2.658)
+  * Forex pairs: 0.5-2.0 range with 4-5 decimals (e.g., 1.15920)
+  * JPY pairs: 100-160 range with 2-3 decimals (e.g., 149.875)
+  * Stocks: Varies by stock (e.g., AAPL 175.50, TSLA 250.00)
+- Entry and stop loss must be MEANINGFULLY different (hundreds for BTC, not just a few points)
+
+PRICE EXAMPLES BY INSTRUMENT TYPE:
+- BTCUSD trading at 92500: Entry=92500, Stop=91800, Target=94200 (NOT Entry=92.5, Stop=91.8)
+- EURUSD trading at 1.0850: Entry=1.08500, Stop=1.08350, Target=1.09200
+- XAUUSD trading at 2650: Entry=2650.00, Stop=2635.00, Target=2680.00
+- USDJPY trading at 149.50: Entry=149.500, Stop=149.200, Target=150.200
 
 TECHNICAL ANALYSIS OUTPUT FORMAT (JSON):
 {
@@ -709,6 +718,29 @@ CONFIDENCE ASSESSMENT:
 - High confidence (80-95%): Strong alignment across all chart layouts
 - Medium confidence (60-79%): Most charts agree with minor divergences
 - Lower confidence (40-59%): Charts show conflicting technical signals
+
+EXAMPLE for BTCUSD at 92500 (Daily + 4H charts):
+{
+  "action": "BUY",
+  "confidence": 85,
+  "timeframe": "swing",
+  "reasons": [
+    "Daily chart: Strong uptrend with price above 20 EMA at 90000, bullish momentum intact",
+    "4H chart: Pullback to support zone at 92000-92500, holding above previous resistance",
+    "Daily RSI at 60 showing strength without being overbought",
+    "4H chart forming higher lows, confirming uptrend continuation pattern",
+    "Volume increasing on bounces from 92000 support on both timeframes",
+    "Multi-timeframe confluence: Both daily and 4H showing bullish structure"
+  ],
+  "tradeSetup": {
+    "quality": "A",
+    "entryPrice": 92500,
+    "stopLoss": 91800,
+    "targetPrice": 94200,
+    "riskRewardRatio": 2.43,
+    "setupDescription": "Daily uptrend provides bullish bias with price above key EMAs. 4H chart shows pullback to 92000-92500 support zone with bullish rejection. Enter long at 92500 with stop below 4H swing low at 91800 (700 point risk). Target next resistance at 94200 (1700 point reward), giving 2.43:1 risk-reward. Multi-timeframe alignment and volume confirmation support high-probability setup."
+  }
+}
 
 Provide ONLY valid JSON output. No additional text or formatting.`;
 

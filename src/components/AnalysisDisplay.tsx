@@ -45,6 +45,7 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
   const [activeTab, setActiveTab] = useState(0);
 
   const hasEconomicContext = !!analysis.economicContext;
+  const isMultiLayout = !!analysis.multiLayoutSnapshots && analysis.multiLayoutSnapshots.length > 1;
 
   const handleRegenerate = async () => {
     try {
@@ -63,16 +64,59 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
 
   return (
     <Card>
-      <CardMedia
-        component="img"
-        image={analysis.snapshot.imageData || analysis.snapshot.url}
-        alt="Chart Analysis"
-        sx={{
-          maxHeight: 500,
-          objectFit: "contain",
-          backgroundColor: "#f5f5f5",
-        }}
-      />
+      {/* Chart Images Section */}
+      {isMultiLayout ? (
+        <Box>
+          <Box sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>
+            <Typography variant="h6">
+              Multi-Layout Analysis ({analysis.layoutsAnalyzed} charts)
+            </Typography>
+            <Typography variant="body2">
+              Intervals: {analysis.intervals?.join(", ")}
+            </Typography>
+          </Box>
+          <Grid container>
+            {analysis.multiLayoutSnapshots?.map((snapshot, index) => (
+              <Grid item xs={12} md={6} key={snapshot.snapshotId}>
+                <Box sx={{ position: "relative" }}>
+                  <CardMedia
+                    component="img"
+                    image={snapshot.imageUrl}
+                    alt={`Chart ${index + 1} - ${snapshot.interval}`}
+                    sx={{
+                      maxHeight: 400,
+                      objectFit: "contain",
+                      backgroundColor: "#f5f5f5",
+                      borderBottom: 1,
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Chip
+                    label={snapshot.interval}
+                    color="primary"
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                    }}
+                  />
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      ) : (
+        <CardMedia
+          component="img"
+          image={analysis.snapshot.imageData || analysis.snapshot.url}
+          alt="Chart Analysis"
+          sx={{
+            maxHeight: 500,
+            objectFit: "contain",
+            backgroundColor: "#f5f5f5",
+          }}
+        />
+      )}
 
       {hasEconomicContext && (
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>

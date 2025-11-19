@@ -490,10 +490,10 @@ async function analyzeLayoutsIndividually(
   layouts: Array<{ interval: string; imageUrl: string; layoutId: string }>
 ): Promise<AnalysisResult> {
   const logger = getLogger();
-  
+
   logger.info("Analyzing layouts individually", {
     layoutCount: layouts.length,
-    intervals: layouts.map(l => l.interval).join(", ")
+    intervals: layouts.map((l) => l.interval).join(", "),
   });
 
   // Analyze each chart individually
@@ -502,14 +502,14 @@ async function analyzeLayoutsIndividually(
       try {
         logger.debug(`Analyzing layout ${index + 1}`, {
           interval: layout.interval,
-          layoutId: layout.layoutId
+          layoutId: layout.layoutId,
         });
         const result = await analyzeChart(layout.imageUrl);
         return { ...result, interval: layout.interval, success: true };
       } catch (error) {
         logger.error(`Failed to analyze layout ${index + 1}`, {
           interval: layout.interval,
-          error: error instanceof Error ? error.message : "Unknown error"
+          error: error instanceof Error ? error.message : "Unknown error",
         });
         return { success: false, interval: layout.interval };
       }
@@ -518,7 +518,8 @@ async function analyzeLayoutsIndividually(
 
   // Filter successful analyses
   const successfulAnalyses = individualAnalyses.filter(
-    (a): a is AnalysisResult & { interval: string; success: true } => a.success === true
+    (a): a is AnalysisResult & { interval: string; success: true } =>
+      a.success === true
   );
 
   if (successfulAnalyses.length === 0) {
@@ -527,7 +528,7 @@ async function analyzeLayoutsIndividually(
 
   logger.info("Individual analyses completed", {
     total: layouts.length,
-    successful: successfulAnalyses.length
+    successful: successfulAnalyses.length,
   });
 
   // Synthesize results: Use most common action, average confidence, combine reasons
@@ -536,9 +537,9 @@ async function analyzeLayoutsIndividually(
     return acc;
   }, {} as Record<string, number>);
 
-  const synthesizedAction = (Object.entries(actionCounts).sort(
+  const synthesizedAction = Object.entries(actionCounts).sort(
     (a, b) => b[1] - a[1]
-  )[0][0] as "BUY" | "SELL" | "HOLD");
+  )[0][0] as "BUY" | "SELL" | "HOLD";
 
   const avgConfidence = Math.round(
     successfulAnalyses.reduce((sum, a) => sum + a.confidence, 0) /
@@ -607,7 +608,7 @@ async function analyzeLayoutsIndividually(
     action: synthesizedResult.action,
     confidence: synthesizedResult.confidence,
     timeframe: synthesizedResult.timeframe,
-    layoutsAnalyzed: successfulAnalyses.length
+    layoutsAnalyzed: successfulAnalyses.length,
   });
 
   return synthesizedResult;
@@ -642,7 +643,9 @@ export async function analyzeMultipleLayouts(
 
     const MULTI_LAYOUT_PROMPT = `You are a professional financial technical analyst providing educational analysis of trading chart layouts. This is for educational and informational purposes to help understand market structure.
 
-TASK: Analyze ${layouts.length} different TradingView chart layouts showing the SAME financial instrument from different perspectives (timeframes or technical indicators).
+TASK: Analyze ${
+      layouts.length
+    } different TradingView chart layouts showing the SAME financial instrument from different perspectives (timeframes or technical indicators).
 
 CHART LAYOUTS PROVIDED:
 ${layouts
@@ -674,8 +677,12 @@ TECHNICAL ANALYSIS OUTPUT FORMAT (JSON):
   "confidence": <0-100>,
   "timeframe": "intraday" | "swing" | "long",
   "reasons": [
-    "Chart 1 (${layouts[0]?.interval}): Technical observation with specific price levels",
-    "Chart 2 (${layouts[1]?.interval}): Technical observation with specific price levels",
+    "Chart 1 (${
+      layouts[0]?.interval
+    }): Technical observation with specific price levels",
+    "Chart 2 (${
+      layouts[1]?.interval
+    }): Technical observation with specific price levels",
     "Multi-chart confluence: Agreements between different perspectives",
     "Higher timeframe trend analysis and key technical levels",
     "Lower timeframe confirmation or rejection signals",
@@ -755,10 +762,15 @@ Provide ONLY valid JSON output. No additional text or formatting.`;
       );
     } catch (axiosError) {
       logger.error("OpenAI API request failed", {
-        error: axiosError instanceof Error ? axiosError.message : "Unknown error",
+        error:
+          axiosError instanceof Error ? axiosError.message : "Unknown error",
         isAxiosError: axios.isAxiosError(axiosError),
-        responseStatus: axios.isAxiosError(axiosError) ? axiosError.response?.status : undefined,
-        responseData: axios.isAxiosError(axiosError) ? JSON.stringify(axiosError.response?.data).substring(0, 500) : undefined,
+        responseStatus: axios.isAxiosError(axiosError)
+          ? axiosError.response?.status
+          : undefined,
+        responseData: axios.isAxiosError(axiosError)
+          ? JSON.stringify(axiosError.response?.data).substring(0, 500)
+          : undefined,
       });
       throw axiosError;
     }
@@ -776,11 +788,14 @@ Provide ONLY valid JSON output. No additional text or formatting.`;
 
     // Check for refusal first
     if (response.data?.choices?.[0]?.message?.refusal) {
-      logger.warn("OpenAI refused multi-layout request, falling back to individual analysis", {
-        refusal: response.data.choices[0].message.refusal,
-        layoutCount: layouts.length,
-      });
-      
+      logger.warn(
+        "OpenAI refused multi-layout request, falling back to individual analysis",
+        {
+          refusal: response.data.choices[0].message.refusal,
+          layoutCount: layouts.length,
+        }
+      );
+
       // Fallback: Analyze each chart individually and combine results
       return await analyzeLayoutsIndividually(layouts);
     }

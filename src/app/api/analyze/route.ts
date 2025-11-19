@@ -169,6 +169,18 @@ export async function POST(request: NextRequest) {
           primarySnapshotId
         );
 
+        // Prepare multi-layout data to save
+        const multiLayoutData = {
+          layoutsAnalyzed: layoutsWithSnapshots.length,
+          intervals: layoutsWithSnapshots.map((l) => l.interval),
+          multiLayoutSnapshots: layoutsWithSnapshots.map((l) => ({
+            interval: l.interval,
+            layoutId: l.layoutId,
+            snapshotId: l.snapshotId,
+            imageUrl: l.imageUrl,
+          })),
+        };
+
         let analysis;
         if (existingAnalysis) {
           analysis = await updateAnalysis(existingAnalysis.id, {
@@ -177,6 +189,8 @@ export async function POST(request: NextRequest) {
             timeframe: analysisResult.timeframe,
             reasons: analysisResult.reasons,
             tradeSetup: analysisResult.tradeSetup,
+            isMultiLayout: true,
+            multiLayoutData,
           });
         } else {
           analysis = await createAnalysis(
@@ -188,6 +202,8 @@ export async function POST(request: NextRequest) {
               timeframe: analysisResult.timeframe,
               reasons: analysisResult.reasons,
               tradeSetup: analysisResult.tradeSetup,
+              isMultiLayout: true,
+              multiLayoutData,
             }
           );
         }
@@ -274,14 +290,6 @@ export async function POST(request: NextRequest) {
           {
             ...analysis,
             economicContext,
-            layoutsAnalyzed: layoutsWithSnapshots.length,
-            intervals: layoutsWithSnapshots.map((l) => l.interval),
-            multiLayoutSnapshots: layoutsWithSnapshots.map((l) => ({
-              interval: l.interval,
-              layoutId: l.layoutId,
-              snapshotId: l.snapshotId,
-              imageUrl: l.imageUrl,
-            })),
           },
           { status: existingAnalysis ? 200 : 201 }
         );

@@ -14,6 +14,17 @@ export interface CreateAnalysisData {
     riskRewardRatio: number | null;
     setupDescription: string;
   } | null;
+  isMultiLayout?: boolean;
+  multiLayoutData?: {
+    layoutsAnalyzed: number;
+    intervals: string[];
+    multiLayoutSnapshots: Array<{
+      interval: string;
+      layoutId: string;
+      snapshotId: string;
+      imageUrl: string;
+    }>;
+  } | null;
 }
 
 export interface AnalysisWithRelations extends Analysis {
@@ -43,6 +54,8 @@ export async function createAnalysis(
       timeframe: data.timeframe,
       reasons: data.reasons,
       tradeSetup: data.tradeSetup || undefined,
+      isMultiLayout: data.isMultiLayout || false,
+      multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
     },
   });
 }
@@ -145,6 +158,8 @@ export async function updateAnalysis(
       timeframe: data.timeframe,
       reasons: data.reasons,
       tradeSetup: data.tradeSetup || undefined,
+      isMultiLayout: data.isMultiLayout || false,
+      multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
     },
   });
 }

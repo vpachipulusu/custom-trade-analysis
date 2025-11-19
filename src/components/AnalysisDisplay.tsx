@@ -45,16 +45,18 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
   const [activeTab, setActiveTab] = useState(0);
 
   const hasEconomicContext = !!analysis.economicContext;
-  const isMultiLayout =
-    !!analysis.multiLayoutSnapshots && analysis.multiLayoutSnapshots.length > 1;
+  const isMultiLayout = analysis.isMultiLayout && !!analysis.multiLayoutData;
+  const multiLayoutSnapshots = analysis.multiLayoutData?.multiLayoutSnapshots || [];
+  const layoutsAnalyzed = analysis.multiLayoutData?.layoutsAnalyzed || 0;
+  const intervals = analysis.multiLayoutData?.intervals || [];
 
   // Debug logging
   console.log("Analysis data:", {
-    hasMultiLayoutSnapshots: !!analysis.multiLayoutSnapshots,
-    snapshotsLength: analysis.multiLayoutSnapshots?.length,
-    layoutsAnalyzed: analysis.layoutsAnalyzed,
-    intervals: analysis.intervals,
     isMultiLayout,
+    hasMultiLayoutData: !!analysis.multiLayoutData,
+    snapshotsLength: multiLayoutSnapshots.length,
+    layoutsAnalyzed,
+    intervals,
   });
 
   const handleRegenerate = async () => {
@@ -82,14 +84,14 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
         <Box>
           <Box sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>
             <Typography variant="h6">
-              Multi-Layout Analysis ({analysis.layoutsAnalyzed} charts)
+              Multi-Layout Analysis ({layoutsAnalyzed} charts)
             </Typography>
             <Typography variant="body2">
-              Intervals: {analysis.intervals?.join(", ")}
+              Intervals: {intervals.join(", ")}
             </Typography>
           </Box>
           <Grid container>
-            {analysis.multiLayoutSnapshots?.map((snapshot, index) => (
+            {multiLayoutSnapshots.map((snapshot, index) => (
               <Grid item xs={12} md={6} key={snapshot.snapshotId}>
                 <Box sx={{ position: "relative" }}>
                   <CardMedia

@@ -38,15 +38,18 @@ export interface Analysis {
     opportunities: string[];
     recommendation: string;
   } | null;
-  // Multi-layout analysis data
-  layoutsAnalyzed?: number;
-  intervals?: string[];
-  multiLayoutSnapshots?: Array<{
-    interval: string;
-    layoutId: string;
-    snapshotId: string;
-    imageUrl: string;
-  }>;
+  // Multi-layout analysis fields
+  isMultiLayout?: boolean;
+  multiLayoutData?: {
+    layoutsAnalyzed: number;
+    intervals: string[];
+    multiLayoutSnapshots: Array<{
+      interval: string;
+      layoutId: string;
+      snapshotId: string;
+      imageUrl: string;
+    }>;
+  } | null;
 }
 
 export interface AnalysesResponse {

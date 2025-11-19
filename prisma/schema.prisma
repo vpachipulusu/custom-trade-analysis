@@ -76,20 +76,22 @@ model Snapshot {
 }
 
 model Analysis {
-  id              String            @id @default(uuid())
-  userId          String
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  snapshotId      String            @unique
-  snapshot        Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-  action          String
-  confidence      Int
-  timeframe       String
-  reasons         Json
-  tradeSetup      Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
-  createdAt       DateTime          @default(now())
-  economicContext EconomicContext?
-  history         AnalysisHistory[]
-  trades          Trade[]           // Can link multiple trades to one analysis
+  id                    String            @id @default(uuid())
+  userId                String
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshotId            String            @unique
+  snapshot              Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  action                String
+  confidence            Int
+  timeframe             String
+  reasons               Json
+  tradeSetup            Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
+  isMultiLayout         Boolean           @default(false) // Whether this is a multi-layout analysis
+  multiLayoutData       Json?             // Multi-layout snapshot data (layoutsAnalyzed, intervals, multiLayoutSnapshots)
+  createdAt             DateTime          @default(now())
+  economicContext       EconomicContext?
+  history               AnalysisHistory[]
+  trades                Trade[]           // Can link multiple trades to one analysis
 }
 
 model EconomicEvent {

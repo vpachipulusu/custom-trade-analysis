@@ -145,7 +145,13 @@ export default function ViewSnapshotsDialog({
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <span>Snapshots</span>
             {snapshots && snapshots.length > 0 && (
               <IconButton
@@ -205,7 +211,9 @@ export default function ViewSnapshotsDialog({
       <DeleteConfirmationDialog
         open={deleteAllDialog}
         title="Delete All Snapshots"
-        message={`Are you sure you want to delete all ${snapshots?.length || 0} snapshots for this layout? This will also delete all associated analyses. This action cannot be undone.`}
+        message={`Are you sure you want to delete all ${
+          snapshots?.length || 0
+        } snapshots for this layout? This will also delete all associated analyses. This action cannot be undone.`}
         onConfirm={handleDeleteAll}
         onCancel={() => setDeleteAllDialog(false)}
       />

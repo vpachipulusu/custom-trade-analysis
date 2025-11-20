@@ -27,6 +27,7 @@ import AddLayoutDialog from "./AddLayoutDialog";
 import EditLayoutDialog from "./EditLayoutDialog";
 import ViewSnapshotsDialog from "./ViewSnapshotsDialog";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import AnalyzeWithModelDialog from "./AnalyzeWithModelDialog";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
@@ -63,6 +64,13 @@ export default function LayoutsTable({
     open: false,
     layoutId: null,
   });
+  const [analyzeDialog, setAnalyzeDialog] = useState<{
+    open: boolean;
+    symbol: string | null;
+  }>({
+    open: false,
+    symbol: null,
+  });
 
   const deleteLayout = useDeleteLayout();
   const createSnapshot = useCreateSnapshot();
@@ -91,16 +99,17 @@ export default function LayoutsTable({
     }
   };
 
-  const handleAnalyzeSymbol = async (symbol: string) => {
+  const handleAnalyzeSymbol = async (symbol: string, aiModel: string) => {
     try {
-      const analysis = await createSymbolAnalysis.mutateAsync(symbol);
+      const analysis = await createSymbolAnalysis.mutateAsync({ symbol, aiModel });
       logger.info("Symbol analysis completed", {
         symbol,
+        aiModel,
         analysisId: analysis.id,
       });
       router.push(`/analysis/${analysis.id}`);
     } catch (error) {
-      logger.error("Symbol analysis failed", { error, symbol });
+      logger.error("Symbol analysis failed", { error, symbol, aiModel });
     }
   };
 
@@ -210,7 +219,7 @@ export default function LayoutsTable({
                         <IconButton
                           size="small"
                           color="success"
-                          onClick={() => handleAnalyzeSymbol(layout.symbol!)}
+                          onClick={() => setAnalyzeDialog({ open: true, symbol: layout.symbol! })}
                           disabled={createSymbolAnalysis.isPending}
                         >
                           <AnalyticsIcon />
@@ -298,6 +307,18 @@ export default function LayoutsTable({
         message="Are you sure you want to delete this layout? This will also delete all associated snapshots and analyses."
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, layoutId: null })}
+      />
+
+      <AnalyzeWithModelDialog
+        open={analyzeDialog.open}
+        onClose={() => setAnalyzeDialog({ open: false, symbol: null })}
+        onConfirm={(aiModel) => {
+          if (analyzeDialog.symbol) {
+            handleAnalyzeSymbol(analyzeDialog.symbol, aiModel);
+          }
+        }}
+        title="Analyze Symbol"
+        description={`Select AI model to analyze all layouts for ${analyzeDialog.symbol || "this symbol"}:`}
       />
     </>
   );

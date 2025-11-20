@@ -16,6 +16,7 @@ import SnapshotCard from "./SnapshotCard";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorAlert from "./ErrorAlert";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import AnalyzeWithModelDialog from "./AnalyzeWithModelDialog";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,16 +47,23 @@ export default function ViewSnapshotsDialog({
     open: false,
     snapshotId: null,
   });
+  const [analyzeDialog, setAnalyzeDialog] = useState<{
+    open: boolean;
+    snapshotId: string | null;
+  }>({
+    open: false,
+    snapshotId: null,
+  });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const handleAnalyze = async (snapshotId: string) => {
+  const handleAnalyze = async (snapshotId: string, aiModel: string) => {
     try {
       setActionLoading(snapshotId);
-      const analysis = await createAnalysis.mutateAsync(snapshotId);
+      const analysis = await createAnalysis.mutateAsync({ snapshotId, aiModel });
       router.push(`/analysis/${analysis.id}`);
       onClose();
     } catch (error) {
-      logger.error("Analysis failed", { error, snapshotId });
+      logger.error("Analysis failed", { error, snapshotId, aiModel });
       setActionLoading(null);
     }
   };
@@ -97,7 +105,7 @@ export default function ViewSnapshotsDialog({
                 <Grid item xs={12} sm={6} md={4} key={snapshot.id}>
                   <SnapshotCard
                     snapshot={snapshot}
-                    onAnalyze={handleAnalyze}
+                    onAnalyze={(id) => setAnalyzeDialog({ open: true, snapshotId: id })}
                     onDelete={(id) =>
                       setDeleteDialog({ open: true, snapshotId: id })
                     }
@@ -126,6 +134,18 @@ export default function ViewSnapshotsDialog({
         message="Are you sure you want to delete this snapshot? This will also delete its analysis if it exists."
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, snapshotId: null })}
+      />
+
+      <AnalyzeWithModelDialog
+        open={analyzeDialog.open}
+        onClose={() => setAnalyzeDialog({ open: false, snapshotId: null })}
+        onConfirm={(aiModel) => {
+          if (analyzeDialog.snapshotId) {
+            handleAnalyze(analyzeDialog.snapshotId, aiModel);
+          }
+        }}
+        title="Analyze Snapshot"
+        description="Select AI model to analyze this snapshot:"
       />
     </>
   );

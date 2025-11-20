@@ -2,6 +2,30 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 
+export interface AnalysisResult {
+  action: "BUY" | "SELL" | "HOLD";
+  confidence: number;
+  timeframe: "intraday" | "swing" | "long";
+  reasons: string[];
+  tradeSetup?: {
+    quality: "A" | "B" | "C";
+    entryPrice: number | null;
+    stopLoss: number | null;
+    targetPrice: number | null;
+    riskRewardRatio: number | null;
+    setupDescription: string;
+  } | null;
+}
+
+export interface EconomicAnalysis {
+  impactSummary: string;
+  immediateRisk: "NONE" | "LOW" | "MEDIUM" | "HIGH" | "EXTREME";
+  weeklyOutlook: "BULLISH" | "BEARISH" | "NEUTRAL" | "VOLATILE";
+  warnings: string[];
+  opportunities: string[];
+  recommendation: string;
+}
+
 export interface Analysis {
   id: string;
   action: "BUY" | "SELL" | "HOLD";
@@ -16,6 +40,19 @@ export interface Analysis {
     riskRewardRatio: number | null;
     setupDescription: string;
   } | null;
+
+  // AI Model tracking
+  aiModel?: string | null;
+  aiModelName?: string | null;
+
+  // Dual AI analysis results (legacy - backward compatibility)
+  openaiAnalysis?: AnalysisResult | null;
+  deepseekAnalysis?: AnalysisResult | null;
+  aiErrors?: {
+    openai?: string;
+    deepseek?: string;
+  } | null;
+
   createdAt: string;
   snapshot: {
     id: string;
@@ -37,6 +74,9 @@ export interface Analysis {
     warnings: string[];
     opportunities: string[];
     recommendation: string;
+    // Dual AI economic analysis results
+    openaiEconomic?: EconomicAnalysis | null;
+    deepseekEconomic?: EconomicAnalysis | null;
   } | null;
   // Multi-layout analysis fields
   isMultiLayout?: boolean;
@@ -107,11 +147,14 @@ export function useCreateAnalysis() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (snapshotId: string) => {
+    mutationFn: async (params: { snapshotId: string; aiModel?: string }) => {
       const token = await getAuthToken();
       const response = await axios.post(
         "/api/analyze",
-        { snapshotId },
+        {
+          snapshotId: params.snapshotId,
+          aiModel: params.aiModel,
+        },
         {
           headers: { Authorization: token },
         }
@@ -131,11 +174,14 @@ export function useCreateSymbolAnalysis() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (symbol: string) => {
+    mutationFn: async (params: { symbol: string; aiModel?: string }) => {
       const token = await getAuthToken();
       const response = await axios.post(
         "/api/analyze",
-        { symbol },
+        {
+          symbol: params.symbol,
+          aiModel: params.aiModel,
+        },
         {
           headers: { Authorization: token },
         }

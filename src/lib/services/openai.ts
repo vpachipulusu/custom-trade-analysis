@@ -147,7 +147,7 @@ Example of CORRECT precision:
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o
  */
-export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
+export async function analyzeChart(imageUrl: string, modelId?: string): Promise<AnalysisResult> {
   try {
     if (!OPENAI_API_KEY) {
       throw new Error("OPENAI_KEY environment variable is not set");
@@ -157,11 +157,13 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
       throw new Error("Image URL is required");
     }
 
+    const model = modelId || "gpt-4o";
+
     // Make API request to OpenAI
     const response = await axios.post(
       OPENAI_API_URL,
       {
-        model: "gpt-4o",
+        model,
         messages: [
           {
             role: "user",
@@ -290,7 +292,8 @@ export async function analyzeChart(imageUrl: string): Promise<AnalysisResult> {
  * Combines insights from different timeframes (Daily, 4H, 1H, etc.)
  */
 export async function analyzeMultiTimeframeCharts(
-  chartsData: Array<{ interval: string; imageUrl: string }>
+  chartsData: Array<{ interval: string; imageUrl: string }>,
+  modelId?: string
 ): Promise<AnalysisResult> {
   try {
     if (!OPENAI_API_KEY) {
@@ -300,6 +303,8 @@ export async function analyzeMultiTimeframeCharts(
     if (!chartsData || chartsData.length === 0) {
       throw new Error("At least one chart is required");
     }
+
+    const model = modelId || "gpt-4o";
 
     const MULTI_TIMEFRAME_PROMPT = `You are an expert technical analyst. Analyze MULTIPLE timeframe charts for the SAME trading symbol.
 
@@ -400,7 +405,7 @@ EXAMPLE Multi-TF Analysis:
     const response = await axios.post(
       OPENAI_API_URL,
       {
-        model: "gpt-4o",
+        model,
         messages: [
           {
             role: "user",
@@ -763,7 +768,8 @@ async function analyzeLayoutsIndividually(
  * Combines insights from different timeframes and perspectives
  */
 export async function analyzeMultipleLayouts(
-  layouts: Array<{ interval: string; imageUrl: string; layoutId: string }>
+  layouts: Array<{ interval: string; imageUrl: string; layoutId: string }>,
+  modelId?: string
 ): Promise<AnalysisResult> {
   try {
     if (!OPENAI_API_KEY) {
@@ -775,14 +781,17 @@ export async function analyzeMultipleLayouts(
     }
 
     const logger = getLogger();
+    const model = modelId || "gpt-4o";
+
     logger.info("Starting multi-layout analysis", {
+      model,
       layoutCount: layouts.length,
       intervals: layouts.map((l) => l.interval).join(", "),
     });
 
     // If only one layout, use single chart analysis
     if (layouts.length === 1) {
-      return await analyzeChart(layouts[0].imageUrl);
+      return await analyzeChart(layouts[0].imageUrl, modelId);
     }
 
     const MULTI_LAYOUT_PROMPT = `You are a professional financial technical analyst providing educational analysis of trading chart layouts. This is for educational and informational purposes to help understand market structure.
@@ -942,7 +951,7 @@ Provide ONLY valid JSON output. No additional text or formatting.`;
       response = await axios.post(
         OPENAI_API_URL,
         {
-          model: "gpt-4o",
+          model,
           messages: [
             {
               role: "user",

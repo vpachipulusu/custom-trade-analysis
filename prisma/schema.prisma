@@ -83,11 +83,23 @@ model Analysis {
   user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   snapshotId            String            @unique
   snapshot              Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  // Primary analysis fields
   action                String
   confidence            Int
   timeframe             String
   reasons               Json
   tradeSetup            Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
+
+  // AI Model tracking
+  aiModel               String?           // AI model used: "openai" | "gemini" | "claude" | "deepseek"
+  aiModelName           String?           // Display name: "OpenAI GPT-4o" | "Google Gemini Pro Vision" | etc
+
+  // Legacy dual AI analysis results (kept for backward compatibility)
+  openaiAnalysis        Json?             // Complete OpenAI analysis result
+  deepseekAnalysis      Json?             // Complete DeepSeek analysis result
+  aiErrors              Json?             // Errors from AI providers
+
   isMultiLayout         Boolean           @default(false) // Whether this is a multi-layout analysis
   multiLayoutData       Json?             // Multi-layout snapshot data (layoutsAnalyzed, intervals, multiLayoutSnapshots)
   createdAt             DateTime          @default(now())
@@ -123,21 +135,25 @@ model EconomicContext {
   analysisId        String     @unique
   analysis          Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
   symbol            String
-  
+
   // Immediate events (within ±1 hour)
   upcomingEvents    Json       // Array of event objects
   immediateRisk     String     // NONE, LOW, MEDIUM, HIGH, EXTREME
-  
+
   // Weekly events (within 7 days)
   weeklyEvents      Json       // Array of event objects
   weeklyOutlook     String     // BULLISH, BEARISH, NEUTRAL, VOLATILE
-  
-  // AI-generated analysis
+
+  // Primary AI-generated analysis (kept for backward compatibility)
   impactSummary     String     @db.Text
   warnings          Json       // Array of warning strings
   opportunities     Json       // Array of opportunity strings
   recommendation    String?    @db.Text
-  
+
+  // Dual AI economic analysis results
+  openaiEconomic    Json?      // Complete OpenAI economic analysis result
+  deepseekEconomic  Json?      // Complete DeepSeek economic analysis result
+
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 }
@@ -387,6 +403,9 @@ model UserSettings {
   // Security Settings
   twoFactorEnabled      Boolean  @default(false)
   lastPasswordChange    DateTime?
+
+  // AI Model Preference
+  preferredAiModel      String?  @default("openai") // "openai" | "gemini" | "claude" | "deepseek"
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

@@ -6,12 +6,7 @@ import {
   getAnalysisBySnapshotId,
   updateAnalysis,
 } from "@/lib/db/analyses";
-import {
-  analyzeChart,
-  analyzeEconomicImpact,
-  analyzeMultiTimeframeCharts,
-  analyzeMultipleLayouts,
-} from "@/lib/services/openai";
+import * as aiService from "@/lib/services/aiService";
 import {
   fetchEconomicEvents,
   filterEventsByTimeframe,
@@ -50,7 +45,24 @@ export async function POST(request: NextRequest) {
     logger.info("Analysis request started", { userId: authResult.user.userId });
 
     const body = await request.json();
-    const { snapshotId, symbol } = body;
+    const { snapshotId, symbol, aiModel } = body;
+
+    // Parse AI model selection (format: "provider:modelId" or just "modelId")
+    let selectedProvider: "openai" | "gemini" | "claude" = "openai";
+    let selectedModelId: string;
+    let modelName: string;
+
+    if (aiModel && aiModel.includes(":")) {
+      const [provider, modelId] = aiModel.split(":");
+      selectedProvider = provider as any;
+      selectedModelId = modelId;
+      modelName = `${provider.toUpperCase()} ${modelId}`;
+    } else {
+      // Fallback to default if no model specified
+      selectedProvider = "openai";
+      selectedModelId = "gpt-4o";
+      modelName = "OpenAI GPT-4o";
+    }
 
     // Two modes: single snapshot analysis OR symbol-based multi-layout analysis
     if (!snapshotId && !symbol) {
@@ -140,17 +152,21 @@ export async function POST(request: NextRequest) {
           intervals: layoutsWithSnapshots.map((l) => l.interval).join(", "),
         });
 
-        // Analyze multiple layouts together
+        // Analyze multiple layouts with selected AI model
         const analysisResult = await performanceLogger.measure(
-          "openai_multi_layout_analysis",
+          "ai_multi_layout_analysis",
           async () => {
             const startTime = Date.now();
-            const result = await analyzeMultipleLayouts(layoutsWithSnapshots);
+            const result = await aiService.analyzeMultipleLayouts(
+              layoutsWithSnapshots,
+              selectedProvider,
+              selectedModelId
+            );
             const duration = Date.now() - startTime;
 
             logExternalAPI(
-              "OpenAI",
-              "/v1/chat/completions",
+              selectedProvider.toUpperCase(),
+              "/multi-layout-analysis",
               "POST",
               200,
               duration
@@ -158,7 +174,7 @@ export async function POST(request: NextRequest) {
 
             return result;
           },
-          { symbol, layoutCount: layoutsWithSnapshots.length }
+          { symbol, layoutCount: layoutsWithSnapshots.length, aiModel: modelName }
         );
 
         // Use the most recent snapshot for storing the analysis
@@ -191,6 +207,8 @@ export async function POST(request: NextRequest) {
             tradeSetup: analysisResult.tradeSetup,
             isMultiLayout: true,
             multiLayoutData,
+            aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
+            aiModelName: modelName,
           });
         } else {
           analysis = await createAnalysis(
@@ -204,6 +222,8 @@ export async function POST(request: NextRequest) {
               tradeSetup: analysisResult.tradeSetup,
               isMultiLayout: true,
               multiLayoutData,
+              aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
+              aiModelName: modelName,
             }
           );
         }
@@ -237,13 +257,13 @@ export async function POST(request: NextRequest) {
           );
 
           if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-            const economicImpact = await analyzeEconomicImpact({
+            const economicImpact = await aiService.analyzeEconomicImpact({
               symbol,
               action: analysisResult.action,
               confidence: analysisResult.confidence,
               upcomingEvents,
               weeklyEvents,
-            });
+            }, selectedModel);
 
             const existingContext = await getEconomicContextByAnalysisId(
               analysis.id
@@ -360,19 +380,29 @@ export async function POST(request: NextRequest) {
     // Check if analysis already exists
     const existingAnalysis = await getAnalysisBySnapshotId(snapshotId);
 
-    // Analyze chart using OpenAI with performance tracking
+    // Analyze chart using selected AI model with performance tracking
     const analysisResult = await performanceLogger.measure(
-      "openai_chart_analysis",
+      "ai_chart_analysis",
       async () => {
         const startTime = Date.now();
-        const result = await analyzeChart(snapshot.url);
+        const result = await aiService.analyzeChart(
+          snapshot.url,
+          selectedProvider,
+          selectedModelId
+        );
         const duration = Date.now() - startTime;
 
-        logExternalAPI("OpenAI", "/v1/chat/completions", "POST", 200, duration);
+        logExternalAPI(
+          selectedProvider.toUpperCase(),
+          "/chart-analysis",
+          "POST",
+          200,
+          duration
+        );
 
         return result;
       },
-      { snapshotId }
+      { snapshotId, aiModel: modelName }
     );
 
     let analysis;
@@ -384,6 +414,8 @@ export async function POST(request: NextRequest) {
         timeframe: analysisResult.timeframe,
         reasons: analysisResult.reasons,
         tradeSetup: analysisResult.tradeSetup,
+        aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
+        aiModelName: modelName,
       });
     } else {
       // Create new analysis
@@ -393,6 +425,8 @@ export async function POST(request: NextRequest) {
         timeframe: analysisResult.timeframe,
         reasons: analysisResult.reasons,
         tradeSetup: analysisResult.tradeSetup,
+        aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
+        aiModelName: modelName,
       });
     }
 
@@ -438,14 +472,14 @@ export async function POST(request: NextRequest) {
             weeklyCount: weeklyEvents.length,
           });
 
-          // Get AI analysis of economic impact
-          const economicImpact = await analyzeEconomicImpact({
+          // Get AI analysis of economic impact using selected model
+          const economicImpact = await aiService.analyzeEconomicImpact({
             symbol,
             action: analysisResult.action,
             confidence: analysisResult.confidence,
             upcomingEvents,
             weeklyEvents,
-          });
+          }, selectedModel);
 
           // Check if economic context already exists
           const existingContext = await getEconomicContextByAnalysisId(

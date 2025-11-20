@@ -51,11 +51,6 @@ export default function AIModelSelector({
       const data = await response.json();
       setModels(data.models || []);
 
-      // If no value is set and we have models, set the first one as default
-      if (!value && data.models && data.models.length > 0) {
-        onChange(data.models[0].id);
-      }
-
       setError(null);
     } catch (err) {
       console.error("Error fetching AI models:", err);

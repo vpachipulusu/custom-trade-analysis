@@ -46,14 +46,44 @@ JSON Format (return ONLY this JSON, no other text):
 
 /**
  * Convert image URL to base64 for Claude API
+ * Returns both base64 data and detected media type
  */
-async function getImageBase64(imageUrl: string): Promise<string> {
+async function getImageBase64(imageUrl: string): Promise<{ base64: string; mediaType: string }> {
   try {
     const response = await axios.get(imageUrl, {
       responseType: "arraybuffer",
     });
     const base64 = Buffer.from(response.data, "binary").toString("base64");
-    return base64;
+
+    // Detect media type from response headers or infer from data
+    let mediaType = "image/jpeg"; // default
+    const contentType = response.headers["content-type"];
+
+    if (contentType) {
+      if (contentType.includes("png")) {
+        mediaType = "image/png";
+      } else if (contentType.includes("jpeg") || contentType.includes("jpg")) {
+        mediaType = "image/jpeg";
+      } else if (contentType.includes("gif")) {
+        mediaType = "image/gif";
+      } else if (contentType.includes("webp")) {
+        mediaType = "image/webp";
+      }
+    } else {
+      // Fallback: detect from base64 data signature
+      const signature = base64.substring(0, 10);
+      if (signature.startsWith("iVBORw0KG")) {
+        mediaType = "image/png";
+      } else if (signature.startsWith("/9j/")) {
+        mediaType = "image/jpeg";
+      } else if (signature.startsWith("R0lGOD")) {
+        mediaType = "image/gif";
+      } else if (signature.startsWith("UklGR")) {
+        mediaType = "image/webp";
+      }
+    }
+
+    return { base64, mediaType };
   } catch (error) {
     throw new Error(`Failed to fetch image: ${error}`);
   }
@@ -75,8 +105,10 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
     const logger = getLogger();
     const model = modelId || CLAUDE_MODEL;
 
-    // Get image as base64
-    const imageBase64 = await getImageBase64(imageUrl);
+    // Get image as base64 with detected media type
+    const { base64: imageBase64, mediaType } = await getImageBase64(imageUrl);
+
+    logger.debug("Image format detected", { mediaType, imageUrl });
 
     // Make API request to Claude
     const response = await axios.post(
@@ -92,7 +124,7 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
                 type: "image",
                 source: {
                   type: "base64",
-                  media_type: "image/jpeg",
+                  media_type: mediaType,
                   data: imageBase64,
                 },
               },
@@ -215,15 +247,19 @@ Timeframes: ${layouts.map((l) => l.interval).join(", ")}
 
 Perform a comprehensive multi-timeframe analysis and return ONLY valid JSON in the same format as before.`;
 
-    // Get all images as base64
+    // Get all images as base64 with detected media types
     const imageContents = await Promise.all(
       layouts.map(async (layout) => {
-        const base64 = await getImageBase64(layout.imageUrl);
+        const { base64, mediaType } = await getImageBase64(layout.imageUrl);
+        logger.debug("Multi-layout image format detected", {
+          interval: layout.interval,
+          mediaType,
+        });
         return {
           type: "image" as const,
           source: {
             type: "base64" as const,
-            media_type: "image/jpeg" as const,
+            media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
             data: base64,
           },
         };

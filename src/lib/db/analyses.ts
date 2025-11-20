@@ -25,6 +25,8 @@ export interface CreateAnalysisData {
       imageUrl: string;
     }>;
   } | null;
+  aiModel?: string | null;
+  aiModelName?: string | null;
 }
 
 export interface AnalysisWithRelations extends Analysis {
@@ -56,6 +58,8 @@ export async function createAnalysis(
       tradeSetup: data.tradeSetup || undefined,
       isMultiLayout: data.isMultiLayout || false,
       multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
+      aiModel: data.aiModel || undefined,
+      aiModelName: data.aiModelName || undefined,
     },
   });
 }
@@ -160,6 +164,8 @@ export async function updateAnalysis(
       tradeSetup: data.tradeSetup || undefined,
       isMultiLayout: data.isMultiLayout || false,
       multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
+      aiModel: data.aiModel || undefined,
+      aiModelName: data.aiModelName || undefined,
     },
   });
 }

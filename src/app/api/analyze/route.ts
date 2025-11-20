@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
               confidence: analysisResult.confidence,
               upcomingEvents,
               weeklyEvents,
-            }, selectedModel);
+            }, selectedProvider);
 
             const existingContext = await getEconomicContextByAnalysisId(
               analysis.id
@@ -479,7 +479,7 @@ export async function POST(request: NextRequest) {
             confidence: analysisResult.confidence,
             upcomingEvents,
             weeklyEvents,
-          }, selectedModel);
+          }, selectedProvider);
 
           // Check if economic context already exists
           const existingContext = await getEconomicContextByAnalysisId(

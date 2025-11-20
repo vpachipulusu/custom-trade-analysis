@@ -16,6 +16,7 @@ import {
   Divider,
   Tabs,
   Tab,
+  Paper,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -33,10 +34,12 @@ import { useCreateAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
 import WarningIcon from "@mui/icons-material/Warning";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
-import { AIModelBadge } from "./AIModelSelector";
+import AIModelSelector, { AIModelBadge } from "./AIModelSelector";
 
 interface AnalysisDisplayProps {
   analysis: Analysis;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
 }
 
 // Helper component to render an individual AI analysis
@@ -49,22 +52,6 @@ interface AIAnalysisContentProps {
 function AIAnalysisContent({ analysisData, providerName, analysis }: AIAnalysisContentProps) {
   return (
     <Grid container spacing={3}>
-      {/* AI Model Badge */}
-      <Grid item xs={12}>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          {analysis.aiModelName ? (
-            <AIModelBadge modelName={analysis.aiModelName} modelId={analysis.aiModel} size="medium" />
-          ) : providerName ? (
-            <Chip
-              icon={<SmartToyIcon />}
-              label={`${providerName} Analysis`}
-              color="primary"
-              variant="outlined"
-            />
-          ) : null}
-        </Box>
-      </Grid>
-
       {/* Action Section */}
       <Grid item xs={12} md={6}>
         <Box sx={{ textAlign: "center", py: 2 }}>
@@ -134,41 +121,20 @@ function AIAnalysisContent({ analysisData, providerName, analysis }: AIAnalysisC
           />
         </Grid>
       )}
-
-      <Grid item xs={12}>
-        <Divider />
-      </Grid>
-
-      {/* Metadata */}
-      <Grid item xs={12}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {analysis.snapshot.layout.symbol && (
-            <Typography variant="body2" color="text.secondary">
-              <strong>Symbol:</strong> {analysis.snapshot.layout.symbol}
-            </Typography>
-          )}
-          {analysis.snapshot.layout.interval && (
-            <Typography variant="body2" color="text.secondary">
-              <strong>Interval:</strong> {analysis.snapshot.layout.interval}
-            </Typography>
-          )}
-          <Typography variant="body2" color="text.secondary">
-            <strong>Analyzed:</strong>{" "}
-            {format(new Date(analysis.createdAt), "MMMM dd, yyyy HH:mm")}
-          </Typography>
-        </Box>
-      </Grid>
     </Grid>
   );
 }
 
-export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
+export default function AnalysisDisplay({ analysis, selectedModel, onModelChange }: AnalysisDisplayProps) {
   const logger = getLogger();
   const router = useRouter();
   const createSnapshot = useCreateSnapshot();
   const createAnalysis = useCreateAnalysis();
   const [regenerating, setRegenerating] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+
+  // Use selectedModel if provided, otherwise fall back to analysis.aiModel
+  const currentModel = selectedModel || analysis.aiModel;
 
   const hasEconomicContext = !!analysis.economicContext;
   const isMultiLayout = analysis.isMultiLayout && !!analysis.multiLayoutData;
@@ -179,13 +145,11 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
   const hasDeepSeek = !!analysis.deepseekAnalysis;
   const hasDualAnalysis = hasOpenAI || hasDeepSeek;
 
-  // Debug logging
-  console.log("Analysis data:", {
-    isMultiLayout,
-    hasMultiLayoutData: !!analysis.multiLayoutData,
-    snapshotsLength: multiLayoutSnapshots.length,
-    layoutsAnalyzed,
-    intervals,
+  // Debug logging for AI model
+  console.log("AI Model Info:", {
+    aiModel: analysis.aiModel,
+    aiModelName: analysis.aiModelName,
+    displayValue: analysis.aiModelName || analysis.aiModel || 'AI Model'
   });
 
   const handleRegenerate = async () => {
@@ -195,31 +159,113 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
       const snapshot = await createSnapshot.mutateAsync(layoutId);
       const newAnalysis = await createAnalysis.mutateAsync({
         snapshotId: snapshot.id,
-        aiModel: analysis.aiModel || undefined
+        aiModel: currentModel || undefined
       });
       router.push(`/analysis/${newAnalysis.id}`);
     } catch (error) {
       logger.error("Regeneration failed", {
         error: error instanceof Error ? error.message : String(error),
         layoutId: analysis.snapshot.layoutId,
+        aiModel: currentModel,
       });
-      alert("Failed to regenerate analysis. Please try again.");
+
+      // Extract error message from axios error
+      let errorMessage = "Failed to regenerate analysis. Please try again.";
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        if (axiosError.response?.data?.error) {
+          errorMessage = `Analysis failed: ${axiosError.response.data.error}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = `Analysis failed: ${error.message}`;
+      }
+
+      alert(errorMessage);
     } finally {
       setRegenerating(false);
     }
   };
 
   return (
-    <Card>
+    <Card elevation={3}>
+      {/* Analysis Info Header */}
+      <Box
+        sx={{
+          bgcolor: 'primary.main',
+          color: 'white',
+          p: 2.5
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          {/* Symbol and Interval */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box>
+              {analysis.snapshot.layout.symbol && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    Symbol:
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {analysis.snapshot.layout.symbol}
+                  </Typography>
+                </Box>
+              )}
+              {analysis.snapshot.layout.interval && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    Interval:
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {analysis.snapshot.layout.interval}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Grid>
+
+          {/* AI Model Badge */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SmartToyIcon sx={{ fontSize: 24 }} />
+              <Box>
+                <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                  Generated by
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  {analysis.aiModelName || analysis.aiModel || 'AI Model'}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Multi-Layout Badge or Date */}
+          <Grid item xs={12} md={4}>
+            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 1, flexWrap: 'wrap' }}>
+              {isMultiLayout && (
+                <Chip
+                  label={`Multi-Layout • ${layoutsAnalyzed} Charts`}
+                  size="medium"
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 600
+                  }}
+                />
+              )}
+              <Typography variant="caption" sx={{ opacity: 0.8, alignSelf: 'center' }}>
+                {format(new Date(analysis.createdAt), "MMM dd, yyyy HH:mm")}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
       {/* Chart Images Section */}
       {isMultiLayout ? (
         <Box>
-          <Box sx={{ p: 2, bgcolor: "primary.main", color: "white" }}>
-            <Typography variant="h6">
-              Multi-Layout Analysis ({layoutsAnalyzed} charts)
-            </Typography>
-            <Typography variant="body2">
-              Intervals: {intervals.join(", ")}
+          <Box sx={{ p: 2, bgcolor: "grey.100", borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
+              Timeframes: {intervals.join(", ")}
             </Typography>
           </Box>
           <Grid container>
@@ -315,6 +361,40 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
                   </Box>
                 )}
 
+                {/* AI Model Selector */}
+                {onModelChange && (
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      mt: 3,
+                      overflow: 'hidden',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.100',
+                        borderBottom: 1,
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        Select AI Model for New Analysis
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Choose a different model and click "Generate New Analysis" below
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2.5 }}>
+                      <AIModelSelector
+                        value={selectedModel || ''}
+                        onChange={onModelChange}
+                      />
+                    </Box>
+                  </Paper>
+                )}
+
                 {/* Action Buttons */}
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12}>
@@ -375,6 +455,40 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
                   </Box>
                 )}
 
+                {/* AI Model Selector */}
+                {onModelChange && (
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      mt: 3,
+                      overflow: 'hidden',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.100',
+                        borderBottom: 1,
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        Select AI Model for New Analysis
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Choose a different model and click "Generate New Analysis" below
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2.5 }}>
+                      <AIModelSelector
+                        value={selectedModel || ''}
+                        onChange={onModelChange}
+                      />
+                    </Box>
+                  </Paper>
+                )}
+
                 {/* Action Buttons */}
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12}>
@@ -428,6 +542,40 @@ export default function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
                   providerName="AI"
                   analysis={analysis}
                 />
+
+                {/* AI Model Selector */}
+                {onModelChange && (
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      mt: 3,
+                      overflow: 'hidden',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: 'grey.100',
+                        borderBottom: 1,
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        Select AI Model for New Analysis
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Choose a different model and click "Generate New Analysis" below
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2.5 }}>
+                      <AIModelSelector
+                        value={selectedModel || ''}
+                        onChange={onModelChange}
+                      />
+                    </Box>
+                  </Paper>
+                )}
 
                 {/* Action Buttons */}
                 <Grid container spacing={2} sx={{ mt: 2 }}>

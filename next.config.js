@@ -11,12 +11,22 @@ if (process.env.NODE_ENV !== "development") {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    instrumentationHook: true,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Completely ignore undici and async_hooks for client-side bundles
+      // Completely ignore server-only modules for client-side bundles
       config.plugins.push(
         new (require("webpack").IgnorePlugin)({
           resourceRegExp: /^(undici|async_hooks)$/,
+        })
+      );
+
+      // Ignore winston and colors for client-side
+      config.plugins.push(
+        new (require("webpack").IgnorePlugin)({
+          resourceRegExp: /^(winston|@colors\/colors)$/,
         })
       );
 
@@ -27,6 +37,11 @@ const nextConfig = {
         fs: false,
         net: false,
         tls: false,
+        os: false,
+        path: false,
+        stream: false,
+        util: false,
+        crypto: false,
       };
     }
     return config;

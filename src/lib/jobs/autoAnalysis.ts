@@ -38,7 +38,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
   } = job;
 
   const layoutName = `${symbol || "Chart"} ${interval || ""}`;
-  logger.info('Starting automation job', {
+  logger.info("Starting automation job", {
     layoutName,
     scheduleId,
     userId,
@@ -51,7 +51,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       sendOnHold: job.sendOnHold,
       includeChart: job.includeChart,
       includeEconomic: job.includeEconomic,
-    }
+    },
   });
 
   // Create job log
@@ -85,9 +85,9 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
         decryptedSessionidSign = sessionidSign;
       }
     } catch (error) {
-      logger.error('Session decryption error', {
+      logger.error("Session decryption error", {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       throw new Error("Failed to decrypt sessionid");
     }
@@ -97,16 +97,16 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     }
 
     // Step 2: Capture chart screenshot using Puppeteer
-    logger.info('Capturing screenshot', { layoutId: layoutIdTradingView });
+    logger.info("Capturing screenshot", { layoutId: layoutIdTradingView });
     const imagePath = await captureWithPuppeteer({
       layoutId: layoutIdTradingView,
       sessionid: decryptedSessionId,
       sessionidSign: decryptedSessionidSign!,
     });
 
-    logger.info('Screenshot captured successfully', {
+    logger.info("Screenshot captured successfully", {
       dataLength: imagePath.length,
-      preview: imagePath.substring(0, 50)
+      preview: imagePath.substring(0, 50),
     });
 
     // Step 3: Calculate expiration (24 hours from now)
@@ -114,7 +114,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Step 4: Create snapshot record
-    logger.debug('Creating snapshot with imageData');
+    logger.debug("Creating snapshot with imageData");
     const snapshot = await prisma.snapshot.create({
       data: {
         layoutId,
@@ -124,14 +124,14 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       },
     });
 
-    logger.info('Snapshot created', {
+    logger.info("Snapshot created", {
       snapshotId: snapshot.id,
       hasImageData: !!snapshot.imageData,
-      imageDataLength: snapshot.imageData?.length || 0
+      imageDataLength: snapshot.imageData?.length || 0,
     });
 
     // Step 5: Analyze with OpenAI
-    logger.info('Analyzing chart with AI');
+    logger.info("Analyzing chart with AI");
     const analysisResult = await analyzeChart(imagePath);
 
     // Step 6: Create analysis record
@@ -161,10 +161,10 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       },
     });
 
-    logger.info('Analysis created', {
+    logger.info("Analysis created", {
       analysisId: analysis.id,
       action: analysis.action,
-      confidence: analysis.confidence
+      confidence: analysis.confidence,
     });
 
     // Step 7: Check if we should send alert
@@ -186,10 +186,10 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       if (previousAnalysis) {
         signalChanged = previousAnalysis.action !== analysis.action;
         shouldSendAlert = signalChanged;
-        logger.info('Signal change check', {
+        logger.info("Signal change check", {
           previousAction: previousAnalysis.action,
           currentAction: analysis.action,
-          changed: signalChanged
+          changed: signalChanged,
         });
       }
     }
@@ -197,11 +197,11 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     // Check minimum confidence
     if (job.minConfidence) {
       const metThreshold = analysis.confidence >= job.minConfidence;
-      logger.info('Confidence check', {
+      logger.info("Confidence check", {
         current: analysis.confidence,
         minimum: job.minConfidence,
         metThreshold,
-        result: metThreshold ? 'passed' : 'skipped'
+        result: metThreshold ? "passed" : "skipped",
       });
 
       if (!metThreshold) {
@@ -211,10 +211,10 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
 
     // Check if HOLD should be sent
     if (analysis.action === "HOLD") {
-      logger.info('HOLD action check', {
+      logger.info("HOLD action check", {
         action: analysis.action,
         sendOnHoldEnabled: job.sendOnHold,
-        result: job.sendOnHold ? 'passed' : 'skipped'
+        result: job.sendOnHold ? "passed" : "skipped",
       });
 
       if (!job.sendOnHold) {
@@ -225,19 +225,19 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     // Step 8: Send Telegram alert if configured and conditions met
     let telegramSent = false;
 
-    logger.info('Telegram alert decision', {
+    logger.info("Telegram alert decision", {
       shouldSend: shouldSendAlert,
       chatIdConfigured: !!telegramChatId,
-      chatId: telegramChatId || 'N/A'
+      chatId: telegramChatId || "N/A",
     });
 
     if (shouldSendAlert && telegramChatId) {
       try {
-        logger.info('Sending Telegram alert', {
+        logger.info("Sending Telegram alert", {
           to: telegramChatId,
           includeChart: job.includeChart,
           includeEconomic: job.includeEconomic,
-          imagePathLength: imagePath.length
+          imagePathLength: imagePath.length,
         });
 
         await sendTradingAlert({
@@ -249,21 +249,23 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
         });
 
         telegramSent = true;
-        logger.info('Telegram alert sent successfully', {
+        logger.info("Telegram alert sent successfully", {
           action: analysis.action,
           confidence: analysis.confidence,
-          layoutName
+          layoutName,
         });
       } catch (error) {
-        logger.error('Telegram send failed', {
+        logger.error("Telegram send failed", {
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
         // Don't throw - job should still be marked as successful
       }
     } else {
-      logger.info('Telegram alert skipped', {
-        reason: !shouldSendAlert ? 'Conditions not met' : 'No chat ID configured'
+      logger.info("Telegram alert skipped", {
+        reason: !shouldSendAlert
+          ? "Conditions not met"
+          : "No chat ID configured",
       });
     }
 
@@ -336,13 +338,13 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       data: logData,
     });
 
-    logger.info('Automation job completed', { duration });
+    logger.info("Automation job completed", { duration });
   } catch (error: any) {
     const duration = Date.now() - startTime;
-    logger.error('Automation job failed', {
+    logger.error("Automation job failed", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
-      duration
+      duration,
     });
 
     // Update job log with error
@@ -367,9 +369,9 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
           `${symbol || "Chart"} ${interval || ""}`
         );
       } catch (err) {
-        logger.error('Failed to send error alert', {
+        logger.error("Failed to send error alert", {
           error: err instanceof Error ? err.message : String(err),
-          stack: err instanceof Error ? err.stack : undefined
+          stack: err instanceof Error ? err.stack : undefined,
         });
       }
     }
@@ -406,7 +408,7 @@ function calculateNextRun(job: AutomationJob): Date {
 
 export async function runScheduledJobs(): Promise<void> {
   const logger = getLogger();
-  logger.info('Checking for scheduled automation jobs');
+  logger.info("Checking for scheduled automation jobs");
 
   try {
     // Find all enabled schedules that are due to run
@@ -426,19 +428,22 @@ export async function runScheduledJobs(): Promise<void> {
     });
 
     if (dueSchedules.length === 0) {
-      logger.info('No jobs due to run');
+      logger.info("No jobs due to run");
       return;
     }
 
-    logger.info('Found jobs to process', { count: dueSchedules.length });
+    logger.info("Found jobs to process", { count: dueSchedules.length });
 
     // Process each schedule
     for (const schedule of dueSchedules) {
       if (!schedule.user.sessionid) {
-        logger.error('User missing sessionid, skipping', {
-          layoutId: schedule.layoutId,
-          userId: schedule.userId
-        });
+        logger.error(
+          "User missing sessionid (configure in Dashboard Settings), skipping",
+          {
+            layoutId: schedule.layoutId,
+            userId: schedule.userId,
+          }
+        );
         continue;
       }
 
@@ -462,20 +467,20 @@ export async function runScheduledJobs(): Promise<void> {
       try {
         await processAutomationJob(job);
       } catch (error) {
-        logger.error('Job failed for schedule', {
+        logger.error("Job failed for schedule", {
           scheduleId: schedule.id,
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+          stack: error instanceof Error ? error.stack : undefined,
         });
         // Continue with other jobs
       }
     }
 
-    logger.info('All scheduled jobs processed');
+    logger.info("All scheduled jobs processed");
   } catch (error) {
-    logger.error('Error running scheduled jobs', {
+    logger.error("Error running scheduled jobs", {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
   }
 }

@@ -34,10 +34,6 @@ model User {
   subscriptionTier      String     @default("free") // free, pro, enterprise
   subscriptionStatus    String     @default("inactive") // inactive, active, canceled, past_due
 
-  // TradingView session credentials (shared across all layouts)
-  tvSessionId           String?
-  tvSessionIdSign       String?
-
   // Dashboard settings
   defaultAiModel        String?    @default("gpt-4o")
   sessionid             String?    // TradingView sessionid cookie

@@ -30,8 +30,8 @@ export async function PATCH(request: NextRequest) {
 
     // Update user's TradingView session credentials
     await updateUser(authResult.user.userId, {
-      tvSessionId: sessionId,
-      tvSessionIdSign: sessionIdSign,
+      sessionid: sessionId,
+      sessionidSign: sessionIdSign,
     });
 
     logger.info("TradingView session credentials updated", {
@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     return NextResponse.json({
-      message: "TradingView session credentials updated successfully"
+      message: "TradingView session credentials updated successfully",
     });
   } catch (error) {
     logger.error("Failed to update TradingView session", {
@@ -64,15 +64,12 @@ export async function GET(request: NextRequest) {
     const user = await getUserById(authResult.user.userId);
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     return NextResponse.json({
-      hasSession: !!(user.tvSessionId && user.tvSessionIdSign),
-      sessionId: user.tvSessionId ? "***" + user.tvSessionId.slice(-4) : null,
+      hasSession: !!(user.sessionid && user.sessionidSign),
+      sessionId: user.sessionid ? "***" + user.sessionid.slice(-4) : null,
     });
   } catch (error) {
     return createErrorResponse(error, 500);

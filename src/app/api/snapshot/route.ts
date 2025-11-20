@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Decrypt sessionid (it's encrypted in the database)
-    let decryptedSessionId = user.tvSessionId;
+    let decryptedSessionId = user.sessionid;
     try {
-      if (user.tvSessionId && user.tvSessionId.includes(":")) {
+      if (user.sessionid && user.sessionid.includes(":")) {
         // Check if it's encrypted (format: iv:encryptedData)
-        decryptedSessionId = decrypt(user.tvSessionId);
+        decryptedSessionId = decrypt(user.sessionid);
         logger.debug("Decrypted sessionid", {
           sessionIdLength: decryptedSessionId.length,
-          layoutId
+          layoutId,
         });
       } else {
         logger.debug("Using plain sessionid (not encrypted)", { layoutId });
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       logger.error("Failed to decrypt sessionid", {
         error: error instanceof Error ? error.message : String(error),
-        layoutId
+        layoutId,
       });
       // If decryption fails, use as-is (might be plain text)
     }
@@ -85,36 +85,36 @@ export async function POST(request: NextRequest) {
     // Debug: Log what we have
     logger.debug("Layout and user data for snapshot", {
       hasLayoutId: !!layout.layoutId,
-      hasTvSessionId: !!user.tvSessionId,
-      hasTvSessionIdSign: !!user.tvSessionIdSign,
+      hasSessionid: !!user.sessionid,
+      hasSessionidSign: !!user.sessionidSign,
       layoutId: layout.layoutId,
     });
 
     // Use Puppeteer ONLY - CHART-IMG is disabled
-    if (!layout.layoutId || !decryptedSessionId || !user.tvSessionIdSign) {
+    if (!layout.layoutId || !decryptedSessionId || !user.sessionidSign) {
       logger.warn("Missing required credentials for Puppeteer screenshot", {
         hasLayoutId: !!layout.layoutId,
         hasSessionid: !!decryptedSessionId,
-        hasSessionidSign: !!user.tvSessionIdSign,
-        layoutId
+        hasSessionidSign: !!user.sessionidSign,
+        layoutId,
       });
       return NextResponse.json(
         {
           error:
-            "Missing TradingView session credentials. Please update your session credentials in Profile > TradingView Session.",
+            "Missing TradingView session credentials. Please update your session credentials in Dashboard Settings.",
         },
         { status: 400 }
       );
     }
 
     logger.info("Using Puppeteer to capture chart", {
-      layoutId: layout.layoutId
+      layoutId: layout.layoutId,
     });
 
     const screenshotDataUrl = await captureWithPuppeteer({
       layoutId: layout.layoutId,
       sessionid: decryptedSessionId,
-      sessionidSign: user.tvSessionIdSign,
+      sessionidSign: user.sessionidSign,
       width: 1920,
       height: 1080,
     });
@@ -138,14 +138,14 @@ export async function POST(request: NextRequest) {
 
     logger.info("Snapshot created successfully", {
       snapshotId: snapshot.id,
-      layoutId
+      layoutId,
     });
 
     return NextResponse.json(snapshot, { status: 201 });
   } catch (error) {
     logger.error("Snapshot generation error", {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     // Handle specific CHART-IMG errors

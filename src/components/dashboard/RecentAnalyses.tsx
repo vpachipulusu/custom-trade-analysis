@@ -10,9 +10,7 @@ import {
 } from "@mui/material";
 import { format } from "date-fns";
 import { Analysis } from "@/hooks/useAnalyses";
-import ActionChip from "./ActionChip";
-import ConfidenceProgress from "./ConfidenceProgress";
-import RiskLevelBadge from "./RiskLevelBadge";
+import { ActionChip, ConfidenceProgress, RiskLevelBadge } from "@/components/common";
 
 interface RecentAnalysesProps {
   analyses: Analysis[];

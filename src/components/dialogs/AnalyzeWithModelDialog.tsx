@@ -10,7 +10,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import AIModelSelector from "./AIModelSelector";
+import { AIModelSelector } from "@/components/analysis";
 
 interface AnalyzeWithModelDialogProps {
   open: boolean;

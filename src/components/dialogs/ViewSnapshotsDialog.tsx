@@ -14,10 +14,9 @@ import {
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { useSnapshots } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
-import SnapshotCard from "./SnapshotCard";
-import LoadingSpinner from "./LoadingSpinner";
-import ErrorAlert from "./ErrorAlert";
-import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import { SnapshotCard } from "@/components/analysis";
+import { LoadingSpinner, ErrorAlert } from "@/components/common";
+import { DeleteConfirmationDialog } from "@/components/dialogs";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -178,7 +177,7 @@ export default function ViewSnapshotsDialog({
                   <SnapshotCard
                     snapshot={snapshot}
                     onAnalyze={handleAnalyze}
-                    onDelete={(id) =>
+                    onDelete={(id: any) =>
                       setDeleteDialog({ open: true, snapshotId: id })
                     }
                     onView={handleView}

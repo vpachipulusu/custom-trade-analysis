@@ -1,14 +1,14 @@
 "use client";
 
 import { Grid, Typography, Paper, Box } from "@mui/material";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Layout from "@/components/Layout";
-import LayoutsTable from "@/components/LayoutsTable";
-import RecentAnalyses from "@/components/RecentAnalyses";
+import { ProtectedRoute } from '@/components/layout';
+import { Layout } from '@/components/layout';
+import { LayoutsTable } from '@/components/dashboard';
+import { RecentAnalyses } from '@/components/dashboard';
 import { useLayouts } from "@/hooks/useLayouts";
 import { useAnalyses } from "@/hooks/useAnalyses";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ErrorAlert from "@/components/ErrorAlert";
+import { LoadingSpinner } from '@/components/common';
+import { ErrorAlert } from '@/components/common';
 
 export default function DashboardPage() {
   const {

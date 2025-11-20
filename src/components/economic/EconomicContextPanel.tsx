@@ -20,8 +20,7 @@ import {
   Lightbulb,
   Info as InfoIcon,
 } from "@mui/icons-material";
-import RiskLevelBadge from "./RiskLevelBadge";
-import OutlookChip from "./OutlookChip";
+import { RiskLevelBadge, OutlookChip } from "@/components/common";
 import EconomicEventsList from "./EconomicEventsList";
 import { EconomicEvent } from "@/lib/services/economicCalendar";
 

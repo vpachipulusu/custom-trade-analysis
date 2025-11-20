@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Button, Skeleton, Paper, Typography, Grid, Divider } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Layout from "@/components/Layout";
-import AnalysisDisplay from "@/components/AnalysisDisplay";
+import { ProtectedRoute } from '@/components/layout';
+import { Layout } from '@/components/layout';
+import { AnalysisDisplay } from '@/components/analysis';
 import { useAnalysis } from "@/hooks/useAnalyses";
-import ErrorAlert from "@/components/ErrorAlert";
-import AIModelSelector from "@/components/AIModelSelector";
+import { ErrorAlert } from '@/components/common';
+import { AIModelSelector } from '@/components/analysis';
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserSettings } from "@/hooks/useUserSettings";
 

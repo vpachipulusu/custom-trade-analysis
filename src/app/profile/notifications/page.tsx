@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box, Typography, Grid } from "@mui/material";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from '@/components/layout';
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import NotificationSettings from "@/components/profile/NotificationSettings";
 import NotificationsPanel from "@/components/profile/NotificationsPanel";

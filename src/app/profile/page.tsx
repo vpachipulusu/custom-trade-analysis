@@ -26,7 +26,7 @@ import {
   NotificationsActive,
 } from "@mui/icons-material";
 import { useProfile } from "@/hooks/useProfile";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from '@/components/layout';
 import ProfileLayout from "@/components/profile/ProfileLayout";
 
 function ProfileOverview() {

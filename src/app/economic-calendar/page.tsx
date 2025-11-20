@@ -30,9 +30,9 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { addDays, startOfDay, endOfDay } from "date-fns";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Layout from "@/components/Layout";
-import EconomicEventsList from "@/components/EconomicEventsList";
+import { ProtectedRoute } from '@/components/layout';
+import { Layout } from '@/components/layout';
+import { EconomicEventsList } from '@/components/economic';
 import { EconomicEvent } from "@/lib/services/economicCalendar";
 
 const COUNTRIES = [

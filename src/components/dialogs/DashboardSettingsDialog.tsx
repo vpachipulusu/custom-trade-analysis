@@ -14,8 +14,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { getLogger } from "@/lib/logging";
-import AIModelSelector from "./AIModelSelector";
-import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import { AIModelSelector } from "@/components/analysis";
+import { DeleteConfirmationDialog } from "@/components/dialogs";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface DashboardSettingsDialogProps {

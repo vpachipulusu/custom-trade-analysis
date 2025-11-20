@@ -24,19 +24,19 @@ import {
   ListItemText,
   ListItemButton,
 } from "@mui/material";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Layout from "@/components/Layout";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ErrorAlert from "@/components/ErrorAlert";
+import { ProtectedRoute } from '@/components/layout';
+import { Layout } from '@/components/layout';
+import { LoadingSpinner } from '@/components/common';
+import { ErrorAlert } from '@/components/common';
 import SettingsIcon from "@mui/icons-material/Settings";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TelegramIcon from "@mui/icons-material/Telegram";
 import AddIcon from "@mui/icons-material/Add";
 import DescriptionIcon from "@mui/icons-material/Description";
-import TelegramSetupDialog from "@/components/TelegramSetupDialog";
-import AutomationSettingsDialog from "@/components/AutomationSettingsDialog";
-import JobLogsDialog from "@/components/JobLogsDialog";
+import { TelegramSetupDialog } from '@/components/automation';
+import { AutomationSettingsDialog } from '@/components/automation';
+import { JobLogsDialog } from '@/components/dialogs';
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -455,7 +455,7 @@ export default function AutomationPage() {
         <TelegramSetupDialog
           open={telegramDialogOpen}
           onClose={() => setTelegramDialogOpen(false)}
-          onSave={async (config) => {
+          onSave={async (config: any) => {
             saveTelegramConfig.mutate(config);
           }}
           onTest={testTelegram}
@@ -506,7 +506,7 @@ export default function AutomationPage() {
             setEditingSchedule(null);
           }}
           layout={selectedLayout}
-          onSave={async (settings) => {
+          onSave={async (settings: any) => {
             saveAutomation.mutate({
               layoutId: selectedLayout?.id,
               ...settings,

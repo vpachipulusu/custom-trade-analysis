@@ -6,10 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   Typography,
   Divider,
@@ -18,6 +14,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { getLogger } from "@/lib/logging";
+import AIModelSelector from "./AIModelSelector";
 
 interface DashboardSettingsDialogProps {
   open: boolean;
@@ -29,12 +26,6 @@ interface DashboardSettingsDialogProps {
   };
   onSave: () => void;
 }
-
-const AI_MODELS = [
-  { value: "gpt-4o", label: "GPT-4o (Recommended)" },
-  { value: "gpt-4o-mini", label: "GPT-4o Mini (Faster, Less Accurate)" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-];
 
 export default function DashboardSettingsDialog({
   open,
@@ -111,20 +102,13 @@ export default function DashboardSettingsDialog({
           <Typography variant="h6" gutterBottom>
             AI Analysis Settings
           </Typography>
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>Default AI Model</InputLabel>
-            <Select
-              value={defaultAiModel}
-              label="Default AI Model"
-              onChange={(e) => setDefaultAiModel(e.target.value)}
-            >
-              {AI_MODELS.map((model) => (
-                <MenuItem key={model.value} value={model.value}>
-                  {model.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select the default AI model to use for all chart analyses.
+          </Typography>
+          <AIModelSelector
+            value={defaultAiModel}
+            onChange={setDefaultAiModel}
+          />
 
           <Divider sx={{ my: 3 }} />
 

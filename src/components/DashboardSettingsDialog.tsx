@@ -15,6 +15,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { getLogger } from "@/lib/logging";
 import AIModelSelector from "./AIModelSelector";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DashboardSettingsDialogProps {
   open: boolean;
@@ -35,6 +37,7 @@ export default function DashboardSettingsDialog({
 }: DashboardSettingsDialogProps) {
   const logger = getLogger();
   const { getAuthToken } = useAuth();
+  const queryClient = useQueryClient();
   const [defaultAiModel, setDefaultAiModel] = useState(
     currentSettings?.defaultAiModel || "gpt-4o"
   );
@@ -44,6 +47,8 @@ export default function DashboardSettingsDialog({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteAllSnapshotsDialog, setDeleteAllSnapshotsDialog] = useState(false);
+  const [deletingSnapshots, setDeletingSnapshots] = useState(false);
 
   // Update state when currentSettings prop changes
   useEffect(() => {
@@ -87,7 +92,29 @@ export default function DashboardSettingsDialog({
     }
   };
 
+  const handleDeleteAllSnapshots = async () => {
+    try {
+      setDeletingSnapshots(true);
+      const token = await getAuthToken();
+      await axios.delete("/api/snapshots/all", {
+        headers: { Authorization: token },
+      });
+      queryClient.invalidateQueries({ queryKey: ["snapshots"] });
+      queryClient.invalidateQueries({ queryKey: ["layouts"] });
+      setDeleteAllSnapshotsDialog(false);
+      logger.info("All snapshots deleted from all layouts");
+    } catch (err) {
+      logger.error("Failed to delete all snapshots", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      setError("Failed to delete snapshots. Please try again.");
+    } finally {
+      setDeletingSnapshots(false);
+    }
+  };
+
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Dashboard Settings</DialogTitle>
       <DialogContent>
@@ -140,6 +167,24 @@ export default function DashboardSettingsDialog({
             placeholder="Your TradingView sessionid_sign cookie"
             helperText="Find this in browser DevTools → Application → Cookies → tradingview.com"
           />
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Clear All Snapshots */}
+          <Typography variant="h6" gutterBottom color="error">
+            Danger Zone
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Permanently delete all snapshots from all layouts. This action cannot be undone.
+          </Typography>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setDeleteAllSnapshotsDialog(true)}
+            fullWidth
+          >
+            Clear All Layout Snapshots
+          </Button>
         </Box>
       </DialogContent>
       <DialogActions>
@@ -151,5 +196,14 @@ export default function DashboardSettingsDialog({
         </Button>
       </DialogActions>
     </Dialog>
+
+    <DeleteConfirmationDialog
+      open={deleteAllSnapshotsDialog}
+      title="Delete All Snapshots"
+      message="Are you sure you want to delete ALL snapshots from ALL layouts? This will also delete all associated analyses. This action cannot be undone."
+      onConfirm={handleDeleteAllSnapshots}
+      onCancel={() => setDeleteAllSnapshotsDialog(false)}
+    />
+    </>
   );
 }

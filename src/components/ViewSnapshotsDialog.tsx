@@ -9,7 +9,9 @@ import {
   Grid,
   Box,
   Typography,
+  IconButton,
 } from "@mui/material";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { useSnapshots } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
 import SnapshotCard from "./SnapshotCard";
@@ -46,7 +48,9 @@ export default function ViewSnapshotsDialog({
     open: false,
     snapshotId: null,
   });
+  const [deleteAllDialog, setDeleteAllDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [userSettings, setUserSettings] = useState<{
     defaultAiModel?: string;
   }>({});
@@ -82,7 +86,10 @@ export default function ViewSnapshotsDialog({
       router.push(`/analysis/${analysis.id}`);
       onClose();
     } catch (error) {
-      logger.error("Analysis failed", { error, snapshotId, aiModel });
+      logger.error("Analysis failed", {
+        error: error instanceof Error ? error.message : String(error),
+        snapshotId,
+      });
       setActionLoading(null);
     }
   };
@@ -100,9 +107,32 @@ export default function ViewSnapshotsDialog({
       setDeleteDialog({ open: false, snapshotId: null });
     } catch (error) {
       logger.error("Delete failed", {
-        error,
+        error: error instanceof Error ? error.message : String(error),
         snapshotId: deleteDialog.snapshotId,
       });
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!layoutId) return;
+
+    try {
+      setDeletingAll(true);
+      const token = await getAuthToken();
+      await axios.delete(`/api/layouts/${layoutId}/snapshots`, {
+        headers: { Authorization: token },
+      });
+      queryClient.invalidateQueries({ queryKey: ["snapshots", layoutId] });
+      queryClient.invalidateQueries({ queryKey: ["layouts"] });
+      setDeleteAllDialog(false);
+      logger.info("All snapshots deleted for layout", { layoutId });
+    } catch (error) {
+      logger.error("Delete all snapshots failed", {
+        error: error instanceof Error ? error.message : String(error),
+        layoutId,
+      });
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -114,7 +144,21 @@ export default function ViewSnapshotsDialog({
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle>Snapshots</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Snapshots</span>
+            {snapshots && snapshots.length > 0 && (
+              <IconButton
+                onClick={() => setDeleteAllDialog(true)}
+                color="error"
+                size="small"
+                title="Delete all snapshots"
+              >
+                <DeleteSweepIcon />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           {error && (
             <ErrorAlert message="Failed to load snapshots" severity="error" />
@@ -156,6 +200,14 @@ export default function ViewSnapshotsDialog({
         message="Are you sure you want to delete this snapshot? This will also delete its analysis if it exists."
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialog({ open: false, snapshotId: null })}
+      />
+
+      <DeleteConfirmationDialog
+        open={deleteAllDialog}
+        title="Delete All Snapshots"
+        message={`Are you sure you want to delete all ${snapshots?.length || 0} snapshots for this layout? This will also delete all associated analyses. This action cannot be undone.`}
+        onConfirm={handleDeleteAll}
+        onCancel={() => setDeleteAllDialog(false)}
       />
     </>
   );

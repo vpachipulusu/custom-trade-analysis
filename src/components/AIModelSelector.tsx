@@ -39,6 +39,15 @@ export default function AIModelSelector({
     fetchEnabledModels();
   }, []);
 
+  // Check if the current value is valid
+  useEffect(() => {
+    if (models.length > 0 && value && !models.find(m => m.id === value)) {
+      // Current value is invalid, reset to first available model
+      console.warn(`Invalid AI model selected: ${value}. Resetting to first available model.`);
+      onChange(models[0].id);
+    }
+  }, [models, value, onChange]);
+
   const fetchEnabledModels = async () => {
     try {
       setLoading(true);

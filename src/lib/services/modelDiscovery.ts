@@ -65,10 +65,14 @@ async function getGeminiModels(): Promise<AvailableModel[]> {
 
         if (response.data?.models) {
           const visionModels = response.data.models
-            .filter((model: any) =>
-              model.supportedGenerationMethods?.includes("generateContent") &&
-              (model.name.includes("vision") || model.name.includes("1.5") || model.name.includes("gemini-pro"))
-            )
+            .filter((model: any) => {
+              const modelName = model.name.replace("models/", "");
+              return (
+                model.supportedGenerationMethods?.includes("generateContent") &&
+                // Only include Gemini 2.x and 3.x models which support vision
+                (modelName.includes("gemini-2.") || modelName.includes("gemini-3"))
+              );
+            })
             .map((model: any) => ({
               id: model.name.replace("models/", ""),
               name: model.displayName || model.name.replace("models/", ""),
@@ -91,9 +95,8 @@ async function getGeminiModels(): Promise<AvailableModel[]> {
     // Fallback to known models if API call fails
     logger.warn("Could not fetch Gemini models from API, using defaults");
     return [
-      { id: "gemini-1.5-pro-latest", name: "Gemini 1.5 Pro", provider: "gemini", supportsVision: true },
-      { id: "gemini-1.5-flash-latest", name: "Gemini 1.5 Flash", provider: "gemini", supportsVision: true },
-      { id: "gemini-pro-vision", name: "Gemini Pro Vision", provider: "gemini", supportsVision: true },
+      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "gemini", supportsVision: true },
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "gemini", supportsVision: true },
     ];
   } catch (error) {
     logger.error("Failed to fetch Gemini models", { error });

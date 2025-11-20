@@ -3,9 +3,9 @@ import { AnalysisResult, EconomicImpactResult } from "./openai";
 import { EconomicEvent, calculateImmediateRisk } from "./economicCalendar";
 import { getLogger } from "../logging";
 
-// Use Gemini 1.5 Pro for vision analysis
-// Note: Use v1 API for Gemini 1.5 models, v1beta only supports older models
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-pro-latest";
+// Use Gemini 2.5 Flash for vision analysis (fast and cost-effective)
+// Note: Use v1 API for Gemini 2.x and 3.x models
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION || "v1";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent`;
 const GEMINI_API_KEY = process.env.GEMINI_KEY;

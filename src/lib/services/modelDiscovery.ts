@@ -14,7 +14,8 @@ export interface AvailableModel {
 async function getClaudeModels(): Promise<AvailableModel[]> {
   const logger = getLogger();
 
-  if (!process.env.CLAUDE_KEY) {
+  // Check if Claude is enabled and has API key
+  if (process.env.ENABLE_CLAUDE === "false" || !process.env.CLAUDE_KEY) {
     return [];
   }
 
@@ -86,7 +87,8 @@ function formatClaudeName(id: string): string {
 async function getGeminiModels(): Promise<AvailableModel[]> {
   const logger = getLogger();
 
-  if (!process.env.GEMINI_KEY) {
+  // Check if Gemini is enabled and has API key
+  if (process.env.ENABLE_GEMINI === "false" || !process.env.GEMINI_KEY) {
     return [];
   }
 
@@ -148,7 +150,8 @@ async function getGeminiModels(): Promise<AvailableModel[]> {
 async function getOpenAIModels(): Promise<AvailableModel[]> {
   const logger = getLogger();
 
-  if (!process.env.OPENAI_KEY) {
+  // Check if OpenAI is enabled and has API key
+  if (process.env.ENABLE_OPENAI === "false" || !process.env.OPENAI_KEY) {
     return [];
   }
 

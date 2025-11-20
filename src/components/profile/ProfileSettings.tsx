@@ -17,7 +17,6 @@ import {
 import { Save } from "@mui/icons-material";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import AvatarUpload from "./AvatarUpload";
-import TradingViewSessionSettings from "./TradingViewSessionSettings";
 
 export default function ProfileSettings() {
   const { data: profile, isLoading } = useProfile();
@@ -181,12 +180,6 @@ export default function ProfileSettings() {
                 rows={4}
                 placeholder="Tell us about yourself..."
               />
-            </Grid>
-
-            {/* TradingView Session */}
-            <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
-              <TradingViewSessionSettings />
             </Grid>
 
             {/* Account Info */}

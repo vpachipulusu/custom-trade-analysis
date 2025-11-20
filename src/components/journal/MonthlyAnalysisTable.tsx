@@ -104,7 +104,7 @@ export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
   };
 
   const formatCurrency = (value: string | undefined | null) => {
-    return formatCurrencyUtil(value, currency);
+    return formatCurrencyUtil(value ?? undefined, currency);
   };
 
   const formatPercent = (value: string | undefined | null) => {
@@ -194,7 +194,6 @@ export default function MonthlyAnalysisTable({ refreshTrigger }: Props) {
             {/* Winning Trades */}
             <TableRow
               sx={{
-                bgcolor: "success.light",
                 bgcolor: "rgba(46, 125, 50, 0.05)",
               }}
             >

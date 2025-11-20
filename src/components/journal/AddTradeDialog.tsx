@@ -118,7 +118,7 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded, linkedAnal
         setAccountBalance(String(data.currentBalance || ""));
       }
     } catch (err) {
-      logger.error("Failed to fetch settings", { error: err });
+      logger.error("Failed to fetch settings", { error: err instanceof Error ? err.message : String(err) });
     }
   };
 
@@ -184,6 +184,10 @@ export default function AddTradeDialog({ open, onClose, onTradeAdded, linkedAnal
     try {
       setLoading(true);
       setError(null);
+
+      if (!time || !date) {
+        throw new Error("Date and time are required");
+      }
 
       const timeStr = time.toTimeString().split(" ")[0].substring(0, 5);
       const riskReward = calculateRiskReward();

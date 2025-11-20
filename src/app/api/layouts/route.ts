@@ -50,26 +50,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
-    // Encrypt sessionid if provided
-    let encryptedSessionId = body.sessionid;
-    if (body.sessionid) {
-      try {
-        encryptedSessionId = encrypt(body.sessionid);
-      } catch (error) {
-        return NextResponse.json(
-          { error: "Failed to encrypt session data" },
-          { status: 500 }
-        );
-      }
-    }
-
     // Create layout
     const layout = await createLayout(authResult.user.userId, {
       layoutId: body.layoutId || null,
       symbol: body.symbol || null,
       interval: body.interval || null,
-      sessionid: encryptedSessionId || null,
-      sessionidSign: body.sessionidSign || null,
     });
 
     return NextResponse.json(layout, { status: 201 });

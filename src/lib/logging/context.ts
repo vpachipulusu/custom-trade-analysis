@@ -10,7 +10,7 @@ if (isNode) {
   try {
     // Dynamic import for Node.js only
     const { AsyncLocalStorage } = require('async_hooks');
-    asyncLocalStorage = new AsyncLocalStorage<LogMetadata>();
+    asyncLocalStorage = new AsyncLocalStorage();
   } catch (e) {
     // Fallback if async_hooks is not available
     console.warn('async_hooks not available, using fallback context storage');

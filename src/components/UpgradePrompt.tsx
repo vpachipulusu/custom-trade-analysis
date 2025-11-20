@@ -59,7 +59,7 @@ export default function UpgradePrompt({
         window.location.href = response.data.url;
       }
     } catch (error) {
-      logger.error("Error creating checkout session", { error, tier });
+      logger.error("Error creating checkout session", { error: error instanceof Error ? error.message : String(error), tier });
       alert("Failed to start checkout. Please try again.");
       setLoading(null);
     }

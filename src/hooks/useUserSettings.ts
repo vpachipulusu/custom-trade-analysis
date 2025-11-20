@@ -18,7 +18,7 @@ export function useUserSettings() {
       });
       setSettings(response.data);
     } catch (error) {
-      logger.error("Failed to fetch user settings", { error });
+      logger.error("Failed to fetch user settings", { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setLoading(false);
     }

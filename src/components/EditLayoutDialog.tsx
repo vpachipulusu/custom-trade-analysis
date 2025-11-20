@@ -87,7 +87,7 @@ export default function EditLayoutDialog({
       handleClose();
       onSuccess();
     } catch (err: any) {
-      logger.error("Layout update error", { error: err, layoutId: layout.id });
+      logger.error("Layout update error", { error: err instanceof Error ? err.message : String(err), layoutId: layout.id });
       setError(err.response?.data?.error || "Failed to update layout");
     }
   };

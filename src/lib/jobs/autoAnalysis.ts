@@ -434,9 +434,10 @@ export async function runScheduledJobs(): Promise<void> {
 
     // Process each schedule
     for (const schedule of dueSchedules) {
-      if (!schedule.layout.sessionid) {
-        logger.error('Layout missing sessionid, skipping', {
-          layoutId: schedule.layoutId
+      if (!schedule.user.sessionid) {
+        logger.error('User missing sessionid, skipping', {
+          layoutId: schedule.layoutId,
+          userId: schedule.userId
         });
         continue;
       }
@@ -448,8 +449,8 @@ export async function runScheduledJobs(): Promise<void> {
         layoutIdTradingView: schedule.layout.layoutId,
         symbol: schedule.layout.symbol,
         interval: schedule.layout.interval,
-        sessionId: schedule.layout.sessionid,
-        sessionidSign: schedule.layout.sessionidSign,
+        sessionId: schedule.user.sessionid,
+        sessionidSign: schedule.user.sessionidSign,
         telegramChatId: schedule.user.telegramConfig?.chatId,
         includeChart: schedule.user.telegramConfig?.includeChart ?? true,
         includeEconomic: schedule.user.telegramConfig?.includeEconomic ?? true,

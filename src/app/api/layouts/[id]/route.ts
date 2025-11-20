@@ -52,22 +52,6 @@ export async function PATCH(
       return NextResponse.json({ error: validation.message }, { status: 400 });
     }
 
-    // Store sessionid as plain text (no encryption needed)
-    let sessionIdValue = undefined;
-    if (body.sessionid) {
-      // User provided a new sessionid value - store it as-is
-      logger.debug("Storing new sessionid", { layoutId: id });
-      sessionIdValue = body.sessionid;
-    } else if (body.sessionid === null || body.sessionid === "") {
-      // User explicitly wants to clear the sessionid
-      logger.debug("Clearing sessionid", { layoutId: id });
-      sessionIdValue = null;
-    } else {
-      // sessionid not provided in update - keep existing value
-      logger.debug("Keeping existing sessionid", { layoutId: id });
-      sessionIdValue = layout.sessionid;
-    }
-
     // Prepare update data - allow clearing fields with null/empty string
     const updateData: any = {};
 
@@ -86,21 +70,9 @@ export async function PATCH(
       updateData.interval = body.interval || null;
     }
 
-    // sessionid - use plain text value determined above
-    updateData.sessionid = sessionIdValue;
-
-    // sessionidSign - allow null to clear
-    if (body.sessionidSign !== undefined) {
-      updateData.sessionidSign = body.sessionidSign || null;
-    } else {
-      // Keep existing value
-      updateData.sessionidSign = layout.sessionidSign;
-    }
-
     logger.debug("Updating layout in database", {
       layoutId: id,
-      updateKeys: Object.keys(updateData),
-      hasSessionId: !!updateData.sessionid
+      updateKeys: Object.keys(updateData)
     });
 
     // Update layout

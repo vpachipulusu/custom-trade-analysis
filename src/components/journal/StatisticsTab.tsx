@@ -61,7 +61,7 @@ export default function StatisticsTab({
       const settingsData = await settingsResponse.json();
       setSettings(settingsData);
     } catch (err) {
-      logger.error("Error fetching statistics data", { error: err });
+      logger.error("Error fetching statistics data", { error: err instanceof Error ? err.message : String(err) });
       setError(
         err instanceof Error ? err.message : "Failed to load statistics"
       );

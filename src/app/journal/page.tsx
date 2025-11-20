@@ -94,7 +94,7 @@ export default function JournalPage() {
       }
       setLoading(false);
     } catch (err) {
-      logger.error("Error checking first time", { error: err });
+      logger.error("Error checking first time", { error: err instanceof Error ? err.message : String(err) });
       setLoading(false);
     }
   };
@@ -118,7 +118,7 @@ export default function JournalPage() {
         setRefreshTrigger((prev) => prev + 1);
       }
     } catch (err) {
-      logger.error("Error saving starting balance", { error: err });
+      logger.error("Error saving starting balance", { error: err instanceof Error ? err.message : String(err) });
     }
   };
 

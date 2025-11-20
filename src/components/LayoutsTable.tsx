@@ -71,7 +71,7 @@ export default function LayoutsTable({
         });
         setUserSettings(response.data);
       } catch (error) {
-        logger.error("Failed to fetch user settings", { error });
+        logger.error("Failed to fetch user settings", { error: error instanceof Error ? error.message : String(error) });
       }
     };
     loadSettings();
@@ -103,7 +103,7 @@ export default function LayoutsTable({
         setDeleteDialog({ open: false, layoutId: null });
       } catch (error) {
         logger.error("Delete failed", {
-          error,
+          error: error instanceof Error ? error.message : String(error),
           layoutId: deleteDialog.layoutId,
         });
       }
@@ -114,7 +114,7 @@ export default function LayoutsTable({
     try {
       await createSnapshot.mutateAsync(layoutId);
     } catch (error) {
-      logger.error("Snapshot generation failed", { error, layoutId });
+      logger.error("Snapshot generation failed", { error: error instanceof Error ? error.message : String(error), layoutId });
     }
   };
 
@@ -132,7 +132,7 @@ export default function LayoutsTable({
       });
       router.push(`/analysis/${analysis.id}`);
     } catch (error) {
-      logger.error("Symbol analysis failed", { error, symbol });
+      logger.error("Symbol analysis failed", { error: error instanceof Error ? error.message : String(error), symbol });
     }
   };
 
@@ -144,7 +144,7 @@ export default function LayoutsTable({
       });
       setUserSettings(response.data);
     } catch (error) {
-      logger.error("Failed to reload user settings", { error });
+      logger.error("Failed to reload user settings", { error: error instanceof Error ? error.message : String(error) });
     }
   };
 

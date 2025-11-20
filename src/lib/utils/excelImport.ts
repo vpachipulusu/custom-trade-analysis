@@ -29,7 +29,7 @@ interface ImportSettings {
   currentBalance: number;
 }
 
-export async function importJournalFromExcel(buffer: Buffer): Promise<{
+export async function importJournalFromExcel(buffer: any): Promise<{
   trades: ImportedTrade[];
   settings: ImportSettings;
   errors: string[];

@@ -28,9 +28,14 @@ export default function AnalysisPage() {
   useEffect(() => {
     let mounted = true;
     const loadSettings = async () => {
-      const token = await getAuthToken();
-      if (token && mounted) {
-        await fetchSettings(token);
+      try {
+        const token = await getAuthToken();
+        if (token && mounted) {
+          await fetchSettings(token);
+        }
+      } catch (error) {
+        // User not logged in yet, settings will be fetched after auth
+        console.debug('Settings fetch skipped - user not authenticated');
       }
     };
     loadSettings();

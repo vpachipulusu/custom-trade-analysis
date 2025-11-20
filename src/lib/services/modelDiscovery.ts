@@ -19,27 +19,65 @@ async function getClaudeModels(): Promise<AvailableModel[]> {
   }
 
   try {
-    // Claude doesn't have a list models endpoint, so we'll try common models
-    // and return the ones that work
-    const modelsToTry = [
-      "claude-3-5-sonnet-20241022",
-      "claude-3-5-sonnet-20240620",
-      "claude-3-opus-20240229",
-      "claude-3-sonnet-20240229",
-      "claude-3-haiku-20240307",
-    ];
+    // Fetch models from Claude API
+    const response = await axios.get(
+      "https://api.anthropic.com/v1/models",
+      {
+        headers: {
+          "x-api-key": process.env.CLAUDE_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        timeout: 5000,
+      }
+    );
 
-    // For now, return all known models - we'll validate on actual use
-    return modelsToTry.map(id => ({
-      id,
-      name: `Claude ${id.includes('opus') ? 'Opus' : id.includes('sonnet') ? 'Sonnet' : 'Haiku'} ${id.includes('3-5') ? '3.5' : '3'}`,
-      provider: "claude" as const,
-      supportsVision: true,
-    }));
+    if (response.data?.data) {
+      const visionModels = response.data.data
+        .filter((model: any) => {
+          // Only include Claude 3+ models which support vision
+          return model.id.includes("claude-3");
+        })
+        .map((model: any) => ({
+          id: model.id,
+          name: model.display_name || formatClaudeName(model.id),
+          provider: "claude" as const,
+          supportsVision: true,
+        }));
+
+      if (visionModels.length > 0) {
+        logger.info(`Found ${visionModels.length} Claude models`);
+        return visionModels;
+      }
+    }
+
+    // Fallback to known models if API call fails or returns no models
+    logger.warn("Could not fetch Claude models from API, using defaults");
+    return [
+      { id: "claude-3-5-sonnet-20240620", name: "Claude 3.5 Sonnet", provider: "claude", supportsVision: true },
+      { id: "claude-3-opus-20240229", name: "Claude 3 Opus", provider: "claude", supportsVision: true },
+      { id: "claude-3-sonnet-20240229", name: "Claude 3 Sonnet", provider: "claude", supportsVision: true },
+      { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku", provider: "claude", supportsVision: true },
+    ];
   } catch (error) {
-    logger.error("Failed to fetch Claude models", { error });
-    return [];
+    logger.error("Failed to fetch Claude models", { error: error instanceof Error ? error.message : String(error) });
+    // Return default models as fallback
+    return [
+      { id: "claude-3-5-sonnet-20240620", name: "Claude 3.5 Sonnet", provider: "claude", supportsVision: true },
+      { id: "claude-3-opus-20240229", name: "Claude 3 Opus", provider: "claude", supportsVision: true },
+      { id: "claude-3-sonnet-20240229", name: "Claude 3 Sonnet", provider: "claude", supportsVision: true },
+      { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku", provider: "claude", supportsVision: true },
+    ];
   }
+}
+
+/**
+ * Format Claude model ID into a friendly name
+ */
+function formatClaudeName(id: string): string {
+  if (id.includes("opus")) return `Claude ${id.includes("3-5") ? "3.5" : "3"} Opus`;
+  if (id.includes("sonnet")) return `Claude ${id.includes("3-5") ? "3.5" : "3"} Sonnet`;
+  if (id.includes("haiku")) return `Claude ${id.includes("3-5") ? "3.5" : "3"} Haiku`;
+  return id;
 }
 
 /**
@@ -99,7 +137,7 @@ async function getGeminiModels(): Promise<AvailableModel[]> {
       { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "gemini", supportsVision: true },
     ];
   } catch (error) {
-    logger.error("Failed to fetch Gemini models", { error });
+    logger.error("Failed to fetch Gemini models", { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
@@ -127,10 +165,14 @@ async function getOpenAIModels(): Promise<AvailableModel[]> {
 
     if (response.data?.data) {
       const visionModels = response.data.data
-        .filter((model: any) =>
-          model.id.includes("gpt-4") &&
-          (model.id.includes("vision") || model.id.includes("4o") || model.id.includes("4-turbo"))
-        )
+        .filter((model: any) => {
+          const id = model.id.toLowerCase();
+          // Include GPT-4 vision models and ChatGPT-4o models
+          return (
+            (id.includes("gpt-4") || id.includes("chatgpt-4")) &&
+            (id.includes("vision") || id.includes("4o") || id.includes("4-turbo"))
+          );
+        })
         .map((model: any) => ({
           id: model.id,
           name: model.id.toUpperCase().replace(/-/g, " "),
@@ -149,7 +191,7 @@ async function getOpenAIModels(): Promise<AvailableModel[]> {
       { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", supportsVision: true },
     ];
   } catch (error) {
-    logger.error("Failed to fetch OpenAI models", { error });
+    logger.error("Failed to fetch OpenAI models", { error: error instanceof Error ? error.message : String(error) });
     // Return default models as fallback
     return [
       { id: "gpt-4o", name: "GPT-4o", provider: "openai", supportsVision: true },
@@ -181,7 +223,7 @@ export async function getAllAvailableModels(): Promise<AvailableModel[]> {
 
     return allModels;
   } catch (error) {
-    logger.error("Failed to discover models", { error });
+    logger.error("Failed to discover models", { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }

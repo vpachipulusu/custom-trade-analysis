@@ -124,7 +124,7 @@ export default function CloseTradeDialog({
       onClose();
       onTradeClosed();
     } catch (err) {
-      logger.error("Close trade exception", { error: err, tradeId: trade.id });
+      logger.error("Close trade exception", { error: err instanceof Error ? err.message : String(err), tradeId: trade.id });
       setError(err instanceof Error ? err.message : "Failed to close trade");
     } finally {
       setLoading(false);

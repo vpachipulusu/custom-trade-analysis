@@ -67,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
         setOpenTradesCount(data.trades?.length || 0);
       }
     } catch (error) {
-      logger.error("Failed to fetch open trades count", { error });
+      logger.error("Failed to fetch open trades count", { error: error instanceof Error ? error.message : String(error) });
     }
   };
 

@@ -227,10 +227,13 @@ export async function getTradeById(tradeId: string) {
   });
 }
 
-export async function updateTrade(tradeId: string, updateData: Partial<Trade>) {
+export async function updateTrade(
+  tradeId: string,
+  updateData: Omit<Partial<Trade>, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+) {
   return await prisma.trade.update({
     where: { id: tradeId },
-    data: updateData,
+    data: updateData as any,
   });
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import prisma from "@/lib/prisma";
-import { adminAuth } from "@/lib/firebase/adminApp";
+import adminApp from "@/lib/firebase/adminApp";
 
 /**
  * POST /api/profile/password
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Update password using Firebase Admin SDK
-      await adminAuth.updateUser(authResult.user.uid, {
+      await adminApp.auth().updateUser(authResult.user.uid, {
         password: newPassword,
       });
 

@@ -38,6 +38,11 @@ model User {
   tvSessionId           String?
   tvSessionIdSign       String?
 
+  // Dashboard settings
+  defaultAiModel        String?    @default("gpt-4o")
+  sessionid             String?    // TradingView sessionid cookie
+  sessionidSign         String?    // TradingView sessionid_sign cookie
+
   layouts               Layout[]
   analyses              Analysis[]
   automationSchedules   AutomationSchedule[]

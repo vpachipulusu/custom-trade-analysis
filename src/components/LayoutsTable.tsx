@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import SettingsIcon from "@mui/icons-material/Settings";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -27,10 +28,12 @@ import AddLayoutDialog from "./AddLayoutDialog";
 import EditLayoutDialog from "./EditLayoutDialog";
 import ViewSnapshotsDialog from "./ViewSnapshotsDialog";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
-import AnalyzeWithModelDialog from "./AnalyzeWithModelDialog";
+import DashboardSettingsDialog from "./DashboardSettingsDialog";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
+import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
 
 interface LayoutsTableProps {
   layouts: Layout[];
@@ -42,7 +45,14 @@ export default function LayoutsTable({
   onRefresh,
 }: LayoutsTableProps) {
   const logger = getLogger();
+  const { getAuthToken } = useAuth();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [userSettings, setUserSettings] = useState<{
+    defaultAiModel?: string;
+    sessionid?: string;
+    sessionidSign?: string;
+  }>({});
   const [editDialog, setEditDialog] = useState<{
     open: boolean;
     layout: Layout | null;
@@ -50,6 +60,22 @@ export default function LayoutsTable({
     open: false,
     layout: null,
   });
+
+  // Fetch user settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const token = await getAuthToken();
+        const response = await axios.get("/api/user/settings", {
+          headers: { Authorization: token },
+        });
+        setUserSettings(response.data);
+      } catch (error) {
+        logger.error("Failed to fetch user settings", { error });
+      }
+    };
+    loadSettings();
+  }, [getAuthToken, logger]);
   const [viewSnapshotsDialog, setViewSnapshotsDialog] = useState<{
     open: boolean;
     layoutId: string | null;
@@ -63,13 +89,6 @@ export default function LayoutsTable({
   }>({
     open: false,
     layoutId: null,
-  });
-  const [analyzeDialog, setAnalyzeDialog] = useState<{
-    open: boolean;
-    symbol: string | null;
-  }>({
-    open: false,
-    symbol: null,
   });
 
   const deleteLayout = useDeleteLayout();
@@ -99,9 +118,13 @@ export default function LayoutsTable({
     }
   };
 
-  const handleAnalyzeSymbol = async (symbol: string, aiModel: string) => {
+  const handleAnalyzeSymbol = async (symbol: string) => {
     try {
-      const analysis = await createSymbolAnalysis.mutateAsync({ symbol, aiModel });
+      const aiModel = userSettings.defaultAiModel || "gpt-4o";
+      const analysis = await createSymbolAnalysis.mutateAsync({
+        symbol,
+        aiModel,
+      });
       logger.info("Symbol analysis completed", {
         symbol,
         aiModel,
@@ -109,7 +132,19 @@ export default function LayoutsTable({
       });
       router.push(`/analysis/${analysis.id}`);
     } catch (error) {
-      logger.error("Symbol analysis failed", { error, symbol, aiModel });
+      logger.error("Symbol analysis failed", { error, symbol });
+    }
+  };
+
+  const handleSettingsSaved = async () => {
+    try {
+      const token = await getAuthToken();
+      const response = await axios.get("/api/user/settings", {
+        headers: { Authorization: token },
+      });
+      setUserSettings(response.data);
+    } catch (error) {
+      logger.error("Failed to reload user settings", { error });
     }
   };
 
@@ -122,6 +157,17 @@ export default function LayoutsTable({
     acc[symbol].push(layout);
     return acc;
   }, {} as Record<string, Layout[]>);
+
+  // Sort symbols alphabetically and group layouts
+  const sortedSymbols = Object.keys(layoutsBySymbol).sort();
+  const groupedLayouts: { symbol: string; layouts: Layout[] }[] =
+    sortedSymbols.map((symbol) => ({
+      symbol,
+      layouts: layoutsBySymbol[symbol].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    }));
 
   if (layouts.length === 0) {
     return (
@@ -151,7 +197,14 @@ export default function LayoutsTable({
 
   return (
     <>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end", gap: 1 }}>
+        <Button
+          variant="outlined"
+          startIcon={<SettingsIcon />}
+          onClick={() => setSettingsDialogOpen(true)}
+        >
+          Settings
+        </Button>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -174,101 +227,134 @@ export default function LayoutsTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {layouts.map((layout) => {
-              const symbolLayoutCount = layout.symbol
-                ? layoutsBySymbol[layout.symbol]?.length || 0
-                : 0;
-              const hasMultipleLayouts = symbolLayoutCount > 1;
+            {groupedLayouts.map((group) => {
+              const hasMultipleLayouts = group.layouts.length > 1;
 
-              return (
-                <TableRow key={layout.id}>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {layout.symbol || "-"}
-                      {hasMultipleLayouts && (
-                        <Chip
-                          label={`${symbolLayoutCount} layouts`}
-                          size="small"
-                          color="secondary"
-                          variant="outlined"
-                        />
+              return group.layouts.map((layout, index) => {
+                const isFirstInGroup = index === 0;
+
+                return (
+                  <TableRow
+                    key={layout.id}
+                    sx={{
+                      borderTop:
+                        isFirstInGroup && index !== 0
+                          ? "2px solid #e0e0e0"
+                          : undefined,
+                    }}
+                  >
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        {isFirstInGroup && (
+                          <>
+                            <Typography
+                              variant="body2"
+                              fontWeight={hasMultipleLayouts ? 600 : 400}
+                            >
+                              {layout.symbol || "-"}
+                            </Typography>
+                            {hasMultipleLayouts && (
+                              <Chip
+                                label={`${group.layouts.length} layouts`}
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                              />
+                            )}
+                          </>
+                        )}
+                        {!isFirstInGroup && (
+                          <Typography
+                            variant="body2"
+                            color="text.disabled"
+                            sx={{ pl: 2 }}
+                          >
+                            ↳
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{layout.interval || "-"}</TableCell>
+                    <TableCell>
+                      {layout.layoutId ? (
+                        <Chip label={layout.layoutId} size="small" />
+                      ) : (
+                        "-"
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{layout.interval || "-"}</TableCell>
-                  <TableCell>
-                    {layout.layoutId ? (
-                      <Chip label={layout.layoutId} size="small" />
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={layout.snapshotCount}
-                      size="small"
-                      color="primary"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(layout.createdAt), "MMM dd, yyyy")}
-                  </TableCell>
-                  <TableCell align="right">
-                    {hasMultipleLayouts && layout.symbol && (
-                      <Tooltip title="Analyze all layouts for this symbol">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => setAnalyzeDialog({ open: true, symbol: layout.symbol! })}
-                          disabled={createSymbolAnalysis.isPending}
-                        >
-                          <AnalyticsIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      title="Generate Snapshot"
-                      onClick={() => handleGenerateSnapshot(layout.id)}
-                      disabled={createSnapshot.isPending}
-                    >
-                      <CameraAltIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="info"
-                      title="View Snapshots"
-                      onClick={() =>
-                        setViewSnapshotsDialog({
-                          open: true,
-                          layoutId: layout.id,
-                        })
-                      }
-                    >
-                      <PhotoLibraryIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      title="Edit"
-                      onClick={() => setEditDialog({ open: true, layout })}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      title="Delete"
-                      onClick={() =>
-                        setDeleteDialog({ open: true, layoutId: layout.id })
-                      }
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={layout.snapshotCount}
+                        size="small"
+                        color="primary"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(layout.createdAt), "MMM dd, yyyy")}
+                    </TableCell>
+                    <TableCell align="right">
+                      {isFirstInGroup &&
+                        hasMultipleLayouts &&
+                        layout.symbol && (
+                          <Tooltip title="Analyze all layouts for this symbol">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() =>
+                                handleAnalyzeSymbol(layout.symbol!)
+                              }
+                              disabled={createSymbolAnalysis.isPending}
+                            >
+                              <AnalyticsIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        title="Generate Snapshot"
+                        onClick={() => handleGenerateSnapshot(layout.id)}
+                        disabled={createSnapshot.isPending}
+                      >
+                        <CameraAltIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="info"
+                        title="View Snapshots"
+                        onClick={() =>
+                          setViewSnapshotsDialog({
+                            open: true,
+                            layoutId: layout.id,
+                          })
+                        }
+                      >
+                        <PhotoLibraryIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="secondary"
+                        title="Edit"
+                        onClick={() => setEditDialog({ open: true, layout })}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        title="Delete"
+                        onClick={() =>
+                          setDeleteDialog({ open: true, layoutId: layout.id })
+                        }
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              });
             })}
           </TableBody>
         </Table>
@@ -309,16 +395,11 @@ export default function LayoutsTable({
         onCancel={() => setDeleteDialog({ open: false, layoutId: null })}
       />
 
-      <AnalyzeWithModelDialog
-        open={analyzeDialog.open}
-        onClose={() => setAnalyzeDialog({ open: false, symbol: null })}
-        onConfirm={(aiModel) => {
-          if (analyzeDialog.symbol) {
-            handleAnalyzeSymbol(analyzeDialog.symbol, aiModel);
-          }
-        }}
-        title="Analyze Symbol"
-        description={`Select AI model to analyze all layouts for ${analyzeDialog.symbol || "this symbol"}:`}
+      <DashboardSettingsDialog
+        open={settingsDialogOpen}
+        onClose={() => setSettingsDialogOpen(false)}
+        currentSettings={userSettings}
+        onSave={handleSettingsSaved}
       />
     </>
   );

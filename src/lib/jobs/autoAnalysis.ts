@@ -1,9 +1,53 @@
 import prisma from "@/lib/prisma";
 import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
-import { analyzeChart } from "@/lib/services/openai";
+import { analyzeChart as analyzeChartOpenAI } from "@/lib/services/openai";
+import { analyzeChart as analyzeChartGemini } from "@/lib/services/gemini";
+import { analyzeChart as analyzeChartClaude } from "@/lib/services/claude";
+import { analyzeChart as analyzeChartDeepSeek } from "@/lib/services/deepseek";
 import { sendTradingAlert, sendErrorAlert } from "@/lib/services/telegram";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger } from "../logging";
+import { getMaxSnapshotsPerLayout } from "@/lib/utils/config";
+import type { AnalysisResult } from "@/lib/services/openai";
+
+/**
+ * Get AI model info and analysis function based on model identifier
+ */
+function getAIModelInfo(modelId?: string): {
+  analyzeFunction: (imageUrl: string, modelId?: string) => Promise<AnalysisResult>;
+  aiModel: string;
+  aiModelName: string;
+} {
+  const model = modelId || "gpt-4o"; // Default to OpenAI
+
+  // Map model identifiers to AI services
+  if (model.includes("gemini") || model === "gemini-2.5-flash") {
+    return {
+      analyzeFunction: analyzeChartGemini,
+      aiModel: "gemini",
+      aiModelName: "Google Gemini 2.5 Flash",
+    };
+  } else if (model.includes("claude")) {
+    return {
+      analyzeFunction: analyzeChartClaude,
+      aiModel: "claude",
+      aiModelName: "Anthropic Claude 3.5 Sonnet",
+    };
+  } else if (model.includes("deepseek")) {
+    return {
+      analyzeFunction: analyzeChartDeepSeek,
+      aiModel: "deepseek",
+      aiModelName: "DeepSeek",
+    };
+  } else {
+    // Default to OpenAI (gpt-4o, gpt-4o-mini, etc.)
+    return {
+      analyzeFunction: analyzeChartOpenAI,
+      aiModel: "openai",
+      aiModelName: model.includes("mini") ? "OpenAI GPT-4o Mini" : "OpenAI GPT-4o",
+    };
+  }
+}
 
 interface AutomationJob {
   scheduleId: string;
@@ -20,6 +64,7 @@ interface AutomationJob {
   onlyOnSignalChange?: boolean;
   minConfidence?: number;
   sendOnHold?: boolean;
+  defaultAiModel?: string; // User's preferred AI model from settings
 }
 
 export async function processAutomationJob(job: AutomationJob): Promise<void> {
@@ -109,11 +154,33 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       preview: imagePath.substring(0, 50),
     });
 
-    // Step 3: Calculate expiration (24 hours from now)
+    // Step 3: Check snapshot limit and auto-delete oldest if needed
+    const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
+    const existingSnapshots = await prisma.snapshot.findMany({
+      where: { layoutId },
+      orderBy: { createdAt: "asc" }, // Oldest first
+      select: { id: true, createdAt: true },
+    });
+
+    if (existingSnapshots.length >= maxSnapshotsPerLayout) {
+      // Delete the oldest snapshot to make room
+      const oldestSnapshot = existingSnapshots[0];
+      await prisma.snapshot.delete({
+        where: { id: oldestSnapshot.id },
+      });
+      logger.info("Auto-deleted oldest snapshot due to limit", {
+        layoutId,
+        deletedSnapshotId: oldestSnapshot.id,
+        maxLimit: maxSnapshotsPerLayout,
+        existingCount: existingSnapshots.length,
+      });
+    }
+
+    // Step 4: Calculate expiration (24 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    // Step 4: Create snapshot record
+    // Step 5: Create snapshot record
     logger.debug("Creating snapshot with imageData");
     const snapshot = await prisma.snapshot.create({
       data: {
@@ -130,11 +197,16 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       imageDataLength: snapshot.imageData?.length || 0,
     });
 
-    // Step 5: Analyze with OpenAI
-    logger.info("Analyzing chart with AI");
-    const analysisResult = await analyzeChart(imagePath);
+    // Step 6: Analyze with AI (using user's default AI model from settings)
+    const { analyzeFunction, aiModel, aiModelName } = getAIModelInfo(job.defaultAiModel);
+    logger.info("Analyzing chart with AI", {
+      userDefaultModel: job.defaultAiModel,
+      aiModel,
+      aiModelName
+    });
+    const analysisResult = await analyzeFunction(imagePath, job.defaultAiModel);
 
-    // Step 6: Create analysis record
+    // Step 7: Create analysis record
     const analysis = await prisma.analysis.create({
       data: {
         userId,
@@ -146,6 +218,8 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
         tradeSetup: analysisResult.tradeSetup
           ? JSON.parse(JSON.stringify(analysisResult.tradeSetup))
           : null,
+        aiModel,
+        aiModelName,
       },
       include: {
         snapshot: {
@@ -165,9 +239,10 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       analysisId: analysis.id,
       action: analysis.action,
       confidence: analysis.confidence,
+      aiModel: analysis.aiModel,
     });
 
-    // Step 7: Check if we should send alert
+    // Step 8: Check if we should send alert
     let shouldSendAlert = true;
     let signalChanged = false;
     let previousAnalysis = null;
@@ -222,7 +297,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       }
     }
 
-    // Step 8: Send Telegram alert if configured and conditions met
+    // Step 9: Send Telegram alert if configured and conditions met
     let telegramSent = false;
 
     logger.info("Telegram alert decision", {
@@ -269,7 +344,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       });
     }
 
-    // Step 9: Record analysis history
+    // Step 10: Record analysis history
     await prisma.analysisHistory.create({
       data: {
         analysisId: analysis.id,
@@ -292,7 +367,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       },
     });
 
-    // Step 10: Update automation schedule
+    // Step 11: Update automation schedule
     const duration = Date.now() - startTime;
 
     // Update job log with success
@@ -462,6 +537,7 @@ export async function runScheduledJobs(): Promise<void> {
         onlyOnSignalChange: schedule.onlyOnSignalChange,
         minConfidence: schedule.minConfidence,
         sendOnHold: schedule.sendOnHold,
+        defaultAiModel: schedule.user.defaultAiModel || "gpt-4o", // Use user's default AI model
       };
 
       try {

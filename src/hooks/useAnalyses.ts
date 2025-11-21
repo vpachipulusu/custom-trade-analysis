@@ -90,6 +90,8 @@ export interface Analysis {
       imageUrl: string;
     }>;
   } | null;
+  // Automation tracking
+  isAutomated?: boolean;
 }
 
 export interface AnalysesResponse {

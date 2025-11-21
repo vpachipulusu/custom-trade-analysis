@@ -39,12 +39,16 @@ export default function AIModelSelector({
     fetchEnabledModels();
   }, []);
 
-  // Check if the current value is valid
+  // Check if the current value is valid - only reset if it's truly invalid (not just missing from list)
+  // This allows automated analyses with stored model IDs to display correctly
   useEffect(() => {
-    if (models.length > 0 && value && !models.find(m => m.id === value)) {
-      // Current value is invalid, reset to first available model
-      console.warn(`Invalid AI model selected: ${value}. Resetting to first available model.`);
-      onChange(models[0].id);
+    if (models.length > 0 && value) {
+      const isValidFormat = value.includes(':') || models.find(m => m.id === value);
+      if (!isValidFormat) {
+        // Current value is invalid format, reset to first available model
+        console.warn(`Invalid AI model selected: ${value}. Resetting to first available model.`);
+        onChange(models[0].id);
+      }
     }
   }, [models, value, onChange]);
 

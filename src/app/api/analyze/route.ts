@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     logger.info("Analysis request started", { userId: authResult.user.userId });
 
     const body = await request.json();
-    const { snapshotId, symbol, aiModel } = body;
+    const { snapshotId, symbol, aiModel, isAutomated = false } = body;
 
     // Parse AI model selection (format: "provider:modelId" or just "modelId")
     let selectedProvider: "openai" | "gemini" | "claude" = "openai";
@@ -209,6 +209,7 @@ export async function POST(request: NextRequest) {
             multiLayoutData,
             aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
             aiModelName: modelName,
+            isAutomated,
           });
         } else {
           analysis = await createAnalysis(
@@ -224,6 +225,7 @@ export async function POST(request: NextRequest) {
               multiLayoutData,
               aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
               aiModelName: modelName,
+              isAutomated,
             }
           );
         }
@@ -416,6 +418,7 @@ export async function POST(request: NextRequest) {
         tradeSetup: analysisResult.tradeSetup,
         aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
         aiModelName: modelName,
+        isAutomated,
       });
     } else {
       // Create new analysis
@@ -427,6 +430,7 @@ export async function POST(request: NextRequest) {
         tradeSetup: analysisResult.tradeSetup,
         aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
         aiModelName: modelName,
+        isAutomated,
       });
     }
 

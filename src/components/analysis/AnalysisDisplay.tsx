@@ -22,6 +22,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import AutoModeIcon from "@mui/icons-material/AutoMode";
 import { format } from "date-fns";
 import { Analysis, AnalysisResult } from "@/hooks/useAnalyses";
 import { ActionChip, ConfidenceProgress } from "@/components/common";
@@ -237,9 +238,9 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
             </Box>
           </Grid>
 
-          {/* Multi-Layout Badge or Date */}
+          {/* Multi-Layout Badge, Automation Badge, and Date */}
           <Grid item xs={12} md={4}>
-            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               {isMultiLayout && (
                 <Chip
                   label={`Multi-Layout • ${layoutsAnalyzed} Charts`}
@@ -248,6 +249,21 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     bgcolor: 'rgba(255, 255, 255, 0.25)',
                     color: 'white',
                     fontWeight: 600
+                  }}
+                />
+              )}
+              {analysis.isAutomated && (
+                <Chip
+                  icon={<AutoModeIcon />}
+                  label="Automated"
+                  size="medium"
+                  sx={{
+                    bgcolor: 'rgba(76, 175, 80, 0.3)',
+                    color: 'white',
+                    fontWeight: 600,
+                    '& .MuiChip-icon': {
+                      color: 'white'
+                    }
                   }}
                 />
               )}

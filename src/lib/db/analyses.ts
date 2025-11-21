@@ -27,6 +27,7 @@ export interface CreateAnalysisData {
   } | null;
   aiModel?: string | null;
   aiModelName?: string | null;
+  isAutomated?: boolean;
 }
 
 export interface AnalysisWithRelations extends Analysis {
@@ -60,6 +61,7 @@ export async function createAnalysis(
       multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
       aiModel: data.aiModel || undefined,
       aiModelName: data.aiModelName || undefined,
+      isAutomated: data.isAutomated || false,
     },
   });
 }
@@ -166,6 +168,7 @@ export async function updateAnalysis(
       multiLayoutData: data.multiLayoutData ? JSON.parse(JSON.stringify(data.multiLayoutData)) : undefined,
       aiModel: data.aiModel || undefined,
       aiModelName: data.aiModelName || undefined,
+      isAutomated: data.isAutomated !== undefined ? data.isAutomated : undefined,
     },
   });
 }

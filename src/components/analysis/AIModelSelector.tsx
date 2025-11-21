@@ -98,18 +98,34 @@ export default function AIModelSelector({
     );
   }
 
+  // Find the currently selected model or use the value as-is if it's in provider:model format
+  const currentModel = models.find(m => m.id === value);
+  const displayValue = currentModel ? value : (value.includes(':') ? value : '');
+
   return (
     <FormControl fullWidth disabled={disabled}>
       <InputLabel id="ai-model-select-label">AI Model</InputLabel>
       <Select
         labelId="ai-model-select-label"
         id="ai-model-select"
-        value={value}
+        value={displayValue}
         label="AI Model"
         onChange={(e) => onChange(e.target.value)}
         startAdornment={
           <SmartToyIcon sx={{ mr: 1, color: "primary.main" }} />
         }
+        renderValue={(selected) => {
+          const model = models.find(m => m.id === selected);
+          if (model) {
+            return model.name;
+          }
+          // If not found in list but has valid format, display it anyway
+          if (selected && selected.includes(':')) {
+            const [provider, modelId] = selected.split(':');
+            return `${provider.toUpperCase()} ${modelId}`;
+          }
+          return selected || 'Select Model';
+        }}
       >
         {models.map((model) => (
           <MenuItem key={model.id} value={model.id}>

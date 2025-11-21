@@ -2,6 +2,7 @@ import axios from "axios";
 import { AnalysisResult, EconomicImpactResult } from "./openai";
 import { EconomicEvent, calculateImmediateRisk } from "./economicCalendar";
 import { getLogger } from "../logging";
+import { ANALYSIS_PROMPT, buildMultiLayoutPrompt } from "./prompts";
 
 // Use Gemini 2.5 Flash for vision analysis (fast and cost-effective)
 // Note: Use v1 API for Gemini 2.x and 3.x models
@@ -9,42 +10,6 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION || "v1";
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent`;
 const GEMINI_API_KEY = process.env.GEMINI_KEY;
-
-// Same analysis prompt as OpenAI for consistency
-const ANALYSIS_PROMPT = `You are an expert technical analyst and professional trader. Analyze the TradingView chart image and return ONLY valid JSON.
-
-CRITICAL PRICE READING INSTRUCTIONS:
-1. **READ THE RIGHT EDGE PRICE SCALE CAREFULLY** - Look at the actual numbers on the RIGHT side
-2. Read the current price from the TOP LEFT corner (ticker info area)
-3. **USE THE CORRECT PRICE MAGNITUDE** based on the instrument:
-   - BTC/BTCUSD: TENS OF THOUSANDS (e.g., 90327.00 NOT 90.327)
-   - Gold/XAUUSD: THOUSANDS (e.g., 2658.75 NOT 2.658)
-   - Forex pairs: Use 4-5 decimals (e.g., 1.15920)
-4. Identify support/resistance levels from horizontal lines drawn on the chart
-5. Entry and Stop Loss MUST be different prices with meaningful distance
-
-JSON Format (return ONLY this JSON, no other text):
-{
-  "action": "BUY" | "SELL" | "HOLD",
-  "confidence": <0-100>,
-  "timeframe": "intraday" | "swing" | "long",
-  "reasons": [
-    "Specific technical indicator with exact price level",
-    "Trend analysis with direction and key levels",
-    "Support/Resistance level identification",
-    "Pattern recognition (if visible)",
-    "Volume or momentum indicator reading",
-    "Additional confluence factor"
-  ],
-  "tradeSetup": {
-    "quality": "A" | "B" | "C",
-    "entryPrice": <number>,
-    "stopLoss": <number>,
-    "targetPrice": <number>,
-    "riskRewardRatio": <number>,
-    "setupDescription": "detailed explanation"
-  }
-}`;
 
 /**
  * Convert image URL to base64 for Gemini API
@@ -206,11 +171,8 @@ export async function analyzeMultipleLayouts(
       return await analyzeChart(layouts[0].imageUrl, modelId);
     }
 
-    const MULTI_LAYOUT_PROMPT = `Analyze ${layouts.length} different TradingView chart layouts showing the SAME financial instrument from different timeframes.
-
-Timeframes: ${layouts.map((l) => l.interval).join(", ")}
-
-Perform a comprehensive multi-timeframe analysis and return ONLY valid JSON in the same format as before.`;
+    // Use centralized multi-layout prompt
+    const MULTI_LAYOUT_PROMPT = buildMultiLayoutPrompt(layouts);
 
     // Get all images as base64
     const imageParts = await Promise.all(
@@ -226,7 +188,7 @@ Perform a comprehensive multi-timeframe analysis and return ONLY valid JSON in t
     );
 
     // Build content with text and all images
-    const parts = [{ text: MULTI_LAYOUT_PROMPT + "\n\n" + ANALYSIS_PROMPT }, ...imageParts];
+    const parts = [{ text: MULTI_LAYOUT_PROMPT }, ...imageParts];
 
     // Make API request to Gemini
     const response = await axios.post(

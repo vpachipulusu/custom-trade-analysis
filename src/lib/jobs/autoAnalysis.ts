@@ -17,8 +17,12 @@ function getAIModelInfo(modelId?: string): {
   analyzeFunction: (imageUrl: string, modelId?: string) => Promise<AnalysisResult>;
   aiModel: string;
   aiModelName: string;
+  cleanModelId: string; // Model ID without provider prefix
 } {
   const model = modelId || "gpt-4o"; // Default to OpenAI
+
+  // Remove provider prefix if present (e.g., "openai:chatgpt-4o-latest" -> "chatgpt-4o-latest")
+  const cleanModelId = model.includes(":") ? model.split(":")[1] : model;
 
   // Map model identifiers to AI services
   if (model.includes("gemini") || model === "gemini-2.5-flash") {
@@ -26,25 +30,29 @@ function getAIModelInfo(modelId?: string): {
       analyzeFunction: analyzeChartGemini,
       aiModel: "gemini",
       aiModelName: "Google Gemini 2.5 Flash",
+      cleanModelId,
     };
   } else if (model.includes("claude")) {
     return {
       analyzeFunction: analyzeChartClaude,
       aiModel: "claude",
       aiModelName: "Anthropic Claude 3.5 Sonnet",
+      cleanModelId,
     };
   } else if (model.includes("deepseek")) {
     return {
       analyzeFunction: analyzeChartDeepSeek,
       aiModel: "deepseek",
       aiModelName: "DeepSeek",
+      cleanModelId,
     };
   } else {
     // Default to OpenAI (gpt-4o, gpt-4o-mini, etc.)
     return {
       analyzeFunction: analyzeChartOpenAI,
       aiModel: "openai",
-      aiModelName: model.includes("mini") ? "OpenAI GPT-4o Mini" : "OpenAI GPT-4o",
+      aiModelName: cleanModelId.includes("mini") ? "OpenAI GPT-4o Mini" : "OpenAI GPT-4o",
+      cleanModelId,
     };
   }
 }
@@ -198,13 +206,14 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
     });
 
     // Step 6: Analyze with AI (using user's default AI model from settings)
-    const { analyzeFunction, aiModel, aiModelName } = getAIModelInfo(job.defaultAiModel);
+    const { analyzeFunction, aiModel, aiModelName, cleanModelId } = getAIModelInfo(job.defaultAiModel);
     logger.info("Analyzing chart with AI", {
       userDefaultModel: job.defaultAiModel,
+      cleanModelId,
       aiModel,
       aiModelName
     });
-    const analysisResult = await analyzeFunction(imagePath, job.defaultAiModel);
+    const analysisResult = await analyzeFunction(imagePath, cleanModelId);
 
     // Step 7: Create analysis record
     const analysis = await prisma.analysis.create({
@@ -481,17 +490,28 @@ function calculateNextRun(job: AutomationJob): Date {
   return new Date(now.getTime() + interval);
 }
 
-export async function runScheduledJobs(): Promise<void> {
+export async function runScheduledJobs(manualTrigger: boolean = false): Promise<void> {
   const logger = getLogger();
-  logger.info("Checking for scheduled automation jobs");
+  logger.info("Checking for scheduled automation jobs", { manualTrigger });
 
   try {
-    // Find all enabled schedules that are due to run
+    // Build the where clause based on whether this is a manual trigger
+    // Manual trigger: run ALL enabled jobs regardless of nextRunAt
+    // Scheduled trigger: only run jobs that are due (nextRunAt is null or in the past)
+    const whereClause: any = {
+      enabled: true,
+    };
+
+    if (!manualTrigger) {
+      whereClause.OR = [
+        { nextRunAt: null },
+        { nextRunAt: { lte: new Date() } }
+      ];
+    }
+
+    // Find all enabled schedules (filtered by due time if not manual trigger)
     const dueSchedules = await prisma.automationSchedule.findMany({
-      where: {
-        enabled: true,
-        OR: [{ nextRunAt: null }, { nextRunAt: { lte: new Date() } }],
-      },
+      where: whereClause,
       include: {
         layout: true,
         user: {

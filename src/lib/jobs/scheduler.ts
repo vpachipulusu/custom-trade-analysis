@@ -52,9 +52,9 @@ export function isSchedulerRunning(): boolean {
 export async function triggerSchedulerNow(): Promise<void> {
   const logger = getLogger();
 
-  logger.info('Manual scheduler trigger');
+  logger.info('Manual scheduler trigger - will run ALL enabled jobs');
   try {
-    await runScheduledJobs();
+    await runScheduledJobs(true); // Pass true to indicate manual trigger
     logger.info('Manual trigger completed');
   } catch (error) {
     logger.error('Manual trigger error', {

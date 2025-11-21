@@ -31,6 +31,7 @@ import { ErrorAlert } from '@/components/common';
 import SettingsIcon from "@mui/icons-material/Settings";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import TelegramIcon from "@mui/icons-material/Telegram";
 import AddIcon from "@mui/icons-material/Add";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -87,6 +88,7 @@ export default function AutomationPage() {
   const [selectedLayout, setSelectedLayout] = useState<any>(null);
   const [editingSchedule, setEditingSchedule] =
     useState<AutomationSchedule | null>(null);
+  const [runningJobId, setRunningJobId] = useState<string | null>(null);
 
   // Fetch automation schedules
   const {
@@ -176,7 +178,7 @@ export default function AutomationPage() {
     },
   });
 
-  // Trigger automation manually
+  // Trigger automation manually (all jobs)
   const triggerAutomation = useMutation({
     mutationFn: async () => {
       const token = await getAuthToken();
@@ -186,6 +188,29 @@ export default function AutomationPage() {
         { headers: { Authorization: token } }
       );
       return response.data;
+    },
+  });
+
+  // Trigger single automation job
+  const triggerSingleJob = useMutation({
+    mutationFn: async (scheduleId: string) => {
+      const token = await getAuthToken();
+      const response = await axios.post(
+        `/api/automation/${scheduleId}`,
+        {},
+        { headers: { Authorization: token } }
+      );
+      return response.data;
+    },
+    onMutate: (scheduleId) => {
+      setRunningJobId(scheduleId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["automation-schedules"] });
+      setRunningJobId(null);
+    },
+    onError: () => {
+      setRunningJobId(null);
     },
   });
 
@@ -405,6 +430,19 @@ export default function AutomationPage() {
                             </Box>
                           </TableCell>
                           <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => triggerSingleJob.mutate(schedule.id)}
+                              disabled={runningJobId === schedule.id || !schedule.enabled}
+                              title={schedule.enabled ? "Run Now" : "Schedule is disabled"}
+                              color="primary"
+                            >
+                              {runningJobId === schedule.id ? (
+                                <HourglassBottomIcon />
+                              ) : (
+                                <PlayArrowIcon />
+                              )}
+                            </IconButton>
                             <IconButton
                               size="small"
                               onClick={() =>

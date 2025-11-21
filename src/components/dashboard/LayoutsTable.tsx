@@ -29,6 +29,7 @@ import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfig } from "@/hooks/useConfig";
 import axios from "axios";
 
 interface LayoutsTableProps {
@@ -42,6 +43,7 @@ export default function LayoutsTable({
 }: LayoutsTableProps) {
   const logger = getLogger();
   const { getAuthToken } = useAuth();
+  const { data: config } = useConfig();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [userSettings, setUserSettings] = useState<{
@@ -228,6 +230,10 @@ export default function LayoutsTable({
 
               return group.layouts.map((layout, index) => {
                 const isFirstInGroup = index === 0;
+                const maxSnapshots = config?.maxSnapshotsPerLayout ?? 4;
+                const snapshotTooltip = layout.snapshotCount >= maxSnapshots
+                  ? `Generate Snapshot (oldest of ${maxSnapshots} will be auto-deleted)`
+                  : "Generate Snapshot";
 
                 return (
                   <TableRow
@@ -307,15 +313,16 @@ export default function LayoutsTable({
                             </IconButton>
                           </Tooltip>
                         )}
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        title="Generate Snapshot"
-                        onClick={() => handleGenerateSnapshot(layout.id)}
-                        disabled={createSnapshot.isPending}
-                      >
-                        <CameraAltIcon />
-                      </IconButton>
+                      <Tooltip title={snapshotTooltip}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleGenerateSnapshot(layout.id)}
+                          disabled={createSnapshot.isPending}
+                        >
+                          <CameraAltIcon />
+                        </IconButton>
+                      </Tooltip>
                       <IconButton
                         size="small"
                         color="info"

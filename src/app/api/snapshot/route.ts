@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, verifyOwnership } from "@/lib/utils/apiAuth";
 import { getLayoutById } from "@/lib/db/layouts";
-import { createSnapshot } from "@/lib/db/snapshots";
+import { createSnapshot, getSnapshotsByLayoutId, deleteSnapshot } from "@/lib/db/snapshots";
 import { generateSnapshot } from "@/lib/services/chartimg";
 import { captureWithPlaywright } from "@/lib/services/playwright-screenshot";
 import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger, LogContext } from "@/lib/logging";
+import { getMaxSnapshotsPerLayout } from "@/lib/utils/config";
 
 /**
  * POST /api/snapshot
@@ -49,6 +50,27 @@ export async function POST(request: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    // Check if layout has reached the maximum number of snapshots
+    // If so, delete the oldest snapshot to make room for the new one
+    const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
+    const existingSnapshots = await getSnapshotsByLayoutId(layoutId);
+
+    if (existingSnapshots.length >= maxSnapshotsPerLayout) {
+      // Sort by createdAt and get the oldest snapshot
+      const oldestSnapshot = existingSnapshots.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0];
+
+      if (oldestSnapshot) {
+        await deleteSnapshot(oldestSnapshot.id);
+        logger.info("Auto-deleted oldest snapshot due to limit", {
+          layoutId,
+          deletedSnapshotId: oldestSnapshot.id,
+          maxLimit: maxSnapshotsPerLayout,
+        });
+      }
     }
 
     // Get user's TradingView session credentials

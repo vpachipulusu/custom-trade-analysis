@@ -116,3 +116,21 @@ export async function getLayoutsBySymbol(
     },
   });
 }
+
+/**
+ * Count layouts for a specific symbol by user
+ */
+export async function countLayoutsBySymbol(
+  userId: string,
+  symbol: string
+): Promise<number> {
+  return await prisma.layout.count({
+    where: {
+      userId,
+      symbol: {
+        equals: symbol,
+        mode: "insensitive", // Case-insensitive search
+      },
+    },
+  });
+}

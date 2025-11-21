@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
-import { createLayout, getLayoutsByUserId } from "@/lib/db/layouts";
+import { createLayout, getLayoutsByUserId, countLayoutsBySymbol } from "@/lib/db/layouts";
 import { validateLayoutData } from "@/lib/utils/validation";
 import { encrypt } from "@/lib/utils/encryption";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
+import { getMaxLayoutsPerSymbol } from "@/lib/utils/config";
 
 /**
  * GET /api/layouts
@@ -48,6 +49,24 @@ export async function POST(request: NextRequest) {
     const validation = validateLayoutData(body);
     if (!validation.valid) {
       return NextResponse.json({ error: validation.message }, { status: 400 });
+    }
+
+    // Check if user has reached the maximum number of layouts for this symbol
+    if (body.symbol) {
+      const maxLayoutsPerSymbol = getMaxLayoutsPerSymbol();
+      const existingLayoutsCount = await countLayoutsBySymbol(
+        authResult.user.userId,
+        body.symbol
+      );
+
+      if (existingLayoutsCount >= maxLayoutsPerSymbol) {
+        return NextResponse.json(
+          {
+            error: `Maximum of ${maxLayoutsPerSymbol} layouts per symbol reached. Please delete an existing layout for ${body.symbol} before adding a new one.`
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Create layout

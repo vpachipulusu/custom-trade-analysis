@@ -165,14 +165,14 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
 
     // Step 3: Check snapshot limit and auto-delete oldest if needed
     const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
-    const existingSnapshots = await prisma.snapshot.findMany({
+    let existingSnapshots = await prisma.snapshot.findMany({
       where: { layoutId },
       orderBy: { createdAt: "asc" }, // Oldest first
       select: { id: true, createdAt: true },
     });
 
-    if (existingSnapshots.length >= maxSnapshotsPerLayout) {
-      // Delete the oldest snapshot to make room
+    // Delete oldest snapshots until we're under the limit (leaving room for the new one)
+    while (existingSnapshots.length >= maxSnapshotsPerLayout) {
       const oldestSnapshot = existingSnapshots[0];
       await prisma.snapshot.delete({
         where: { id: oldestSnapshot.id },
@@ -182,7 +182,11 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
         deletedSnapshotId: oldestSnapshot.id,
         maxLimit: maxSnapshotsPerLayout,
         existingCount: existingSnapshots.length,
+        remaining: existingSnapshots.length - 1,
       });
+
+      // Remove the deleted snapshot from the array
+      existingSnapshots = existingSnapshots.slice(1);
     }
 
     // Step 4: Calculate expiration (24 hours from now)

@@ -53,24 +53,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if layout has reached the maximum number of snapshots
-    // If so, delete the oldest snapshot to make room for the new one
+    // Delete oldest snapshots until we're under the limit (leaving room for the new one)
     const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
-    const existingSnapshots = await getSnapshotsByLayoutId(layoutId);
+    let existingSnapshots = await getSnapshotsByLayoutId(layoutId);
 
-    if (existingSnapshots.length >= maxSnapshotsPerLayout) {
-      // Sort by createdAt and get the oldest snapshot
-      const oldestSnapshot = existingSnapshots.sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      )[0];
+    // Sort by createdAt (oldest first)
+    existingSnapshots = existingSnapshots.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
 
-      if (oldestSnapshot) {
-        await deleteSnapshot(oldestSnapshot.id);
-        logger.info("Auto-deleted oldest snapshot due to limit", {
-          layoutId,
-          deletedSnapshotId: oldestSnapshot.id,
-          maxLimit: maxSnapshotsPerLayout,
-        });
-      }
+    // Delete oldest snapshots until we're under the limit
+    while (existingSnapshots.length >= maxSnapshotsPerLayout) {
+      const oldestSnapshot = existingSnapshots[0];
+      await deleteSnapshot(oldestSnapshot.id);
+      logger.info("Auto-deleted oldest snapshot due to limit", {
+        layoutId,
+        deletedSnapshotId: oldestSnapshot.id,
+        maxLimit: maxSnapshotsPerLayout,
+        existingCount: existingSnapshots.length,
+        remaining: existingSnapshots.length - 1,
+      });
+
+      // Remove the deleted snapshot from the array
+      existingSnapshots = existingSnapshots.slice(1);
     }
 
     // Get user's TradingView session credentials

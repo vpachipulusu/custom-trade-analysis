@@ -73,6 +73,7 @@ interface AutomationJob {
   minConfidence?: number;
   sendOnHold?: boolean;
   defaultAiModel?: string; // User's preferred AI model from settings
+  frequency?: string; // Schedule frequency (15m, 1h, 4h, 1d, 1w)
 }
 
 export async function processAutomationJob(job: AutomationJob): Promise<void> {
@@ -476,8 +477,7 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
 function calculateNextRun(job: AutomationJob): Date {
   const now = new Date();
 
-  // Get frequency from schedule (would be passed in job in real scenario)
-  // For now, using simple intervals
+  // Interval durations in milliseconds
   const intervals: Record<string, number> = {
     "15m": 15 * 60 * 1000,
     "1h": 60 * 60 * 1000,
@@ -486,7 +486,10 @@ function calculateNextRun(job: AutomationJob): Date {
     "1w": 7 * 24 * 60 * 60 * 1000,
   };
 
-  const interval = intervals["1h"]; // Default to 1h
+  // Use the job's frequency if available, otherwise default to 1h
+  const frequency = job.frequency || "1h";
+  const interval = intervals[frequency] || intervals["1h"];
+
   return new Date(now.getTime() + interval);
 }
 
@@ -558,6 +561,7 @@ export async function runScheduledJobs(manualTrigger: boolean = false): Promise<
         minConfidence: schedule.minConfidence,
         sendOnHold: schedule.sendOnHold,
         defaultAiModel: schedule.user.defaultAiModel || "gpt-4o", // Use user's default AI model
+        frequency: schedule.frequency, // Add frequency for nextRunAt calculation
       };
 
       try {

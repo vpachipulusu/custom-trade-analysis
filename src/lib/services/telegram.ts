@@ -29,25 +29,12 @@ function initializeBot() {
   return bot;
 }
 
-function getConfidenceEmoji(confidence: number): string {
-  if (confidence >= 90) return "🟢🟢🟢";
-  if (confidence >= 70) return "🟢🟢⚪";
-  if (confidence >= 50) return "🟢⚪⚪";
-  if (confidence >= 30) return "🟡⚪⚪";
-  return "🔴⚪⚪";
-}
-
-function getActionEmoji(action: string): string {
-  switch (action) {
-    case "BUY":
-      return "📈 BUY";
-    case "SELL":
-      return "📉 SELL";
-    case "HOLD":
-      return "⏸️ HOLD";
-    default:
-      return action;
-  }
+function getConfidenceLevel(confidence: number): string {
+  if (confidence >= 90) return "Very High";
+  if (confidence >= 70) return "High";
+  if (confidence >= 50) return "Medium";
+  if (confidence >= 30) return "Low";
+  return "Very Low";
 }
 
 function formatPrice(price: number): string {
@@ -95,40 +82,39 @@ export async function sendTradingAlert(
   logger.debug('Telegram bot initialized');
 
   // Build message
-  let message = `🤖 *Trade Analysis Alert*\n\n`;
+  let message = `*TRADE ANALYSIS ALERT*\n\n`;
   const layoutName = `${analysis.snapshot.layout?.symbol || "Chart"} ${
     analysis.snapshot.layout?.interval || ""
   }`;
-  message += `📊 *${layoutName}*\n`;
-  message += `⏰ ${new Date(analysis.createdAt).toLocaleString()}\n\n`;
+  message += `*Symbol:* ${layoutName}\n`;
+  message += `*Time:* ${new Date(analysis.createdAt).toLocaleString()}\n`;
+  message += `*AI Model:* ${analysis.aiModelName || "N/A"}\n\n`;
 
   // Action
-  message += `*Action:* ${getActionEmoji(analysis.action)}\n`;
-  message += `*Confidence:* ${analysis.confidence}% ${getConfidenceEmoji(
-    analysis.confidence
-  )}\n\n`;
+  message += `*Action:* ${analysis.action}\n`;
+  message += `*Confidence:* ${analysis.confidence}% (${getConfidenceLevel(analysis.confidence)})\n\n`;
 
   // Trade Setup (if available and not HOLD)
   if (analysis.tradeSetup && analysis.action !== "HOLD") {
     const ts = analysis.tradeSetup as TradeSetup;
     if (ts.entryPrice && ts.stopLoss && ts.targetPrice) {
-      message += `💼 *Trade Setup* (${ts.quality})\\n`;
-      message += `Entry: \`${formatPrice(ts.entryPrice)}\`\\n`;
-      message += `Stop Loss: \`${formatPrice(ts.stopLoss)}\`\\n`;
-      message += `Target: \`${formatPrice(ts.targetPrice)}\`\\n`;
+      message += `*TRADE SETUP (Quality: ${ts.quality})*\n`;
+      message += `Entry: ${formatPrice(ts.entryPrice)}\n`;
+      message += `Stop Loss: ${formatPrice(ts.stopLoss)}\n`;
+      message += `Target: ${formatPrice(ts.targetPrice)}\n`;
 
       const riskReward = (
         (ts.targetPrice - ts.entryPrice) /
         (ts.entryPrice - ts.stopLoss)
       ).toFixed(2);
-      message += `R:R Ratio: \`1:${riskReward}\`\\n\\n`;
+      message += `Risk/Reward: 1:${riskReward}\n\n`;
 
       if (ts.reasons && ts.reasons.length > 0) {
-        message += `*Key Reasons:*\\n`;
+        message += `*Key Reasons:*\n`;
         ts.reasons.slice(0, 3).forEach((reason: string, idx: number) => {
-          message += `${idx + 1}. ${reason}\\n`;
+          message += `${idx + 1}. ${reason}\n`;
         });
-        message += "\\n";
+        message += "\n";
       }
     }
   }
@@ -136,8 +122,8 @@ export async function sendTradingAlert(
   // Reasons as summary
   if (analysis.reasons && analysis.reasons.length > 0) {
     const firstReason = analysis.reasons[0];
-    message += `📝 *Analysis:* ${firstReason.substring(0, 150)}${
-      firstReason.length > 150 ? "..." : ""
+    message += `*Analysis Summary:*\n${firstReason.substring(0, 200)}${
+      firstReason.length > 200 ? "..." : ""
     }\n\n`;
   }
 
@@ -145,15 +131,15 @@ export async function sendTradingAlert(
   if (includeEconomic && analysis.economicContext) {
     const ec = analysis.economicContext as any;
     if (ec.immediateRisk && ec.immediateRisk !== "NONE") {
-      message += `⚠️ *Economic Risk:* ${ec.immediateRisk}\n`;
+      message += `*Economic Risk:* ${ec.immediateRisk}\n`;
     }
     if (ec.weeklyOutlook && ec.weeklyOutlook !== "NEUTRAL") {
-      message += `📊 *Weekly Outlook:* ${ec.weeklyOutlook}\n`;
+      message += `*Weekly Outlook:* ${ec.weeklyOutlook}\n`;
     }
     message += "\n";
   }
 
-  message += `🔗 [View Full Analysis](${
+  message += `[View Full Analysis](${
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   }/analysis/${analysis.id})`;
 
@@ -228,9 +214,9 @@ export async function testTelegramConnection(
 
     await bot.sendMessage(
       chatId,
-      "✅ *Telegram Connection Successful!*\n\n" +
+      "*TELEGRAM CONNECTION SUCCESSFUL*\n\n" +
         "Your trading alerts will be sent to this chat.\n\n" +
-        "🤖 Automation is now active!",
+        "Automation is now active!",
       { parse_mode: "Markdown" }
     );
 
@@ -257,10 +243,10 @@ export async function sendErrorAlert(
     const bot = initializeBot();
 
     const message =
-      `⚠️ *Automation Error*\n\n` +
-      `📊 Layout: ${layoutName}\n` +
-      `❌ Error: ${error}\n\n` +
-      `⏰ ${new Date().toLocaleString()}`;
+      `*AUTOMATION ERROR*\n\n` +
+      `*Layout:* ${layoutName}\n` +
+      `*Error:* ${error}\n\n` +
+      `*Time:* ${new Date().toLocaleString()}`;
 
     await bot.sendMessage(chatId, message, {
       parse_mode: "Markdown",

@@ -85,6 +85,7 @@ export async function POST(
       minConfidence: schedule.minConfidence,
       sendOnHold: schedule.sendOnHold,
       defaultAiModel: schedule.user.defaultAiModel || "gpt-4o",
+      frequency: schedule.frequency, // Add frequency for nextRunAt calculation
     };
 
     // Process the job

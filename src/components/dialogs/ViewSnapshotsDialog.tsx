@@ -10,13 +10,16 @@ import {
   Box,
   Typography,
   IconButton,
+  Alert,
 } from "@mui/material";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import InfoIcon from "@mui/icons-material/Info";
 import { useSnapshots } from "@/hooks/useSnapshots";
 import { useCreateAnalysis } from "@/hooks/useAnalyses";
 import { SnapshotCard } from "@/components/analysis";
 import { LoadingSpinner, ErrorAlert } from "@/components/common";
 import { DeleteConfirmationDialog } from "@/components/dialogs";
+import { useConfig } from "@/hooks/useConfig";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,6 +38,7 @@ export default function ViewSnapshotsDialog({
 }: ViewSnapshotsDialogProps) {
   const logger = getLogger();
   const { data: snapshots, isLoading, error } = useSnapshots(layoutId);
+  const { data: config } = useConfig();
   const createAnalysis = useCreateAnalysis();
   const { getAuthToken } = useAuth();
   const queryClient = useQueryClient();
@@ -171,21 +175,35 @@ export default function ViewSnapshotsDialog({
           {isLoading ? (
             <LoadingSpinner message="Loading snapshots..." />
           ) : snapshots && snapshots.length > 0 ? (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              {snapshots.map((snapshot) => (
-                <Grid item xs={12} sm={6} md={4} key={snapshot.id}>
-                  <SnapshotCard
-                    snapshot={snapshot}
-                    onAnalyze={handleAnalyze}
-                    onDelete={(id: any) =>
-                      setDeleteDialog({ open: true, snapshotId: id })
-                    }
-                    onView={handleView}
-                    loading={actionLoading === snapshot.id}
-                  />
-                </Grid>
-              ))}
-            </Grid>
+            <>
+              {config && snapshots.length >= config.maxSnapshotsPerLayout && (
+                <Alert
+                  severity="info"
+                  icon={<InfoIcon />}
+                  sx={{ mb: 2 }}
+                >
+                  <Typography variant="body2">
+                    <strong>Snapshot limit reached ({snapshots.length}/{config.maxSnapshotsPerLayout}).</strong>
+                    {" "}When you create a new snapshot, the oldest one will be automatically recycled to maintain the limit.
+                  </Typography>
+                </Alert>
+              )}
+              <Grid container spacing={2} sx={{ mt: 0 }}>
+                {snapshots.map((snapshot) => (
+                  <Grid item xs={12} sm={6} md={4} key={snapshot.id}>
+                    <SnapshotCard
+                      snapshot={snapshot}
+                      onAnalyze={handleAnalyze}
+                      onDelete={(id: any) =>
+                        setDeleteDialog({ open: true, snapshotId: id })
+                      }
+                      onView={handleView}
+                      loading={actionLoading === snapshot.id}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </>
           ) : (
             <Box sx={{ textAlign: "center", py: 4 }}>
               <Typography variant="body2" color="text.secondary">

@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       onlyOnSignalChange,
       minConfidence,
       sendOnHold,
+      useMultiLayout,
     } = body;
 
     if (!layoutId) {
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
             onlyOnSignalChange ?? existingSchedule.onlyOnSignalChange,
           minConfidence: minConfidence ?? existingSchedule.minConfidence,
           sendOnHold: sendOnHold ?? existingSchedule.sendOnHold,
+          useMultiLayout: useMultiLayout ?? existingSchedule.useMultiLayout,
           nextRunAt: new Date(), // Reset to run soon
         },
         include: {
@@ -119,6 +121,7 @@ export async function POST(request: NextRequest) {
           onlyOnSignalChange: onlyOnSignalChange ?? false,
           minConfidence: minConfidence ?? 50,
           sendOnHold: sendOnHold ?? false,
+          useMultiLayout: useMultiLayout ?? false,
           nextRunAt: new Date(),
         },
         include: {

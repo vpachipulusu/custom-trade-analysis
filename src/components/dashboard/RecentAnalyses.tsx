@@ -75,12 +75,30 @@ export default function RecentAnalyses({ analyses }: RecentAnalysesProps) {
                 <ConfidenceProgress confidence={analysis.confidence} />
               </Box>
 
-              <Chip
-                label={analysis.timeframe}
-                size="small"
-                variant="outlined"
-                sx={{ textTransform: "capitalize" }}
-              />
+              <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                <Chip
+                  label={analysis.timeframe}
+                  size="small"
+                  variant="outlined"
+                  sx={{ textTransform: "capitalize" }}
+                />
+                {analysis.isMultiLayout && (
+                  <Chip
+                    label="Multi-Layout"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+                {analysis.isAutomated && (
+                  <Chip
+                    label="Automated"
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
+                )}
+              </Box>
             </CardContent>
           </CardActionArea>
         </Card>

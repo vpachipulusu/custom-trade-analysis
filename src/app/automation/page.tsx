@@ -52,6 +52,7 @@ interface AutomationSchedule {
   onlyOnSignalChange: boolean;
   minConfidence: number;
   sendOnHold: boolean;
+  useMultiLayout: boolean;
   lastRunAt: string | null;
   nextRunAt: string | null;
   layout: {
@@ -415,6 +416,14 @@ export default function AutomationPage() {
                                 flexWrap: "wrap",
                               }}
                             >
+                              {schedule.useMultiLayout && (
+                                <Chip
+                                  label="Multi-Layout"
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              )}
                               {schedule.onlyOnSignalChange && (
                                 <Chip label="Signal Change" size="small" />
                               )}
@@ -559,6 +568,7 @@ export default function AutomationPage() {
                   onlyOnSignalChange: editingSchedule.onlyOnSignalChange,
                   minConfidence: editingSchedule.minConfidence,
                   sendOnHold: editingSchedule.sendOnHold,
+                  useMultiLayout: editingSchedule.useMultiLayout,
                 }
               : null
           }

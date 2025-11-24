@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,182 +8,147 @@ datasource db {
 }
 
 model User {
-  id                    String     @id @default(uuid())
-  firebaseUid           String     @unique
-  email                 String     @unique
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @default(now()) @updatedAt
-
-  // Profile fields
-  displayName           String?
-  photoURL              String?
-  bio                   String?    @db.Text
-  phoneNumber           String?
-  location              String?
-  website               String?
-  lastLoginAt           DateTime?
-
-  // Subscription fields
-  stripeCustomerId      String?    @unique
-  stripeSubscriptionId  String?    @unique
-  stripePriceId         String?
+  id                     String               @id @default(uuid())
+  firebaseUid            String               @unique
+  email                  String               @unique
+  createdAt              DateTime             @default(now())
+  stripeCustomerId       String?              @unique
+  stripeSubscriptionId   String?              @unique
+  stripePriceId          String?
   stripeCurrentPeriodEnd DateTime?
-  subscriptionTier      String     @default("free") // free, pro, enterprise
-  subscriptionStatus    String     @default("inactive") // inactive, active, canceled, past_due
-
-  // Dashboard settings
-  defaultAiModel        String?    @default("gpt-4o")
-  sessionid             String?    // TradingView sessionid cookie
-  sessionidSign         String?    // TradingView sessionid_sign cookie
-
-  layouts               Layout[]
-  analyses              Analysis[]
-  automationSchedules   AutomationSchedule[]
-  telegramConfig        TelegramConfig?
-
-  // Trading Journal
-  journalSettings       JournalSettings?
-  trades                Trade[]
-  monthlyStats          MonthlyStats[]
-
-  // Profile features
-  settings              UserSettings?
-  notifications         Notification[]
-  loginHistory          LoginHistory[]
+  subscriptionTier       String               @default("free")
+  subscriptionStatus     String               @default("inactive")
+  bio                    String?
+  displayName            String?
+  lastLoginAt            DateTime?
+  location               String?
+  phoneNumber            String?
+  photoURL               String?
+  updatedAt              DateTime             @default(now()) @updatedAt
+  website                String?
+  defaultAiModel         String?              @default("gpt-4o")
+  sessionid              String?
+  sessionidSign          String?
+  analyses               Analysis[]
+  automationSchedules    AutomationSchedule[]
+  journalSettings        JournalSettings?
+  layouts                Layout[]
+  loginHistory           LoginHistory[]
+  monthlyStats           MonthlyStats[]
+  notifications          Notification[]
+  telegramConfig         TelegramConfig?
+  trades                 Trade[]
+  settings               UserSettings?
 }
 
 model Layout {
-  id             String     @id @default(uuid())
-  userId         String
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  layoutId       String?
-  symbol         String?
-  interval       String?
-  createdAt      DateTime   @default(now())
-  snapshots      Snapshot[]
+  id                 String              @id @default(uuid())
+  userId             String
+  layoutId           String?
+  symbol             String?
+  interval           String?
+  createdAt          DateTime            @default(now())
   automationSchedule AutomationSchedule?
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots          Snapshot[]
 }
 
 model Snapshot {
-  id          String     @id @default(uuid())
-  layoutId    String
-  layout      Layout     @relation(fields: [layoutId], references: [id], onDelete: Cascade)
-  url         String
-  imageData   String?    @db.Text
-  expiresAt   DateTime
-  createdAt   DateTime   @default(now())
-  analysis    Analysis?
+  id        String    @id @default(uuid())
+  layoutId  String
+  url       String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  imageData String?
+  analysis  Analysis?
+  layout    Layout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
 }
 
 model Analysis {
-  id                    String            @id @default(uuid())
-  userId                String
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  snapshotId            String            @unique
-  snapshot              Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-
-  // Primary analysis fields
-  action                String
-  confidence            Int
-  timeframe             String
-  reasons               Json
-  tradeSetup            Json?             // Trade setup details (quality, entry, stop loss, target, R:R ratio)
-
-  // AI Model tracking
-  aiModel               String?           // AI model used: "openai" | "gemini" | "claude" | "deepseek"
-  aiModelName           String?           // Display name: "OpenAI GPT-4o" | "Google Gemini Pro Vision" | etc
-
-  // Legacy dual AI analysis results (kept for backward compatibility)
-  openaiAnalysis        Json?             // Complete OpenAI analysis result
-  deepseekAnalysis      Json?             // Complete DeepSeek analysis result
-  aiErrors              Json?             // Errors from AI providers
-
-  isMultiLayout         Boolean           @default(false) // Whether this is a multi-layout analysis
-  multiLayoutData       Json?             // Multi-layout snapshot data (layoutsAnalyzed, intervals, multiLayoutSnapshots)
-  isAutomated           Boolean           @default(false) // Whether analysis was generated by automation
-  createdAt             DateTime          @default(now())
-  economicContext       EconomicContext?
-  history               AnalysisHistory[]
-  trades                Trade[]           // Can link multiple trades to one analysis
+  id               String            @id @default(uuid())
+  userId           String
+  snapshotId       String            @unique
+  action           String
+  confidence       Int
+  timeframe        String
+  reasons          Json
+  createdAt        DateTime          @default(now())
+  tradeSetup       Json?
+  isMultiLayout    Boolean           @default(false)
+  multiLayoutData  Json?
+  aiErrors         Json?
+  aiModel          String?
+  aiModelName      String?
+  deepseekAnalysis Json?
+  openaiAnalysis   Json?
+  isAutomated      Boolean           @default(false)
+  snapshot         Snapshot          @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history          AnalysisHistory[]
+  economicContext  EconomicContext?
+  trades           Trade[]
 }
 
 model EconomicEvent {
-  id            String    @id @default(uuid())
-  eventId       String    @unique  // External API event ID
-  date          DateTime
-  time          String?
-  country       String
-  currency      String?
-  event         String    @db.Text
-  impact        String    // LOW, MEDIUM, HIGH
-  category      String    // Employment, GDP, Inflation, CentralBank, etc.
-  actual        String?
-  forecast      String?
-  previous      String?
-  source        String    // API source name
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id        String   @id @default(uuid())
+  eventId   String   @unique
+  date      DateTime
+  time      String?
+  country   String
+  currency  String?
+  event     String
+  impact    String
+  category  String
+  actual    String?
+  forecast  String?
+  previous  String?
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([date, impact])
   @@index([country, date])
   @@index([currency, date])
 }
 
 model EconomicContext {
-  id                String     @id @default(uuid())
-  analysisId        String     @unique
-  analysis          Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  symbol            String
-
-  // Immediate events (within ±1 hour)
-  upcomingEvents    Json       // Array of event objects
-  immediateRisk     String     // NONE, LOW, MEDIUM, HIGH, EXTREME
-
-  // Weekly events (within 7 days)
-  weeklyEvents      Json       // Array of event objects
-  weeklyOutlook     String     // BULLISH, BEARISH, NEUTRAL, VOLATILE
-
-  // Primary AI-generated analysis (kept for backward compatibility)
-  impactSummary     String     @db.Text
-  warnings          Json       // Array of warning strings
-  opportunities     Json       // Array of opportunity strings
-  recommendation    String?    @db.Text
-
-  // Dual AI economic analysis results
-  openaiEconomic    Json?      // Complete OpenAI economic analysis result
-  deepseekEconomic  Json?      // Complete DeepSeek economic analysis result
-
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id               String   @id @default(uuid())
+  analysisId       String   @unique
+  symbol           String
+  upcomingEvents   Json
+  immediateRisk    String
+  weeklyEvents     Json
+  weeklyOutlook    String
+  impactSummary    String
+  warnings         Json
+  opportunities    Json
+  recommendation   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deepseekEconomic Json?
+  openaiEconomic   Json?
+  analysis         Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 }
 
 model AutomationSchedule {
-  id                  String    @id @default(uuid())
-  userId              String
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  layoutId            String    @unique
-  layout              Layout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
-  
-  enabled             Boolean   @default(true)
-  frequency           String    // "15m", "1h", "4h", "1d", "1w"
-  customCron          String?   // For future custom schedules
-  
-  sendToTelegram      Boolean   @default(true)
-  
-  lastRunAt           DateTime?
-  nextRunAt           DateTime?
-  
-  // Alert filters
-  onlyOnSignalChange  Boolean   @default(false)  // Only alert if signal changes
-  minConfidence       Int       @default(0)      // Minimum confidence (0-100)
-  sendOnHold          Boolean   @default(false)  // Send HOLD signals
+  id                 String    @id @default(uuid())
+  userId             String
+  layoutId           String    @unique
+  enabled            Boolean   @default(true)
+  frequency          String
+  customCron         String?
+  sendToTelegram     Boolean   @default(true)
+  lastRunAt          DateTime?
+  nextRunAt          DateTime?
+  onlyOnSignalChange Boolean   @default(false)
+  minConfidence      Int       @default(0)
+  sendOnHold         Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  useMultiLayout     Boolean   @default(false)
+  layout             Layout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Multi-layout analysis option
-  useMultiLayout      Boolean   @default(false)  // Analyze all layouts for the symbol
-
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
   @@index([nextRunAt, enabled])
   @@index([userId])
 }
@@ -194,259 +156,182 @@ model AutomationSchedule {
 model TelegramConfig {
   id              String    @id @default(uuid())
   userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  chatId          String    // Telegram chat ID
-  username        String?   // Telegram username
-  
+  chatId          String
+  username        String?
   isActive        Boolean   @default(true)
-  
-  // Message preferences
-  includeChart    Boolean   @default(true)   // Send chart image
-  includeEconomic Boolean   @default(true)   // Include economic context
-  notifyOnHold    Boolean   @default(false)  // Send HOLD signals
-  
+  includeChart    Boolean   @default(true)
+  includeEconomic Boolean   @default(true)
+  notifyOnHold    Boolean   @default(false)
   verifiedAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AnalysisHistory {
   id               String    @id @default(uuid())
   analysisId       String
-  analysis         Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
-  
-  previousAction   String    // Previous action for comparison
-  newAction        String    // New action
-  signalChanged    Boolean   // True if action changed
-  
+  previousAction   String
+  newAction        String
+  signalChanged    Boolean
   notificationSent Boolean   @default(false)
   sentAt           DateTime?
-  
   createdAt        DateTime  @default(now())
-  
+  analysis         Analysis  @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
   @@index([analysisId, createdAt])
 }
 
 model AutomationJobLog {
   id               String    @id @default(uuid())
   scheduleId       String
-  
-  // Execution details
   startedAt        DateTime  @default(now())
   completedAt      DateTime?
-  duration         Int?      // milliseconds
-  status           String    // "success", "failed", "skipped"
-  
-  // Analysis results
-  action           String?   // BUY, SELL, HOLD
-  confidence       Int?      // 0-100
-  previousAction   String?   // For signal change tracking
-  
-  // Filter decisions
+  duration         Int?
+  status           String
+  action           String?
+  confidence       Int?
+  previousAction   String?
   signalChanged    Boolean   @default(false)
   metMinConfidence Boolean   @default(true)
-  
-  // Telegram notification
   telegramSent     Boolean   @default(false)
   telegramChatId   String?
-  telegramError    String?   @db.Text
-  
-  // Skip/error reasons
-  skipReason       String?   @db.Text
-  errorMessage     String?   @db.Text
-  errorStack       String?   @db.Text
-  
-  // Screenshot and analysis
+  telegramError    String?
+  skipReason       String?
+  errorMessage     String?
+  errorStack       String?
   screenshotPath   String?
   analysisId       String?
-  
   createdAt        DateTime  @default(now())
-  
+
   @@index([scheduleId, createdAt])
   @@index([status, createdAt])
 }
 
-// ==================== TRADING JOURNAL MODELS ====================
-
 model JournalSettings {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Account Settings
-  startingBalance       Decimal  @db.Decimal(15, 2)
-  currentBalance        Decimal  @db.Decimal(15, 2)
-  currency              String   @default("GBP")
-  
-  // Preferences
-  timezone              String   @default("UTC")
-  defaultPositionSize   Decimal? @db.Decimal(10, 4)
-  defaultRiskPercent    Decimal? @db.Decimal(5, 2)
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  startingBalance     Decimal  @db.Decimal(15, 2)
+  currentBalance      Decimal  @db.Decimal(15, 2)
+  currency            String   @default("GBP")
+  timezone            String   @default("UTC")
+  defaultPositionSize Decimal? @db.Decimal(10, 4)
+  defaultRiskPercent  Decimal? @db.Decimal(5, 2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Trade {
-  id                    String   @id @default(uuid())
-  userId                String
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Account Info
-  accountNumber         String?  // Account number (can be alphanumeric)
-  
-  // Basic Trade Info
-  date                  DateTime
-  time                  String
-  direction             String   // "Long" or "Short"
-  market                String   // Symbol (e.g., "GBPUSD", "BTC", "AAPL")
-  
-  // Entry Details
-  entryPrice            Decimal  @db.Decimal(15, 8)
-  accountBalance        Decimal  @db.Decimal(15, 2)
-  positionSize          Decimal  @db.Decimal(15, 8)
-  
-  // Exit Planning
-  stopLossPrice         Decimal? @db.Decimal(15, 8)
-  takeProfitPrice       Decimal? @db.Decimal(15, 8)
-  
-  // Exit Execution
-  actualExitPrice       Decimal? @db.Decimal(15, 8)
-  exitDate              DateTime?
-  exitTime              String?
-  
-  // Costs & Performance
-  tradeCosts            Decimal  @db.Decimal(10, 2) @default(0)
-  riskRewardRatio       String?  // "1:2.5" format
-  closedPositionPL      Decimal? @db.Decimal(15, 2)
-  accountChangePercent  Decimal? @db.Decimal(8, 4)
-  
-  // Trade Analysis
-  tradeScreenshot       String?  // URL to screenshot
-  tradeNotes            String?  @db.Text
-  disciplineRating      Int?     // 1-10
-  emotionalState        String?  // "Calm and focused", "Anxious", etc.
-  
-  // Strategy/Setup (optional tags)
-  strategy              String?
-  setup                 String?
-  tags                  Json?    // Array of custom tags
-  
-  // Status
-  status                String   @default("open") // "open", "closed", "cancelled"
-  
-  // Link to analysis (optional)
-  analysisId            String?
-  analysis              Analysis? @relation(fields: [analysisId], references: [id])
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  id                   String    @id @default(uuid())
+  userId               String
+  date                 DateTime
+  time                 String
+  direction            String
+  market               String
+  entryPrice           Decimal   @db.Decimal(15, 8)
+  accountBalance       Decimal   @db.Decimal(15, 2)
+  positionSize         Decimal   @db.Decimal(15, 8)
+  stopLossPrice        Decimal?  @db.Decimal(15, 8)
+  takeProfitPrice      Decimal?  @db.Decimal(15, 8)
+  actualExitPrice      Decimal?  @db.Decimal(15, 8)
+  exitDate             DateTime?
+  exitTime             String?
+  tradeCosts           Decimal   @default(0) @db.Decimal(10, 2)
+  riskRewardRatio      String?
+  closedPositionPL     Decimal?  @db.Decimal(15, 2)
+  accountChangePercent Decimal?  @db.Decimal(8, 4)
+  tradeScreenshot      String?
+  tradeNotes           String?
+  disciplineRating     Int?
+  emotionalState       String?
+  strategy             String?
+  setup                String?
+  tags                 Json?
+  status               String    @default("open")
+  analysisId           String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  accountNumber        String?
+  analysis             Analysis? @relation(fields: [analysisId], references: [id])
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, date])
   @@index([userId, status])
   @@index([market, date])
 }
 
 model MonthlyStats {
-  id                        String   @id @default(uuid())
-  userId                    String
-  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  year                      Int
-  month                     Int      // 1-12
-  
-  // Trade Counts
-  totalTrades               Int      @default(0)
-  winningTrades             Int      @default(0)
-  losingTrades              Int      @default(0)
-  breakEvenTrades           Int      @default(0)
-  
-  // Win Rate
-  winRate                   Decimal  @db.Decimal(5, 2) @default(0)
-  
-  // P&L Metrics
-  totalPL                   Decimal  @db.Decimal(15, 2) @default(0)
-  averageWin                Decimal? @db.Decimal(15, 2)
-  averageLoss               Decimal? @db.Decimal(15, 2)
-  largestWin                Decimal? @db.Decimal(15, 2)
-  largestLoss               Decimal? @db.Decimal(15, 2)
-  averagePLPerTrade         Decimal? @db.Decimal(15, 2)
-  
-  // Costs
-  totalTradeCosts           Decimal  @db.Decimal(15, 2) @default(0)
-  
-  // Risk/Reward
-  averageRiskPerTrade       Decimal? @db.Decimal(8, 4)
-  averageRewardPerTrade     Decimal? @db.Decimal(8, 4)
-  averageRiskRewardRatio    String?  // "1:1.5" format
-  
-  // ROI
-  returnOnInvestment        Decimal? @db.Decimal(8, 4)
-  
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  
+  id                     String   @id @default(uuid())
+  userId                 String
+  year                   Int
+  month                  Int
+  totalTrades            Int      @default(0)
+  winningTrades          Int      @default(0)
+  losingTrades           Int      @default(0)
+  breakEvenTrades        Int      @default(0)
+  winRate                Decimal  @default(0) @db.Decimal(5, 2)
+  totalPL                Decimal  @default(0) @db.Decimal(15, 2)
+  averageWin             Decimal? @db.Decimal(15, 2)
+  averageLoss            Decimal? @db.Decimal(15, 2)
+  largestWin             Decimal? @db.Decimal(15, 2)
+  largestLoss            Decimal? @db.Decimal(15, 2)
+  averagePLPerTrade      Decimal? @db.Decimal(15, 2)
+  totalTradeCosts        Decimal  @default(0) @db.Decimal(15, 2)
+  averageRiskPerTrade    Decimal? @db.Decimal(8, 4)
+  averageRewardPerTrade  Decimal? @db.Decimal(8, 4)
+  averageRiskRewardRatio String?
+  returnOnInvestment     Decimal? @db.Decimal(8, 4)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, year, month])
   @@index([userId, year, month])
 }
 
-// ==================== USER PROFILE & SETTINGS MODELS ====================
-
 model UserSettings {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Notification Preferences
-  emailNotifications    Boolean  @default(true)
-  pushNotifications     Boolean  @default(true)
-  marketingEmails       Boolean  @default(false)
-  securityAlerts        Boolean  @default(true)
-  notificationFrequency String   @default("instant") // instant, daily, weekly
-
-  // Security Settings
-  twoFactorEnabled      Boolean  @default(false)
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  emailNotifications    Boolean   @default(true)
+  pushNotifications     Boolean   @default(true)
+  marketingEmails       Boolean   @default(false)
+  securityAlerts        Boolean   @default(true)
+  notificationFrequency String    @default("instant")
+  twoFactorEnabled      Boolean   @default(false)
   lastPasswordChange    DateTime?
-
-  // AI Model Preference
-  preferredAiModel      String?  @default("openai") // "openai" | "gemini" | "claude" | "deepseek"
-
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  preferredAiModel      String?   @default("openai")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type        String    // "info", "success", "warning", "error", "security"
-  title       String
-  message     String    @db.Text
-  read        Boolean   @default(false)
-  actionUrl   String?   // Optional link for the notification
-
-  createdAt   DateTime  @default(now())
-  readAt      DateTime?
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean   @default(false)
+  actionUrl String?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
   @@index([userId, createdAt])
 }
 
 model LoginHistory {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  ipAddress   String?
-  userAgent   String?  @db.Text
-  location    String?  // City, Country
-  device      String?  // Device type (Desktop, Mobile, etc.)
-  browser     String?  // Browser name
-
-  loginAt     DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  ipAddress String?
+  userAgent String?
+  location  String?
+  device    String?
+  browser   String?
+  loginAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, loginAt])
 }
-

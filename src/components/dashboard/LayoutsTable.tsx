@@ -13,6 +13,10 @@ import {
   Chip,
   Typography,
   Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -21,6 +25,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import CameraIcon from "@mui/icons-material/Camera";
+import ImageIcon from "@mui/icons-material/Image";
 import { format } from "date-fns";
 import { Layout } from "@/hooks/useLayouts";
 import { useDeleteLayout } from "@/hooks/useLayouts";
@@ -116,21 +123,37 @@ export default function LayoutsTable({
     }
   };
 
-  const handleAnalyzeSymbol = async (symbol: string) => {
+  const [analyzeMenuAnchor, setAnalyzeMenuAnchor] = useState<{
+    element: HTMLElement | null;
+    symbol: string | null;
+  }>({ element: null, symbol: null });
+
+  const handleAnalyzeSymbol = async (
+    symbol: string,
+    captureNewSnapshots: boolean = false
+  ) => {
     try {
       const aiModel = userSettings.defaultAiModel || "gpt-4o";
       const analysis = await createSymbolAnalysis.mutateAsync({
         symbol,
         aiModel,
+        captureNewSnapshots,
       });
       logger.info("Symbol analysis completed", {
         symbol,
         aiModel,
+        captureNewSnapshots,
         analysisId: analysis.id,
       });
       router.push(`/analysis/${analysis.id}`);
+      // Close menu if open
+      setAnalyzeMenuAnchor({ element: null, symbol: null });
     } catch (error) {
-      logger.error("Symbol analysis failed", { error: error instanceof Error ? error.message : String(error), symbol });
+      logger.error("Symbol analysis failed", {
+        error: error instanceof Error ? error.message : String(error),
+        symbol,
+        captureNewSnapshots,
+      });
     }
   };
 
@@ -304,8 +327,11 @@ export default function LayoutsTable({
                             <IconButton
                               size="small"
                               color="success"
-                              onClick={() =>
-                                handleAnalyzeSymbol(layout.symbol!)
+                              onClick={(e) =>
+                                setAnalyzeMenuAnchor({
+                                  element: e.currentTarget,
+                                  symbol: layout.symbol!,
+                                })
                               }
                               disabled={createSymbolAnalysis.isPending}
                             >
@@ -404,6 +430,46 @@ export default function LayoutsTable({
         currentSettings={userSettings}
         onSave={handleSettingsSaved}
       />
+
+      {/* Multi-layout Analysis Menu */}
+      <Menu
+        anchorEl={analyzeMenuAnchor.element}
+        open={Boolean(analyzeMenuAnchor.element)}
+        onClose={() => setAnalyzeMenuAnchor({ element: null, symbol: null })}
+      >
+        <MenuItem
+          onClick={() => {
+            if (analyzeMenuAnchor.symbol) {
+              handleAnalyzeSymbol(analyzeMenuAnchor.symbol, false);
+            }
+          }}
+          disabled={createSymbolAnalysis.isPending}
+        >
+          <ListItemIcon>
+            <ImageIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Use Existing Snapshots"
+            secondary="Analyze with current snapshots"
+          />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (analyzeMenuAnchor.symbol) {
+              handleAnalyzeSymbol(analyzeMenuAnchor.symbol, true);
+            }
+          }}
+          disabled={createSymbolAnalysis.isPending}
+        >
+          <ListItemIcon>
+            <CameraIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Capture New Snapshots"
+            secondary="Generate fresh charts for analysis"
+          />
+        </MenuItem>
+      </Menu>
     </>
   );
 }

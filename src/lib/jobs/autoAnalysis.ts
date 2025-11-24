@@ -4,8 +4,10 @@ import { sendTradingAlert, sendErrorAlert } from "@/lib/services/telegram";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger } from "../logging";
 import { getMaxAutomatedSnapshotsPerLayout } from "@/lib/utils/config";
+import { getLayoutsBySymbol } from "@/lib/db/layouts";
 import {
   executeCompleteAnalysis,
+  executeCompleteMultiLayoutAnalysis,
   parseAIModel,
   enrichWithEconomicContext,
 } from "@/lib/services/analysisService";
@@ -27,6 +29,292 @@ interface AutomationJob {
   sendOnHold?: boolean;
   defaultAiModel?: string; // User's preferred AI model from settings
   frequency?: string; // Schedule frequency (15m, 1h, 4h, 1d, 1w)
+  useMultiLayout?: boolean; // Analyze all layouts for the symbol
+}
+
+/**
+ * Process multi-layout automation job
+ * Captures snapshots for all layouts of a symbol and analyzes them together
+ */
+async function processMultiLayoutAutomationJob(
+  job: AutomationJob,
+  context: {
+    userId: string;
+    symbol: string;
+    decryptedSessionId: string;
+    decryptedSessionidSign: string;
+    jobLog: any;
+    startTime: number;
+  }
+): Promise<void> {
+  const logger = getLogger();
+  const { userId, symbol, decryptedSessionId, decryptedSessionidSign, jobLog, startTime } = context;
+
+  try {
+    // Get all layouts for the symbol
+    const layouts = await getLayoutsBySymbol(userId, symbol);
+
+    if (!layouts || layouts.length === 0) {
+      throw new Error(`No layouts found for symbol ${symbol}`);
+    }
+
+    logger.info("Found layouts for multi-layout analysis", {
+      symbol,
+      layoutCount: layouts.length,
+      intervals: layouts.map((l) => l.interval).join(", "),
+    });
+
+    const layoutsWithSnapshots: Array<{
+      layoutId: string;
+      interval: string;
+      imageUrl: string;
+      snapshotId: string;
+    }> = [];
+
+    // Capture snapshots for all layouts
+    for (const layout of layouts) {
+      try {
+        if (!layout.layoutId) {
+          logger.warn("Layout missing layoutId, skipping", {
+            layoutDbId: layout.id,
+            symbol,
+          });
+          continue;
+        }
+
+        logger.info("Capturing snapshot for layout", {
+          layoutId: layout.layoutId,
+          interval: layout.interval,
+        });
+
+        const imagePath = await captureWithPuppeteer({
+          layoutId: layout.layoutId,
+          sessionid: decryptedSessionId,
+          sessionidSign: decryptedSessionidSign,
+        });
+
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        const snapshot = await prisma.snapshot.create({
+          data: {
+            layoutId: layout.id,
+            url: `https://www.tradingview.com/chart/${layout.layoutId}/`,
+            imageData: imagePath,
+            expiresAt,
+          },
+        });
+
+        layoutsWithSnapshots.push({
+          layoutId: layout.id,
+          interval: layout.interval || "Unknown",
+          imageUrl: imagePath,
+          snapshotId: snapshot.id,
+        });
+
+        logger.info("Snapshot captured for multi-layout", {
+          snapshotId: snapshot.id,
+          layoutId: layout.layoutId,
+          interval: layout.interval,
+        });
+      } catch (error) {
+        logger.error("Failed to capture snapshot for layout", {
+          layoutId: layout.layoutId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with other layouts
+      }
+    }
+
+    if (layoutsWithSnapshots.length === 0) {
+      throw new Error("Failed to capture any snapshots for multi-layout analysis");
+    }
+
+    // Perform multi-layout analysis
+    logger.info("Performing multi-layout analysis", {
+      symbol,
+      layoutCount: layoutsWithSnapshots.length,
+    });
+
+    const { analysis, economicContext } = await executeCompleteMultiLayoutAnalysis({
+      userId,
+      layouts: layoutsWithSnapshots,
+      symbol,
+      aiModel: job.defaultAiModel,
+      isAutomated: true,
+    });
+
+    logger.info("Multi-layout analysis completed", {
+      analysisId: analysis.id,
+      action: analysis.action,
+      confidence: analysis.confidence,
+      layoutCount: layoutsWithSnapshots.length,
+    });
+
+    // Check if we should send alert (same logic as single layout)
+    let shouldSendAlert = true;
+    let signalChanged = false;
+    let previousAnalysis = null;
+
+    if (job.onlyOnSignalChange) {
+      previousAnalysis = await prisma.analysis.findFirst({
+        where: {
+          userId,
+          isAutomated: true,
+          isMultiLayout: true,
+          snapshot: {
+            layout: {
+              symbol,
+            },
+          },
+          id: { not: analysis.id },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (previousAnalysis) {
+        signalChanged = previousAnalysis.action !== analysis.action;
+        shouldSendAlert = signalChanged;
+        logger.info("Signal change check (multi-layout)", {
+          previousAction: previousAnalysis.action,
+          currentAction: analysis.action,
+          changed: signalChanged,
+        });
+      }
+    }
+
+    if (job.minConfidence && analysis.confidence < job.minConfidence) {
+      shouldSendAlert = false;
+      logger.info("Confidence threshold not met", {
+        current: analysis.confidence,
+        minimum: job.minConfidence,
+      });
+    }
+
+    if (analysis.action === "HOLD" && !job.sendOnHold) {
+      shouldSendAlert = false;
+      logger.info("HOLD action skipped (sendOnHold disabled)");
+    }
+
+    // Send Telegram alert if conditions met
+    let telegramSent = false;
+    if (shouldSendAlert && job.telegramChatId) {
+      try {
+        // Use the first layout's image for the alert
+        await sendTradingAlert({
+          analysis: analysis as any,
+          chatId: job.telegramChatId,
+          includeChart: job.includeChart,
+          includeEconomic: job.includeEconomic,
+          chartImagePath: layoutsWithSnapshots[0].imageUrl,
+        });
+        telegramSent = true;
+        logger.info("Telegram alert sent for multi-layout analysis");
+      } catch (error) {
+        logger.error("Telegram send failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // Record analysis history
+    await prisma.analysisHistory.create({
+      data: {
+        analysisId: analysis.id,
+        previousAction: previousAnalysis?.action || "NONE",
+        newAction: analysis.action,
+        signalChanged,
+        notificationSent: telegramSent,
+        sentAt: telegramSent ? new Date() : null,
+      },
+    });
+
+    // Update job log
+    const duration = Date.now() - startTime;
+    await prisma.automationJobLog.update({
+      where: { id: jobLog.id },
+      data: {
+        status: "success",
+        duration,
+        action: analysis.action,
+        confidence: analysis.confidence,
+        previousAction: previousAnalysis?.action || null,
+        signalChanged,
+        metMinConfidence: !job.minConfidence || analysis.confidence >= job.minConfidence,
+        telegramSent,
+        screenshotPath: layoutsWithSnapshots[0].imageUrl,
+        analysisId: analysis.id,
+        completedAt: new Date(),
+        skipReason: !shouldSendAlert
+          ? `Filters not met: ${
+              !signalChanged && job.onlyOnSignalChange ? "Signal unchanged" : ""
+            }${
+              job.minConfidence && analysis.confidence < job.minConfidence
+                ? ` Confidence ${analysis.confidence}% < ${job.minConfidence}%`
+                : ""
+            }${!job.sendOnHold && analysis.action === "HOLD" ? " HOLD disabled" : ""}`
+              .trim()
+          : null,
+      },
+    });
+
+    // Update schedule
+    await prisma.automationSchedule.update({
+      where: { id: job.scheduleId },
+      data: {
+        lastRunAt: new Date(),
+        nextRunAt: calculateNextRun(job),
+      },
+    });
+
+    logger.info("Multi-layout automation job completed", {
+      duration,
+      layoutCount: layoutsWithSnapshots.length,
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error("Multi-layout automation job failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      duration,
+    });
+
+    await prisma.automationJobLog.update({
+      where: { id: jobLog.id },
+      data: {
+        status: "failed",
+        duration,
+        completedAt: new Date(),
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        telegramError: job.telegramChatId ? (error instanceof Error ? error.message : String(error)) : null,
+      },
+    });
+
+    await prisma.automationSchedule.update({
+      where: { id: job.scheduleId },
+      data: {
+        lastRunAt: new Date(),
+        nextRunAt: calculateNextRun(job),
+      },
+    });
+
+    if (job.telegramChatId) {
+      try {
+        await sendErrorAlert(
+          job.telegramChatId,
+          error instanceof Error ? error.message : String(error),
+          `Multi-layout analysis for ${symbol}`
+        );
+      } catch (err) {
+        logger.error("Failed to send error alert", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    throw error;
+  }
 }
 
 export async function processAutomationJob(job: AutomationJob): Promise<void> {
@@ -101,6 +389,25 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
 
     if (!layoutIdTradingView || !sessionidSign) {
       throw new Error("Missing layoutId or sessionidSign");
+    }
+
+    // Check if multi-layout analysis is enabled
+    if (job.useMultiLayout && symbol) {
+      logger.info("Multi-layout analysis enabled for automation", {
+        symbol,
+        scheduleId,
+      });
+
+      // Process multi-layout analysis
+      await processMultiLayoutAutomationJob(job, {
+        userId,
+        symbol,
+        decryptedSessionId,
+        decryptedSessionidSign: decryptedSessionidSign!,
+        jobLog,
+        startTime,
+      });
+      return;
     }
 
     // Step 2: Capture chart screenshot using Puppeteer
@@ -507,6 +814,7 @@ export async function runScheduledJobs(manualTrigger: boolean = false): Promise<
         sendOnHold: schedule.sendOnHold,
         defaultAiModel: schedule.user.defaultAiModel || "gpt-4o", // Use user's default AI model
         frequency: schedule.frequency, // Add frequency for nextRunAt calculation
+        useMultiLayout: schedule.useMultiLayout, // Multi-layout analysis option
       };
 
       try {

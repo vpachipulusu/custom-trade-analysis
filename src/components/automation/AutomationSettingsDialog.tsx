@@ -30,6 +30,7 @@ interface AutomationSettings {
   onlyOnSignalChange: boolean;
   minConfidence: number;
   sendOnHold: boolean;
+  useMultiLayout?: boolean; // ✨ New: Enable multi-layout analysis
 }
 
 interface AutomationSettingsDialogProps {
@@ -56,6 +57,7 @@ export default function AutomationSettingsDialog({
     onlyOnSignalChange: false,
     minConfidence: 50,
     sendOnHold: false,
+    useMultiLayout: false,
   });
 
   useEffect(() => {
@@ -133,6 +135,30 @@ export default function AutomationSettingsDialog({
             </Select>
           </FormControl>
         </Box>
+
+        {/* Multi-layout Analysis Option */}
+        {layout?.symbol && (
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.useMultiLayout}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      useMultiLayout: e.target.checked,
+                    })
+                  }
+                  disabled={!settings.enabled}
+                />
+              }
+              label="Multi-layout Analysis"
+            />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
+              Analyze all layouts for {layout.symbol} across multiple timeframes
+            </Typography>
+          </Box>
+        )}
 
         <Divider sx={{ my: 3 }} />
 

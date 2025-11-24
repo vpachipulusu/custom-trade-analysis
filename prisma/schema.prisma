@@ -180,7 +180,10 @@ model AutomationSchedule {
   onlyOnSignalChange  Boolean   @default(false)  // Only alert if signal changes
   minConfidence       Int       @default(0)      // Minimum confidence (0-100)
   sendOnHold          Boolean   @default(false)  // Send HOLD signals
-  
+
+  // Multi-layout analysis option
+  useMultiLayout      Boolean   @default(false)  // Analyze all layouts for the symbol
+
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   

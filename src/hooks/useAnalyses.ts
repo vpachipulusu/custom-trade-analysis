@@ -176,13 +176,18 @@ export function useCreateSymbolAnalysis() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { symbol: string; aiModel?: string }) => {
+    mutationFn: async (params: {
+      symbol: string;
+      aiModel?: string;
+      captureNewSnapshots?: boolean; // ✨ New: Capture fresh snapshots for all layouts
+    }) => {
       const token = await getAuthToken();
       const response = await axios.post(
         "/api/analyze",
         {
           symbol: params.symbol,
           aiModel: params.aiModel,
+          captureNewSnapshots: params.captureNewSnapshots ?? false,
         },
         {
           headers: { Authorization: token },

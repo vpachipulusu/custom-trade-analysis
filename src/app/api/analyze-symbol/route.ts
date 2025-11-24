@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
-import { createAnalysis, updateAnalysis } from "@/lib/db/analyses";
-import { analyzeMultiTimeframeCharts, analyzeEconomicImpact } from "@/lib/services/openai";
-import {
-  fetchEconomicEvents,
-  filterEventsByTimeframe,
-  parseSymbolCurrencies,
-} from "@/lib/services/economicCalendar";
-import {
-  createEconomicContext,
-  getEconomicContextByAnalysisId,
-} from "@/lib/db/economicContext";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { getLogger, LogContext } from "@/lib/logging";
 import { performanceLogger } from "@/lib/logging/middleware/performanceLogger";
 import { logExternalAPI, logUserAction } from "@/lib/logging/helpers";
 import { getLayoutsBySymbol } from "@/lib/db/layouts";
-import prisma from "@/lib/prisma";
+import {
+  executeCompleteMultiLayoutAnalysis,
+  parseAIModel,
+} from "@/lib/services/analysisService";
 
 /**
  * POST /api/analyze-symbol
@@ -84,150 +76,39 @@ export async function POST(request: NextRequest) {
     });
 
     // Prepare chart data for multi-timeframe analysis
-    const chartsData = layoutsWithSnapshots.map(layout => ({
+    const layoutsData = layoutsWithSnapshots.map(layout => ({
       interval: layout.interval || 'Unknown',
       imageUrl: layout.snapshots[0].url, // Latest snapshot
       layoutId: layout.id,
       snapshotId: layout.snapshots[0].id,
     }));
 
-    // Analyze charts using OpenAI with performance tracking
-    const analysisResult = await performanceLogger.measure(
+    // Parse AI model
+    const modelConfig = parseAIModel();
+
+    // Use shared service for multi-layout analysis with performance tracking
+    const { analysis, economicContext } = await performanceLogger.measure(
       'openai_multitimeframe_analysis',
       async () => {
         const startTime = Date.now();
-        const result = await analyzeMultiTimeframeCharts(
-          chartsData.map(c => ({ interval: c.interval, imageUrl: c.imageUrl }))
-        );
+        const result = await executeCompleteMultiLayoutAnalysis({
+          userId: authResult.user.userId,
+          layouts: layoutsData,
+          symbol,
+          isAutomated: false,
+        });
         const duration = Date.now() - startTime;
 
-        logExternalAPI('OpenAI', '/v1/chat/completions', 'POST', 200, duration);
+        logExternalAPI(modelConfig.provider.toUpperCase(), '/v1/chat/completions', 'POST', 200, duration);
 
         return result;
       },
-      { symbol, timeframeCount: chartsData.length }
+      { symbol, timeframeCount: layoutsData.length }
     );
-
-    // Use the primary (first) snapshot for linking the analysis
-    const primarySnapshotId = chartsData[0].snapshotId;
-
-    // Check if analysis already exists for this snapshot
-    const existingAnalysis = await prisma.analysis.findUnique({
-      where: { snapshotId: primarySnapshotId },
-    });
-
-    let analysis;
-    if (existingAnalysis) {
-      // Update existing analysis
-      analysis = await updateAnalysis(existingAnalysis.id, {
-        action: analysisResult.action,
-        confidence: analysisResult.confidence,
-        timeframe: analysisResult.timeframe,
-        reasons: analysisResult.reasons,
-        tradeSetup: analysisResult.tradeSetup,
-      });
-    } else {
-      // Create new analysis
-      analysis = await createAnalysis(authResult.user.userId, primarySnapshotId, {
-        action: analysisResult.action,
-        confidence: analysisResult.confidence,
-        timeframe: analysisResult.timeframe,
-        reasons: analysisResult.reasons,
-        tradeSetup: analysisResult.tradeSetup,
-      });
-    }
-
-    // Fetch and analyze economic context
-    let economicContext = null;
-    try {
-      logger.info('Fetching economic context', { symbol, analysisId: analysis.id });
-
-      // Parse symbol to get currencies/countries
-      const { currencies, countries } = parseSymbolCurrencies(symbol);
-
-      // Fetch events: ±1 hour window and 7 days ahead
-      const now = new Date();
-      const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
-      const sevenDaysAhead = new Date(
-        now.getTime() + 7 * 24 * 60 * 60 * 1000
-      );
-
-      const allEvents = await fetchEconomicEvents({
-        startDate: oneHourBefore,
-        endDate: sevenDaysAhead,
-        countries: countries.length > 0 ? countries : undefined,
-        currencies: currencies.length > 0 ? currencies : undefined,
-      });
-
-      // Filter into upcomingEvents and weeklyEvents
-      const { upcomingEvents, weeklyEvents } = filterEventsByTimeframe(
-        allEvents,
-        now
-      );
-
-      // Only create economic context if there are events
-      if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-        logger.info('Found economic events', {
-          symbol,
-          upcomingCount: upcomingEvents.length,
-          weeklyCount: weeklyEvents.length
-        });
-
-        // Get AI analysis of economic impact
-        const economicImpact = await analyzeEconomicImpact({
-          symbol,
-          action: analysisResult.action,
-          confidence: analysisResult.confidence,
-          upcomingEvents,
-          weeklyEvents,
-        });
-
-        // Check if economic context already exists
-        const existingContext = await getEconomicContextByAnalysisId(
-          analysis.id
-        );
-
-        if (!existingContext) {
-          // Create new economic context
-          economicContext = await createEconomicContext({
-            analysisId: analysis.id,
-            symbol,
-            upcomingEvents: upcomingEvents.map((e) => ({
-              ...e,
-              date: e.date.toISOString(),
-            })),
-            weeklyEvents: weeklyEvents.map((e) => ({
-              ...e,
-              date: e.date.toISOString(),
-            })),
-            immediateRisk: economicImpact.immediateRisk,
-            weeklyOutlook: economicImpact.weeklyOutlook,
-            impactSummary: economicImpact.impactSummary,
-            warnings: economicImpact.warnings,
-            opportunities: economicImpact.opportunities,
-            recommendation: economicImpact.recommendation,
-          });
-
-          logger.info('Created economic context', {
-            analysisId: analysis.id,
-            symbol,
-            immediateRisk: economicImpact.immediateRisk
-          });
-        }
-      } else {
-        logger.debug('No economic events found', { symbol });
-      }
-    } catch (economicError) {
-      // Log error but don't fail the analysis
-      logger.error('Error fetching economic context', {
-        error: economicError instanceof Error ? economicError.message : 'Unknown error',
-        stack: economicError instanceof Error ? economicError.stack : undefined
-      });
-    }
 
     logger.info('Multi-timeframe analysis completed successfully', {
       symbol,
-      timeframeCount: chartsData.length,
+      timeframeCount: layoutsData.length,
       action: analysis.action,
       confidence: analysis.confidence,
       hasEconomicContext: !!economicContext
@@ -240,12 +121,12 @@ export async function POST(request: NextRequest) {
         economicContext,
         multiTimeframe: {
           symbol,
-          timeframes: chartsData.map(c => c.interval),
-          layoutCount: chartsData.length,
+          timeframes: layoutsData.map(c => c.interval),
+          layoutCount: layoutsData.length,
         },
       },
       {
-        status: existingAnalysis ? 200 : 201,
+        status: 201,
       }
     );
   } catch (error) {

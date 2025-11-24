@@ -1,61 +1,14 @@
 import prisma from "@/lib/prisma";
 import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
-import { analyzeChart as analyzeChartOpenAI } from "@/lib/services/openai";
-import { analyzeChart as analyzeChartGemini } from "@/lib/services/gemini";
-import { analyzeChart as analyzeChartClaude } from "@/lib/services/claude";
-import { analyzeChart as analyzeChartDeepSeek } from "@/lib/services/deepseek";
 import { sendTradingAlert, sendErrorAlert } from "@/lib/services/telegram";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger } from "../logging";
 import { getMaxAutomatedSnapshotsPerLayout } from "@/lib/utils/config";
-import type { AnalysisResult } from "@/lib/services/openai";
-
-/**
- * Get AI model info and analysis function based on model identifier
- */
-function getAIModelInfo(modelId?: string): {
-  analyzeFunction: (imageUrl: string, modelId?: string) => Promise<AnalysisResult>;
-  aiModel: string;
-  aiModelName: string;
-  cleanModelId: string; // Model ID without provider prefix
-} {
-  const model = modelId || "gpt-4o"; // Default to OpenAI
-
-  // Remove provider prefix if present (e.g., "openai:chatgpt-4o-latest" -> "chatgpt-4o-latest")
-  const cleanModelId = model.includes(":") ? model.split(":")[1] : model;
-
-  // Map model identifiers to AI services
-  if (model.includes("gemini") || model === "gemini-2.5-flash") {
-    return {
-      analyzeFunction: analyzeChartGemini,
-      aiModel: "gemini",
-      aiModelName: "Google Gemini 2.5 Flash",
-      cleanModelId,
-    };
-  } else if (model.includes("claude")) {
-    return {
-      analyzeFunction: analyzeChartClaude,
-      aiModel: "claude",
-      aiModelName: "Anthropic Claude 3.5 Sonnet",
-      cleanModelId,
-    };
-  } else if (model.includes("deepseek")) {
-    return {
-      analyzeFunction: analyzeChartDeepSeek,
-      aiModel: "deepseek",
-      aiModelName: "DeepSeek",
-      cleanModelId,
-    };
-  } else {
-    // Default to OpenAI (gpt-4o, gpt-4o-mini, etc.)
-    return {
-      analyzeFunction: analyzeChartOpenAI,
-      aiModel: "openai",
-      aiModelName: cleanModelId.includes("mini") ? "OpenAI GPT-4o Mini" : "OpenAI GPT-4o",
-      cleanModelId,
-    };
-  }
-}
+import {
+  executeCompleteAnalysis,
+  parseAIModel,
+  enrichWithEconomicContext,
+} from "@/lib/services/analysisService";
 
 interface AutomationJob {
   scheduleId: string;
@@ -227,44 +180,14 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       imageDataLength: snapshot.imageData?.length || 0,
     });
 
-    // Step 6: Analyze with AI (using user's default AI model from settings)
-    const { analyzeFunction, aiModel, aiModelName, cleanModelId } = getAIModelInfo(job.defaultAiModel);
-    logger.info("Analyzing chart with AI", {
-      userDefaultModel: job.defaultAiModel,
-      cleanModelId,
-      aiModel,
-      aiModelName
-    });
-    const analysisResult = await analyzeFunction(imagePath, cleanModelId);
-
-    // Step 7: Create analysis record
-    const analysis = await prisma.analysis.create({
-      data: {
-        userId,
-        snapshotId: snapshot.id,
-        action: analysisResult.action,
-        confidence: analysisResult.confidence,
-        timeframe: analysisResult.timeframe,
-        reasons: analysisResult.reasons,
-        tradeSetup: analysisResult.tradeSetup
-          ? JSON.parse(JSON.stringify(analysisResult.tradeSetup))
-          : null,
-        aiModel,
-        aiModelName,
-        isAutomated: true, // Mark as automated
-      },
-      include: {
-        snapshot: {
-          include: {
-            layout: {
-              select: {
-                symbol: true,
-                interval: true,
-              },
-            },
-          },
-        },
-      },
+    // Step 6 & 7: Analyze with AI and create analysis record (using shared service)
+    const { analysis, economicContext } = await executeCompleteAnalysis({
+      userId,
+      snapshotId: snapshot.id,
+      imageUrl: imagePath,
+      symbol: symbol || undefined,
+      aiModel: job.defaultAiModel,
+      isAutomated: true,
     });
 
     logger.info("Analysis created", {

@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, verifyOwnership } from "@/lib/utils/apiAuth";
 import { getSnapshotById } from "@/lib/db/snapshots";
-import {
-  createAnalysis,
-  getAnalysisBySnapshotId,
-  updateAnalysis,
-} from "@/lib/db/analyses";
-import * as aiService from "@/lib/services/aiService";
-import {
-  fetchEconomicEvents,
-  filterEventsByTimeframe,
-  parseSymbolCurrencies,
-} from "@/lib/services/economicCalendar";
-import {
-  createEconomicContext,
-  getEconomicContextByAnalysisId,
-} from "@/lib/db/economicContext";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { getLogger, LogContext } from "@/lib/logging";
 import { performanceLogger } from "@/lib/logging/middleware/performanceLogger";
 import { logExternalAPI, logUserAction } from "@/lib/logging/helpers";
 import { getLayoutsBySymbol } from "@/lib/db/layouts";
-import { createSnapshot } from "@/lib/db/snapshots";
+import {
+  executeCompleteAnalysis,
+  executeCompleteMultiLayoutAnalysis,
+  parseAIModel,
+} from "@/lib/services/analysisService";
 
 /**
  * POST /api/analyze
@@ -47,22 +36,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { snapshotId, symbol, aiModel, isAutomated = false } = body;
 
-    // Parse AI model selection (format: "provider:modelId" or just "modelId")
-    let selectedProvider: "openai" | "gemini" | "claude" = "openai";
-    let selectedModelId: string;
-    let modelName: string;
-
-    if (aiModel && aiModel.includes(":")) {
-      const [provider, modelId] = aiModel.split(":");
-      selectedProvider = provider as any;
-      selectedModelId = modelId;
-      modelName = `${provider.toUpperCase()} ${modelId}`;
-    } else {
-      // Fallback to default if no model specified
-      selectedProvider = "openai";
-      selectedModelId = "gpt-4o";
-      modelName = "OpenAI GPT-4o";
-    }
+    // Parse AI model selection using shared service
+    const modelConfig = parseAIModel(aiModel);
 
     // Two modes: single snapshot analysis OR symbol-based multi-layout analysis
     if (!snapshotId && !symbol) {
@@ -152,20 +127,22 @@ export async function POST(request: NextRequest) {
           intervals: layoutsWithSnapshots.map((l) => l.interval).join(", "),
         });
 
-        // Analyze multiple layouts with selected AI model
-        const analysisResult = await performanceLogger.measure(
+        // Use shared service for multi-layout analysis
+        const { analysis, economicContext } = await performanceLogger.measure(
           "ai_multi_layout_analysis",
           async () => {
             const startTime = Date.now();
-            const result = await aiService.analyzeMultipleLayouts(
-              layoutsWithSnapshots,
-              selectedProvider,
-              selectedModelId
-            );
+            const result = await executeCompleteMultiLayoutAnalysis({
+              userId: authResult.user.userId,
+              layouts: layoutsWithSnapshots,
+              symbol,
+              aiModel,
+              isAutomated,
+            });
             const duration = Date.now() - startTime;
 
             logExternalAPI(
-              selectedProvider.toUpperCase(),
+              modelConfig.provider.toUpperCase(),
               "/multi-layout-analysis",
               "POST",
               200,
@@ -174,132 +151,8 @@ export async function POST(request: NextRequest) {
 
             return result;
           },
-          { symbol, layoutCount: layoutsWithSnapshots.length, aiModel: modelName }
+          { symbol, layoutCount: layoutsWithSnapshots.length, aiModel: modelConfig.modelName }
         );
-
-        // Use the most recent snapshot for storing the analysis
-        const primarySnapshotId = layoutsWithSnapshots[0].snapshotId;
-
-        // Check if analysis already exists for this snapshot
-        const existingAnalysis = await getAnalysisBySnapshotId(
-          primarySnapshotId
-        );
-
-        // Prepare multi-layout data to save
-        const multiLayoutData = {
-          layoutsAnalyzed: layoutsWithSnapshots.length,
-          intervals: layoutsWithSnapshots.map((l) => l.interval),
-          multiLayoutSnapshots: layoutsWithSnapshots.map((l) => ({
-            interval: l.interval,
-            layoutId: l.layoutId,
-            snapshotId: l.snapshotId,
-            imageUrl: l.imageUrl,
-          })),
-        };
-
-        let analysis;
-        if (existingAnalysis) {
-          analysis = await updateAnalysis(existingAnalysis.id, {
-            action: analysisResult.action,
-            confidence: analysisResult.confidence,
-            timeframe: analysisResult.timeframe,
-            reasons: analysisResult.reasons,
-            tradeSetup: analysisResult.tradeSetup,
-            isMultiLayout: true,
-            multiLayoutData,
-            aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
-            aiModelName: modelName,
-            isAutomated,
-          });
-        } else {
-          analysis = await createAnalysis(
-            authResult.user.userId,
-            primarySnapshotId,
-            {
-              action: analysisResult.action,
-              confidence: analysisResult.confidence,
-              timeframe: analysisResult.timeframe,
-              reasons: analysisResult.reasons,
-              tradeSetup: analysisResult.tradeSetup,
-              isMultiLayout: true,
-              multiLayoutData,
-              aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
-              aiModelName: modelName,
-              isAutomated,
-            }
-          );
-        }
-
-        // Fetch and analyze economic context
-        let economicContext = null;
-        try {
-          logger.info("Fetching economic context", {
-            symbol,
-            analysisId: analysis.id,
-          });
-
-          const { currencies, countries } = parseSymbolCurrencies(symbol);
-
-          const now = new Date();
-          const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
-          const sevenDaysAhead = new Date(
-            now.getTime() + 7 * 24 * 60 * 60 * 1000
-          );
-
-          const allEvents = await fetchEconomicEvents({
-            startDate: oneHourBefore,
-            endDate: sevenDaysAhead,
-            countries: countries.length > 0 ? countries : undefined,
-            currencies: currencies.length > 0 ? currencies : undefined,
-          });
-
-          const { upcomingEvents, weeklyEvents } = filterEventsByTimeframe(
-            allEvents,
-            now
-          );
-
-          if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-            const economicImpact = await aiService.analyzeEconomicImpact({
-              symbol,
-              action: analysisResult.action,
-              confidence: analysisResult.confidence,
-              upcomingEvents,
-              weeklyEvents,
-            }, selectedProvider);
-
-            const existingContext = await getEconomicContextByAnalysisId(
-              analysis.id
-            );
-
-            if (!existingContext) {
-              economicContext = await createEconomicContext({
-                analysisId: analysis.id,
-                symbol,
-                upcomingEvents: upcomingEvents.map((e) => ({
-                  ...e,
-                  date: e.date.toISOString(),
-                })),
-                weeklyEvents: weeklyEvents.map((e) => ({
-                  ...e,
-                  date: e.date.toISOString(),
-                })),
-                immediateRisk: economicImpact.immediateRisk,
-                weeklyOutlook: economicImpact.weeklyOutlook,
-                impactSummary: economicImpact.impactSummary,
-                warnings: economicImpact.warnings,
-                opportunities: economicImpact.opportunities,
-                recommendation: economicImpact.recommendation,
-              });
-            }
-          }
-        } catch (economicError) {
-          logger.error("Error fetching economic context", {
-            error:
-              economicError instanceof Error
-                ? economicError.message
-                : "Unknown error",
-          });
-        }
 
         logger.info("Multi-layout analysis completed", {
           symbol,
@@ -313,7 +166,7 @@ export async function POST(request: NextRequest) {
             ...analysis,
             economicContext,
           },
-          { status: existingAnalysis ? 200 : 201 }
+          { status: 201 }
         );
       } catch (symbolAnalysisError) {
         logger.error("Symbol-based analysis failed", {
@@ -379,23 +232,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if analysis already exists
-    const existingAnalysis = await getAnalysisBySnapshotId(snapshotId);
-
-    // Analyze chart using selected AI model with performance tracking
-    const analysisResult = await performanceLogger.measure(
+    // Use shared service for single chart analysis with performance tracking
+    const { analysis, economicContext } = await performanceLogger.measure(
       "ai_chart_analysis",
       async () => {
         const startTime = Date.now();
-        const result = await aiService.analyzeChart(
-          snapshot.url,
-          selectedProvider,
-          selectedModelId
-        );
+        const result = await executeCompleteAnalysis({
+          userId: authResult.user.userId,
+          snapshotId,
+          imageUrl: snapshot.url,
+          symbol: snapshotWithLayout.layout?.symbol,
+          aiModel,
+          isAutomated,
+        });
         const duration = Date.now() - startTime;
 
         logExternalAPI(
-          selectedProvider.toUpperCase(),
+          modelConfig.provider.toUpperCase(),
           "/chart-analysis",
           "POST",
           200,
@@ -404,133 +257,8 @@ export async function POST(request: NextRequest) {
 
         return result;
       },
-      { snapshotId, aiModel: modelName }
+      { snapshotId, aiModel: modelConfig.modelName }
     );
-
-    let analysis;
-    if (existingAnalysis) {
-      // Update existing analysis
-      analysis = await updateAnalysis(existingAnalysis.id, {
-        action: analysisResult.action,
-        confidence: analysisResult.confidence,
-        timeframe: analysisResult.timeframe,
-        reasons: analysisResult.reasons,
-        tradeSetup: analysisResult.tradeSetup,
-        aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
-        aiModelName: modelName,
-        isAutomated,
-      });
-    } else {
-      // Create new analysis
-      analysis = await createAnalysis(authResult.user.userId, snapshotId, {
-        action: analysisResult.action,
-        confidence: analysisResult.confidence,
-        timeframe: analysisResult.timeframe,
-        reasons: analysisResult.reasons,
-        tradeSetup: analysisResult.tradeSetup,
-        aiModel: aiModel || `${selectedProvider}:${selectedModelId}`,
-        aiModelName: modelName,
-        isAutomated,
-      });
-    }
-
-    // Fetch and analyze economic context if symbol is available
-    let economicContext = null;
-    try {
-      const symbol = snapshotWithLayout.layout?.symbol;
-
-      if (symbol) {
-        logger.info("Fetching economic context", {
-          symbol,
-          analysisId: analysis.id,
-        });
-
-        // Parse symbol to get currencies/countries
-        const { currencies, countries } = parseSymbolCurrencies(symbol);
-
-        // Fetch events: ±1 hour window and 7 days ahead
-        const now = new Date();
-        const oneHourBefore = new Date(now.getTime() - 60 * 60 * 1000);
-        const sevenDaysAhead = new Date(
-          now.getTime() + 7 * 24 * 60 * 60 * 1000
-        );
-
-        const allEvents = await fetchEconomicEvents({
-          startDate: oneHourBefore,
-          endDate: sevenDaysAhead,
-          countries: countries.length > 0 ? countries : undefined,
-          currencies: currencies.length > 0 ? currencies : undefined,
-        });
-
-        // Filter into upcomingEvents and weeklyEvents
-        const { upcomingEvents, weeklyEvents } = filterEventsByTimeframe(
-          allEvents,
-          now
-        );
-
-        // Only create economic context if there are events
-        if (upcomingEvents.length > 0 || weeklyEvents.length > 0) {
-          logger.info("Found economic events", {
-            symbol,
-            upcomingCount: upcomingEvents.length,
-            weeklyCount: weeklyEvents.length,
-          });
-
-          // Get AI analysis of economic impact using selected model
-          const economicImpact = await aiService.analyzeEconomicImpact({
-            symbol,
-            action: analysisResult.action,
-            confidence: analysisResult.confidence,
-            upcomingEvents,
-            weeklyEvents,
-          }, selectedProvider);
-
-          // Check if economic context already exists
-          const existingContext = await getEconomicContextByAnalysisId(
-            analysis.id
-          );
-
-          if (!existingContext) {
-            // Create new economic context
-            economicContext = await createEconomicContext({
-              analysisId: analysis.id,
-              symbol,
-              upcomingEvents: upcomingEvents.map((e) => ({
-                ...e,
-                date: e.date.toISOString(),
-              })),
-              weeklyEvents: weeklyEvents.map((e) => ({
-                ...e,
-                date: e.date.toISOString(),
-              })),
-              immediateRisk: economicImpact.immediateRisk,
-              weeklyOutlook: economicImpact.weeklyOutlook,
-              impactSummary: economicImpact.impactSummary,
-              warnings: economicImpact.warnings,
-              opportunities: economicImpact.opportunities,
-              recommendation: economicImpact.recommendation,
-            });
-
-            logger.info("Created economic context", {
-              analysisId: analysis.id,
-              symbol,
-              immediateRisk: economicImpact.immediateRisk,
-            });
-          }
-        } else {
-          logger.debug("No economic events found", { symbol });
-        }
-      }
-    } catch (economicError) {
-      // Log error but don't fail the analysis
-      logger.error("Error fetching economic context", {
-        error:
-          economicError instanceof Error
-            ? economicError.message
-            : "Unknown error",
-        stack: economicError instanceof Error ? economicError.stack : undefined,
-      });
-    }
 
     logger.info("Analysis completed successfully", {
       snapshotId,
@@ -546,7 +274,7 @@ export async function POST(request: NextRequest) {
         economicContext,
       },
       {
-        status: existingAnalysis ? 200 : 201,
+        status: 201,
       }
     );
   } catch (error) {

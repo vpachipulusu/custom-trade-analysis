@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@mui/material/styles";
 import styles from "./signup.module.scss";
 
 export default function SignupPage() {
@@ -25,6 +26,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const { signup, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const validateForm = () => {
     if (!email || !password || !confirmPassword) {
@@ -77,9 +80,30 @@ export default function SignupPage() {
   };
 
   return (
-    <Box className={styles.container}>
-      <Card className={styles.card}>
-        <CardContent className={styles.cardContent}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: isDark
+          ? "linear-gradient(to bottom, #0a0a0f 0%, #1a1625 50%, #0a0a0f 100%)"
+          : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        padding: "1rem",
+      }}
+    >
+      <Card
+        sx={{
+          maxWidth: 450,
+          width: "100%",
+          boxShadow: isDark
+            ? "0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(99, 102, 241, 0.2)"
+            : "0 8px 32px rgba(0, 0, 0, 0.1)",
+          bgcolor: isDark ? "rgba(24, 24, 27, 0.9)" : "#ffffff",
+          backdropFilter: isDark ? "blur(10px)" : "none",
+        }}
+      >
+        <CardContent sx={{ padding: "2.5rem !important" }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Sign Up
           </Typography>

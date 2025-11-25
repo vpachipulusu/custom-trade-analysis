@@ -64,29 +64,31 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         palette: {
           mode,
           primary: {
-            main: mode === "light" ? "#667eea" : "#8b9ffc",
-            light: mode === "light" ? "#8b9ffc" : "#a5b8ff",
-            dark: mode === "light" ? "#4c5fcd" : "#667eea",
+            main: mode === "light" ? "#667eea" : "#6366f1",
+            light: mode === "light" ? "#8b9ffc" : "#818cf8",
+            dark: mode === "light" ? "#4c5fcd" : "#4f46e5",
           },
           secondary: {
-            main: mode === "light" ? "#764ba2" : "#9b6bd1",
-            light: mode === "light" ? "#9b6bd1" : "#b88ce0",
-            dark: mode === "light" ? "#5a3880" : "#764ba2",
+            main: mode === "light" ? "#764ba2" : "#8b5cf6",
+            light: mode === "light" ? "#9b6bd1" : "#a78bfa",
+            dark: mode === "light" ? "#5a3880" : "#7c3aed",
           },
           background: {
-            default: mode === "light" ? "#f5f5f5" : "#121212",
-            paper: mode === "light" ? "#ffffff" : "#1e1e1e",
+            default: mode === "light" ? "#f8fafc" : "#0a0a0f",
+            paper: mode === "light" ? "#ffffff" : "#18181b",
           },
           text: {
-            primary: mode === "light" ? "rgba(0, 0, 0, 0.87)" : "rgba(255, 255, 255, 0.87)",
-            secondary: mode === "light" ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.6)",
+            primary: mode === "light" ? "rgba(15, 23, 42, 0.95)" : "rgba(250, 250, 250, 0.95)",
+            secondary: mode === "light" ? "rgba(15, 23, 42, 0.65)" : "rgba(161, 161, 170, 0.9)",
           },
+          divider: mode === "light" ? "rgba(15, 23, 42, 0.08)" : "rgba(250, 250, 250, 0.06)",
         },
         components: {
           MuiCard: {
             styleOverrides: {
               root: {
                 backgroundImage: "none",
+                borderRadius: 12,
               },
             },
           },
@@ -94,9 +96,22 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             styleOverrides: {
               root: {
                 backgroundImage: "none",
+                borderRadius: 12,
               },
             },
           },
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: 8,
+                textTransform: "none",
+                fontWeight: 600,
+              },
+            },
+          },
+        },
+        shape: {
+          borderRadius: 12,
         },
       }),
     [mode]

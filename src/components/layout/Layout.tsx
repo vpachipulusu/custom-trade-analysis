@@ -44,6 +44,7 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isDark = theme.palette.mode === "dark";
 
   // Fetch open trades count for badge
   useEffect(() => {
@@ -125,8 +126,8 @@ export default function Layout({ children }: LayoutProps) {
   );
 
   return (
-    <Box className={styles.root}>
-      <AppBar position="static">
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <AppBar position="static" sx={{ bgcolor: isDark ? "#18181b" : "primary.main" }}>
         <Toolbar>
           {isMobile && (
             <IconButton
@@ -258,13 +259,27 @@ export default function Layout({ children }: LayoutProps) {
         </Drawer>
       )}
 
-      <Box component="main" className={styles.content}>
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          bgcolor: "background.default",
+        }}
+      >
         <Container maxWidth="xl" sx={{ py: 4 }}>
           {children}
         </Container>
       </Box>
 
-      <Box component="footer" className={styles.footer}>
+      <Box
+        component="footer"
+        sx={{
+          py: 3,
+          bgcolor: "background.paper",
+          borderTop: 1,
+          borderColor: "divider",
+        }}
+      >
         <Container maxWidth="xl">
           <Typography variant="body2" color="text.secondary" align="center">
             © {new Date().getFullYear()} TradingView AI Evaluator. All rights

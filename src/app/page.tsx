@@ -39,7 +39,7 @@ export default function Home() {
       sx={{
         minHeight: "100vh",
         background: isDark
-          ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+          ? "linear-gradient(to bottom, #0a0a0f 0%, #1a1625 50%, #0a0a0f 100%)"
           : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         position: "relative",
         overflow: "hidden",
@@ -167,13 +167,17 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
-                transition: "all 0.3s ease",
+                bgcolor: isDark ? "rgba(24, 24, 27, 0.7)" : "rgba(255,255,255,0.98)",
+                backdropFilter: isDark ? "blur(10px)" : "none",
+                border: isDark ? "1px solid rgba(99, 102, 241, 0.2)" : "none",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 "&:hover": {
                   transform: "translateY(-8px)",
                   boxShadow: isDark
-                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    ? "0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(99, 102, 241, 0.4)"
                     : "0 12px 24px rgba(0,0,0,0.15)",
+                  border: isDark ? "1px solid rgba(99, 102, 241, 0.6)" : "none",
+                  bgcolor: isDark ? "rgba(24, 24, 27, 0.9)" : "rgba(255,255,255,0.98)",
                 },
                 borderRadius: 3,
               }}
@@ -207,13 +211,17 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
-                transition: "all 0.3s ease",
+                bgcolor: isDark ? "rgba(24, 24, 27, 0.7)" : "rgba(255,255,255,0.98)",
+                backdropFilter: isDark ? "blur(10px)" : "none",
+                border: isDark ? "1px solid rgba(99, 102, 241, 0.2)" : "none",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 "&:hover": {
                   transform: "translateY(-8px)",
                   boxShadow: isDark
-                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    ? "0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(99, 102, 241, 0.4)"
                     : "0 12px 24px rgba(0,0,0,0.15)",
+                  border: isDark ? "1px solid rgba(99, 102, 241, 0.6)" : "none",
+                  bgcolor: isDark ? "rgba(24, 24, 27, 0.9)" : "rgba(255,255,255,0.98)",
                 },
                 borderRadius: 3,
               }}
@@ -247,13 +255,17 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
-                transition: "all 0.3s ease",
+                bgcolor: isDark ? "rgba(24, 24, 27, 0.7)" : "rgba(255,255,255,0.98)",
+                backdropFilter: isDark ? "blur(10px)" : "none",
+                border: isDark ? "1px solid rgba(99, 102, 241, 0.2)" : "none",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 "&:hover": {
                   transform: "translateY(-8px)",
                   boxShadow: isDark
-                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    ? "0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(99, 102, 241, 0.4)"
                     : "0 12px 24px rgba(0,0,0,0.15)",
+                  border: isDark ? "1px solid rgba(99, 102, 241, 0.6)" : "none",
+                  bgcolor: isDark ? "rgba(24, 24, 27, 0.9)" : "rgba(255,255,255,0.98)",
                 },
                 borderRadius: 3,
               }}
@@ -287,48 +299,48 @@ export default function Home() {
         {/* Additional Features */}
         <Grid container spacing={3} sx={{ mb: { xs: 6, md: 8 } }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: "center", color: "white" }}>
-              <TimelineIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9 }} />
-              <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Box sx={{ textAlign: "center" }}>
+              <TimelineIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9, color: "white" }} />
+              <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: "white" }}>
                 Multi-Timeframe Analysis
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
                 Analyze multiple timeframes simultaneously for comprehensive market insights
               </Typography>
             </Box>
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: "center", color: "white" }}>
-              <NotificationsActiveIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9 }} />
-              <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Box sx={{ textAlign: "center" }}>
+              <NotificationsActiveIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9, color: "white" }} />
+              <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: "white" }}>
                 Real-Time Alerts
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
                 Get notified instantly when trading signals change or meet your criteria
               </Typography>
             </Box>
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: "center", color: "white" }}>
-              <AnalyticsIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9 }} />
-              <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Box sx={{ textAlign: "center" }}>
+              <AnalyticsIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9, color: "white" }} />
+              <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: "white" }}>
                 Trading Journal
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
                 Track your trades and link them to AI analysis for performance insights
               </Typography>
             </Box>
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ textAlign: "center", color: "white" }}>
-              <TrendingUpIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9 }} />
-              <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Box sx={{ textAlign: "center" }}>
+              <TrendingUpIcon sx={{ fontSize: 50, mb: 2, opacity: 0.9, color: "white" }} />
+              <Typography variant="h6" fontWeight={600} gutterBottom sx={{ color: "white" }}>
                 Economic Calendar
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
                 Stay informed with integrated economic events and their market impact
               </Typography>
             </Box>
@@ -338,11 +350,13 @@ export default function Home() {
         {/* How It Works */}
         <Card
           sx={{
-            bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
+            bgcolor: isDark ? "rgba(24, 24, 27, 0.7)" : "rgba(255,255,255,0.98)",
+            backdropFilter: isDark ? "blur(10px)" : "none",
+            border: isDark ? "1px solid rgba(99, 102, 241, 0.2)" : "none",
             mb: { xs: 6, md: 8 },
             borderRadius: 3,
             boxShadow: isDark
-              ? "0 8px 32px rgba(0,0,0,0.5)"
+              ? "0 20px 60px rgba(0,0,0,0.6)"
               : "0 8px 32px rgba(0,0,0,0.1)",
           }}
         >
@@ -352,7 +366,7 @@ export default function Home() {
               fontWeight={700}
               gutterBottom
               textAlign="center"
-              sx={{ mb: { xs: 4, md: 6 }, color: isDark ? "#8b9ffc" : "#667eea" }}
+              sx={{ mb: { xs: 4, md: 6 }, color: isDark ? "#818cf8" : "#667eea" }}
             >
               How It Works
             </Typography>

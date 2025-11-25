@@ -82,6 +82,14 @@ async function processMultiLayoutAutomationJob(
           continue;
         }
 
+        // Enforce snapshot limit FIRST - delete oldest if needed
+        logger.info("Enforcing snapshot limit for multi-layout automation", {
+          layoutDbId: layout.id,
+          layoutIdTradingView: layout.layoutId,
+          interval: layout.interval,
+        });
+        await enforceSnapshotLimit(layout.id);
+
         logger.info("Capturing snapshot for layout", {
           layoutId: layout.layoutId,
           interval: layout.interval,
@@ -92,9 +100,6 @@ async function processMultiLayoutAutomationJob(
           sessionid: decryptedSessionId,
           sessionidSign: decryptedSessionidSign,
         });
-
-        // Enforce snapshot limit - delete oldest if needed
-        await enforceSnapshotLimit(layout.id);
 
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
@@ -421,7 +426,12 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       return;
     }
 
-    // Step 2: Capture chart screenshot using Puppeteer
+    // Step 2: Enforce snapshot limit FIRST - delete oldest snapshots if needed
+    // This ensures we clean up before capturing new screenshots (expensive operation)
+    logger.info("Enforcing snapshot limit before automation job", { layoutId });
+    await enforceSnapshotLimit(layoutId);
+
+    // Step 3: Capture chart screenshot using Puppeteer
     logger.info("Capturing screenshot", { layoutId: layoutIdTradingView });
     const imagePath = await captureWithPuppeteer({
       layoutId: layoutIdTradingView,
@@ -433,9 +443,6 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       dataLength: imagePath.length,
       preview: imagePath.substring(0, 50),
     });
-
-    // Step 3: Enforce snapshot limit - delete oldest snapshots if needed
-    await enforceSnapshotLimit(layoutId);
 
     // Step 4: Calculate expiration (24 hours from now)
     const expiresAt = new Date();

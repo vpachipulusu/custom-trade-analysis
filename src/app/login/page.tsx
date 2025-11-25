@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@mui/material/styles";
 import styles from "./login.module.scss";
 
 export default function LoginPage() {
@@ -24,6 +25,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const validateForm = () => {
     if (!email || !password) {

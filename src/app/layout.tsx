@@ -1,22 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.scss";
 import { useState, StrictMode } from "react";
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#667eea",
-    },
-    secondary: {
-      main: "#764ba2",
-    },
-  },
-});
 
 export default function RootLayout({
   children,
@@ -40,8 +28,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <StrictMode>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-              <CssBaseline />
+            <ThemeProvider>
               <AuthProvider>{children}</AuthProvider>
             </ThemeProvider>
           </QueryClientProvider>

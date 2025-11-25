@@ -11,6 +11,9 @@ import {
   Stack,
   useTheme,
   useMediaQuery,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import LoginIcon from "@mui/icons-material/Login";
@@ -22,22 +25,38 @@ import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Home() {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+  const isDark = theme.palette.mode === "dark";
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        background: isDark
+          ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+          : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         position: "relative",
         overflow: "hidden",
       }}
     >
+      {/* Theme Toggle - Floating Top Right */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 10,
+        }}
+      >
+        <ThemeToggle />
+      </Box>
+
       {/* Animated background elements */}
       <Box
         sx={{
@@ -46,9 +65,12 @@ export default function Home() {
           left: 0,
           right: 0,
           bottom: 0,
-          opacity: 0.1,
-          backgroundImage: `radial-gradient(circle at 20% 50%, white 1px, transparent 1px),
-                           radial-gradient(circle at 80% 80%, white 1px, transparent 1px)`,
+          opacity: isDark ? 0.05 : 0.1,
+          backgroundImage: isDark
+            ? `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.5) 1px, transparent 1px),
+               radial-gradient(circle at 80% 80%, rgba(255,255,255,0.5) 1px, transparent 1px)`
+            : `radial-gradient(circle at 20% 50%, white 1px, transparent 1px),
+               radial-gradient(circle at 80% 80%, white 1px, transparent 1px)`,
           backgroundSize: "50px 50px",
         }}
       />
@@ -94,9 +116,9 @@ export default function Home() {
               onClick={() => router.push("/login")}
               sx={{
                 bgcolor: "white",
-                color: "#667eea",
+                color: isDark ? "#667eea" : "#667eea",
                 "&:hover": {
-                  bgcolor: "#f5f5f5",
+                  bgcolor: isDark ? "#f0f0f0" : "#f5f5f5",
                   transform: "translateY(-2px)",
                   boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
                 },
@@ -122,7 +144,7 @@ export default function Home() {
                 "&:hover": {
                   borderColor: "white",
                   borderWidth: 2,
-                  bgcolor: "rgba(255,255,255,0.15)",
+                  bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.15)",
                   transform: "translateY(-2px)",
                   boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
                 },
@@ -145,11 +167,13 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: "rgba(255,255,255,0.98)",
+                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
                 transition: "all 0.3s ease",
                 "&:hover": {
                   transform: "translateY(-8px)",
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
+                  boxShadow: isDark
+                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    : "0 12px 24px rgba(0,0,0,0.15)",
                 },
                 borderRadius: 3,
               }}
@@ -183,11 +207,13 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: "rgba(255,255,255,0.98)",
+                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
                 transition: "all 0.3s ease",
                 "&:hover": {
                   transform: "translateY(-8px)",
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
+                  boxShadow: isDark
+                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    : "0 12px 24px rgba(0,0,0,0.15)",
                 },
                 borderRadius: 3,
               }}
@@ -221,11 +247,13 @@ export default function Home() {
             <Card
               sx={{
                 height: "100%",
-                bgcolor: "rgba(255,255,255,0.98)",
+                bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
                 transition: "all 0.3s ease",
                 "&:hover": {
                   transform: "translateY(-8px)",
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
+                  boxShadow: isDark
+                    ? "0 12px 24px rgba(0,0,0,0.5)"
+                    : "0 12px 24px rgba(0,0,0,0.15)",
                 },
                 borderRadius: 3,
               }}
@@ -310,10 +338,12 @@ export default function Home() {
         {/* How It Works */}
         <Card
           sx={{
-            bgcolor: "rgba(255,255,255,0.98)",
+            bgcolor: isDark ? "rgba(30,30,30,0.95)" : "rgba(255,255,255,0.98)",
             mb: { xs: 6, md: 8 },
             borderRadius: 3,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0,0,0,0.5)"
+              : "0 8px 32px rgba(0,0,0,0.1)",
           }}
         >
           <CardContent sx={{ p: { xs: 3, md: 5 } }}>
@@ -322,7 +352,7 @@ export default function Home() {
               fontWeight={700}
               gutterBottom
               textAlign="center"
-              sx={{ mb: { xs: 4, md: 6 }, color: "#667eea" }}
+              sx={{ mb: { xs: 4, md: 6 }, color: isDark ? "#8b9ffc" : "#667eea" }}
             >
               How It Works
             </Typography>

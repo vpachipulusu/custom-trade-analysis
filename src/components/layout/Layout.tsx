@@ -27,6 +27,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLogger } from "@/lib/logging";
 import { useUnreadCount } from "@/hooks/useNotifications";
+import ThemeToggle from "@/components/ThemeToggle";
 import styles from "./Layout.module.scss";
 
 interface LayoutProps {
@@ -186,6 +187,7 @@ export default function Layout({ children }: LayoutProps) {
               >
                 {user.email}
               </Typography>
+              <ThemeToggle />
               <IconButton
                 size="large"
                 aria-label="notifications"

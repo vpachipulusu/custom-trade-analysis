@@ -46,7 +46,7 @@ export default function SnapshotCard({
         height="200"
         image={snapshot.imageData || snapshot.url}
         alt="Chart snapshot"
-        sx={{ objectFit: "cover", backgroundColor: "#f5f5f5" }}
+        sx={{ objectFit: "cover", backgroundColor: "action.hover" }}
       />
       <CardContent sx={{ flexGrow: 1 }}>
         <Box

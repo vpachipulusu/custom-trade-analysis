@@ -279,7 +279,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
       {/* Chart Images Section */}
       {isMultiLayout ? (
         <Box>
-          <Box sx={{ p: 2, bgcolor: "grey.100", borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
             <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
               Timeframes: {intervals.map(i => formatInterval(i)).join(", ")}
             </Typography>
@@ -295,7 +295,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     sx={{
                       maxHeight: 400,
                       objectFit: "contain",
-                      backgroundColor: "#f5f5f5",
+                      backgroundColor: "action.hover",
                       borderBottom: 1,
                       borderColor: "divider",
                     }}
@@ -322,7 +322,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
           sx={{
             maxHeight: 500,
             objectFit: "contain",
-            backgroundColor: "#f5f5f5",
+            backgroundColor: "action.hover",
           }}
         />
       )}
@@ -390,7 +390,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     <Box
                       sx={{
                         p: 2,
-                        bgcolor: 'grey.100',
+                        bgcolor: 'background.paper',
                         borderBottom: 1,
                         borderColor: 'divider'
                       }}
@@ -484,7 +484,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     <Box
                       sx={{
                         p: 2,
-                        bgcolor: 'grey.100',
+                        bgcolor: 'background.paper',
                         borderBottom: 1,
                         borderColor: 'divider'
                       }}
@@ -572,7 +572,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     <Box
                       sx={{
                         p: 2,
-                        bgcolor: 'grey.100',
+                        bgcolor: 'background.paper',
                         borderBottom: 1,
                         borderColor: 'divider'
                       }}

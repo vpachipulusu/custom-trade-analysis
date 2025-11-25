@@ -14,6 +14,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Trade } from "@prisma/client";
 import { useJournal } from "@/contexts/JournalContext";
 import { getCurrencySymbol } from "@/lib/utils/currency";
@@ -32,6 +33,8 @@ interface DataPoint {
 export default function DisciplineChart({ trades }: DisciplineChartProps) {
   const { currency } = useJournal();
   const symbol = getCurrencySymbol(currency);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   const closedTrades = trades
     .filter((t) => t.status === "closed" && t.closedPositionPL !== null)
@@ -90,7 +93,7 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <Paper sx={{ p: 1.5, border: "1px solid #ccc" }}>
+        <Paper sx={{ p: 1.5, border: 1, borderColor: "divider" }}>
           <Typography variant="body2" fontWeight="bold">
             {data.date}
           </Typography>
@@ -146,7 +149,7 @@ export default function DisciplineChart({ trades }: DisciplineChartProps) {
       <Box sx={{ width: "100%", height: 400, mt: 2 }}>
         <ResponsiveContainer>
           <ComposedChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e0e0e0"} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 11 }}

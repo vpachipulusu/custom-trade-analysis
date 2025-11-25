@@ -16,6 +16,7 @@ import {
   Scatter,
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Trade } from "@prisma/client";
 import { useJournal } from "@/contexts/JournalContext";
 import { getCurrencySymbol } from "@/lib/utils/currency";
@@ -40,6 +41,8 @@ export default function EquityCurveChart({
 }: EquityCurveChartProps) {
   const { currency } = useJournal();
   const symbol = getCurrencySymbol(currency);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   // Helper to safely convert Decimal/string to number
   const toNum = (val: any) => {
@@ -108,7 +111,7 @@ export default function EquityCurveChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <Paper sx={{ p: 1.5, border: "1px solid #ccc" }}>
+        <Paper sx={{ p: 1.5, border: 1, borderColor: "divider" }}>
           <Typography variant="body2" fontWeight="bold">
             {data.date}
           </Typography>
@@ -154,7 +157,7 @@ export default function EquityCurveChart({
         cy={cy}
         r={4}
         fill={colors[payload.tradeType as "win" | "loss" | "breakeven"]}
-        stroke="#fff"
+        stroke={isDark ? "#18181b" : "#fff"}
         strokeWidth={1}
       />
     );
@@ -182,7 +185,7 @@ export default function EquityCurveChart({
       <Box sx={{ width: "100%", height: 400 }}>
         <ResponsiveContainer>
           <ComposedChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e0e0e0"} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 12 }}
@@ -260,7 +263,8 @@ export default function EquityCurveChart({
               height: 12,
               borderRadius: "50%",
               bgcolor: "#4caf50",
-              border: "1px solid #fff",
+              border: "1px solid",
+              borderColor: isDark ? "#18181b" : "#fff",
             }}
           />
           <Typography variant="caption">Winning Trade</Typography>
@@ -272,7 +276,8 @@ export default function EquityCurveChart({
               height: 12,
               borderRadius: "50%",
               bgcolor: "#f44336",
-              border: "1px solid #fff",
+              border: "1px solid",
+              borderColor: isDark ? "#18181b" : "#fff",
             }}
           />
           <Typography variant="caption">Losing Trade</Typography>
@@ -284,7 +289,8 @@ export default function EquityCurveChart({
               height: 12,
               borderRadius: "50%",
               bgcolor: "#ff9800",
-              border: "1px solid #fff",
+              border: "1px solid",
+              borderColor: isDark ? "#18181b" : "#fff",
             }}
           />
           <Typography variant="caption">Break-Even Trade</Typography>

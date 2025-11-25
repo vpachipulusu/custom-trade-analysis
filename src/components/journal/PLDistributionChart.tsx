@@ -14,6 +14,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Trade } from "@prisma/client";
 import { useJournal } from "@/contexts/JournalContext";
 import { getCurrencySymbol } from "@/lib/utils/currency";

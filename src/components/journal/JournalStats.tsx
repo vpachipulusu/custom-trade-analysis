@@ -17,6 +17,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { useAuth } from "@/contexts/AuthContext";
 import { useJournal } from "@/contexts/JournalContext";
 import { getCurrencySymbol } from "@/lib/utils/currency";
+import { useTheme } from "@mui/material/styles";
 
 interface StatsData {
   totalTrades: number;
@@ -49,6 +50,8 @@ interface Props {
 
 export default function JournalStats({ refreshTrigger }: Props) {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -138,8 +141,10 @@ export default function JournalStats({ refreshTrigger }: Props) {
           <Card
             elevation={2}
             sx={{
-              background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-              borderLeft: "4px solid #667eea",
+              background: isDark
+                ? "linear-gradient(135deg, #18181b 0%, #27272a 100%)"
+                : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+              borderLeft: isDark ? "4px solid #6366f1" : "4px solid #667eea",
             }}
           >
             <CardContent sx={{ py: 3 }}>

@@ -19,6 +19,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Trade } from "@prisma/client";
 import { useJournal } from "@/contexts/JournalContext";
 import { getCurrencySymbol } from "@/lib/utils/currency";
@@ -31,6 +32,8 @@ type ViewMode = "count" | "amount";
 
 export default function WinLossChart({ trades }: WinLossChartProps) {
   const { currency } = useJournal();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [viewMode, setViewMode] = React.useState<ViewMode>("count");
 
   const closedTrades = trades.filter(
@@ -87,7 +90,7 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <Paper sx={{ p: 1.5, border: "1px solid #ccc" }}>
+        <Paper sx={{ p: 1.5, border: 1, borderColor: "divider" }}>
           <Typography variant="body2" fontWeight="bold">
             {data.name}
           </Typography>
@@ -146,7 +149,7 @@ export default function WinLossChart({ trades }: WinLossChartProps) {
       <Box sx={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e0e0e0"} />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis
               tick={{ fontSize: 12 }}

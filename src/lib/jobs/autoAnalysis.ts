@@ -391,6 +391,14 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       throw new Error("Missing layoutId or sessionidSign");
     }
 
+    // DEBUG: Log job object fields
+    logger.info("DEBUG: Multi-layout check values", {
+      "job.useMultiLayout": job.useMultiLayout,
+      "job.symbol": job.symbol,
+      "symbol variable": symbol,
+      "condition result": !!(job.useMultiLayout && symbol),
+    });
+
     // Check if multi-layout analysis is enabled
     if (job.useMultiLayout && symbol) {
       logger.info("Multi-layout analysis enabled for automation", {

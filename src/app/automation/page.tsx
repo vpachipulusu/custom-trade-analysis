@@ -42,6 +42,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLayouts } from "@/hooks/useLayouts";
+import { formatInterval } from "@/lib/utils/intervalFormat";
 
 interface AutomationSchedule {
   id: string;
@@ -386,7 +387,7 @@ export default function AutomationPage() {
                       {schedules.map((schedule) => (
                         <TableRow key={schedule.id}>
                           <TableCell>
-                            {schedule.layout.symbol} {schedule.layout.interval}
+                            {schedule.layout.symbol} {schedule.layout.interval ? formatInterval(schedule.layout.interval) : ""}
                           </TableCell>
                           <TableCell>
                             {getFrequencyLabel(schedule.frequency)}
@@ -458,7 +459,7 @@ export default function AutomationPage() {
                                 handleViewLogs(
                                   schedule.id,
                                   `${schedule.layout.symbol || "Chart"} ${
-                                    schedule.layout.interval || ""
+                                    schedule.layout.interval ? formatInterval(schedule.layout.interval) : ""
                                   }`
                                 )
                               }
@@ -529,7 +530,7 @@ export default function AutomationPage() {
                     onClick={() => handleLayoutSelected(layout)}
                   >
                     <ListItemText
-                      primary={`${layout.symbol} ${layout.interval}`}
+                      primary={`${layout.symbol} ${layout.interval ? formatInterval(layout.interval) : ""}`}
                       secondary={`Layout ID: ${layout.layoutId || "N/A"}`}
                     />
                   </ListItemButton>

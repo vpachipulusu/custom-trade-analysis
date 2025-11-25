@@ -35,6 +35,7 @@ import { getLogger } from "@/lib/logging";
 import WarningIcon from "@mui/icons-material/Warning";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import AIModelSelector, { AIModelBadge } from "./AIModelSelector";
+import { formatInterval } from "@/lib/utils/intervalFormat";
 
 interface AnalysisDisplayProps {
   analysis: Analysis;
@@ -216,7 +217,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     Interval:
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {analysis.snapshot.layout.interval}
+                    {formatInterval(analysis.snapshot.layout.interval)}
                   </Typography>
                 </Box>
               )}
@@ -280,7 +281,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
         <Box>
           <Box sx={{ p: 2, bgcolor: "grey.100", borderBottom: 1, borderColor: 'divider' }}>
             <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Timeframes: {intervals.join(", ")}
+              Timeframes: {intervals.map(i => formatInterval(i)).join(", ")}
             </Typography>
           </Box>
           <Grid container>
@@ -290,7 +291,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                   <CardMedia
                     component="img"
                     image={snapshot.imageUrl}
-                    alt={`Chart ${index + 1} - ${snapshot.interval}`}
+                    alt={`Chart ${index + 1} - ${formatInterval(snapshot.interval)}`}
                     sx={{
                       maxHeight: 400,
                       objectFit: "contain",
@@ -300,7 +301,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
                     }}
                   />
                   <Chip
-                    label={snapshot.interval}
+                    label={formatInterval(snapshot.interval)}
                     color="primary"
                     sx={{
                       position: "absolute",

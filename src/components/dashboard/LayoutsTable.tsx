@@ -37,6 +37,7 @@ import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfig } from "@/hooks/useConfig";
+import { formatInterval } from "@/lib/utils/intervalFormat";
 import axios from "axios";
 
 interface LayoutsTableProps {
@@ -301,7 +302,7 @@ export default function LayoutsTable({
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell>{layout.interval || "-"}</TableCell>
+                    <TableCell>{layout.interval ? formatInterval(layout.interval) : "-"}</TableCell>
                     <TableCell>
                       {layout.layoutId ? (
                         <Chip label={layout.layoutId} size="small" />

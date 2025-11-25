@@ -3,6 +3,9 @@ import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import prisma from "@/lib/prisma";
 import adminApp from "@/lib/firebase/adminApp";
+import { getLogger } from "@/lib/logging";
+
+const logger = getLogger();
 
 /**
  * POST /api/profile/password
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
         message: "Password changed successfully",
       });
     } catch (error: any) {
-      console.error("Firebase password update error:", error);
+      logger.error("Firebase password update error", { error: error instanceof Error ? error.message : String(error) });
       return NextResponse.json(
         { error: "Failed to update password. Please try again." },
         { status: 500 }

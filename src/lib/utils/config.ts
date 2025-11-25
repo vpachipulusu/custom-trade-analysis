@@ -3,6 +3,10 @@
  * Reads and validates configuration values from environment variables
  */
 
+import { getLogger } from "../logging";
+
+const logger = getLogger();
+
 /**
  * Get the maximum number of layouts allowed per symbol per user
  * @returns number - defaults to 4 if not set or invalid
@@ -15,7 +19,7 @@ export function getMaxLayoutsPerSymbol(): number {
 
   const parsed = parseInt(value, 10);
   if (isNaN(parsed) || parsed <= 0) {
-    console.warn(`Invalid MAX_LAYOUTS_PER_SYMBOL value: ${value}. Using default: 4`);
+    logger.warn(`Invalid MAX_LAYOUTS_PER_SYMBOL value: ${value}. Using default: 4`);
     return 4;
   }
 
@@ -34,7 +38,7 @@ export function getMaxSnapshotsPerLayout(): number {
 
   const parsed = parseInt(value, 10);
   if (isNaN(parsed) || parsed <= 0) {
-    console.warn(`Invalid MAX_SNAPSHOTS_PER_LAYOUT value: ${value}. Using default: 4`);
+    logger.warn(`Invalid MAX_SNAPSHOTS_PER_LAYOUT value: ${value}. Using default: 4`);
     return 4;
   }
 
@@ -54,7 +58,7 @@ export function getMaxAutomatedSnapshotsPerLayout(): number {
 
   const parsed = parseInt(value, 10);
   if (isNaN(parsed) || parsed <= 0) {
-    console.warn(`Invalid MAX_AUTOMATED_SNAPSHOTS_PER_LAYOUT value: ${value}. Using default: 2`);
+    logger.warn(`Invalid MAX_AUTOMATED_SNAPSHOTS_PER_LAYOUT value: ${value}. Using default: 2`);
     return 2;
   }
 

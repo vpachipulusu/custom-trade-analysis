@@ -3,6 +3,8 @@
  * All AI models (OpenAI, Claude, Gemini, DeepSeek) use these standardized instructions
  */
 
+import { formatInterval } from "../utils/intervalFormat";
+
 export const ANALYSIS_PROMPT = `You are an expert technical analyst and professional trader. Analyze the TradingView chart image and return ONLY valid JSON.
 
 CRITICAL PRICE READING INSTRUCTIONS:
@@ -127,7 +129,7 @@ export function buildMultiLayoutPrompt(layouts: Array<{ interval: string; layout
 TASK: Analyze ${layouts.length} different TradingView chart layouts showing the SAME financial instrument from different perspectives (timeframes or technical indicators).
 
 CHART LAYOUTS PROVIDED:
-${layouts.map((l, i) => `Chart ${i + 1}: ${l.interval} timeframe (Layout ID: ${l.layoutId})`).join("\n")}
+${layouts.map((l, i) => `Chart ${i + 1}: ${formatInterval(l.interval)} timeframe (Layout ID: ${l.layoutId})`).join("\n")}
 
 ANALYSIS METHODOLOGY:
 1. Study all charts together for a comprehensive technical view
@@ -171,8 +173,8 @@ TECHNICAL ANALYSIS OUTPUT FORMAT (JSON):
   "confidence": <0-100>,
   "timeframe": "intraday" | "swing" | "long",
   "reasons": [
-    "Chart 1 (${layouts[0]?.interval}): Technical observation with specific price levels",
-    "Chart 2 (${layouts[1]?.interval}): Technical observation with specific price levels",
+    "Chart 1 (${layouts[0] ? formatInterval(layouts[0].interval) : 'N/A'}): Technical observation with specific price levels",
+    "Chart 2 (${layouts[1] ? formatInterval(layouts[1].interval) : 'N/A'}): Technical observation with specific price levels",
     "Multi-chart confluence: Agreements between different perspectives",
     "Higher timeframe trend analysis and key technical levels",
     "Lower timeframe confirmation or rejection signals",
@@ -248,7 +250,7 @@ export function buildMultiTimeframePrompt(chartsData: Array<{ interval: string }
 CRITICAL: You are viewing ${chartsData.length} different timeframes of the SAME symbol. Perform a comprehensive multi-timeframe analysis.
 
 Timeframes provided:
-${chartsData.map((c, i) => `${i + 1}. ${c.interval || "Unknown"} timeframe`).join("\n")}
+${chartsData.map((c, i) => `${i + 1}. ${c.interval ? formatInterval(c.interval) : "Unknown"} timeframe`).join("\n")}
 
 MULTI-TIMEFRAME ANALYSIS REQUIREMENTS:
 1. **Higher Timeframe Bias**: Start with the longest timeframe to determine overall trend direction

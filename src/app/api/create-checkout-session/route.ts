@@ -5,12 +5,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
-import { handleApiError } from "@/lib/utils/errorHandler";
+import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { createCheckoutSession, SUBSCRIPTION_TIERS } from "@/lib/stripe";
 import { getUserByFirebaseUid, updateUser } from "@/lib/db/users";
 import { stripe } from "@/lib/stripe";
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Authenticate user
     const authResult = await authenticateRequest(request);
@@ -89,6 +89,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
-    return handleApiError(error);
+    return createErrorResponse(error);
   }
 }

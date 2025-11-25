@@ -51,8 +51,8 @@ async function trackLogin(user: User) {
       }),
     });
   } catch (error) {
-    console.error("Failed to track login:", error);
     // Don't throw - login should succeed even if tracking fails
+    // Error is logged on server side
   }
 }
 

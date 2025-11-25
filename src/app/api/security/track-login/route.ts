@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import prisma from "@/lib/prisma";
+import { getLogger } from "@/lib/logging";
+
+const logger = getLogger();
 
 /**
  * POST /api/security/track-login
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Login tracking error:", error);
+    logger.error("Login tracking error", { error: error instanceof Error ? error.message : String(error) });
     // Don't fail the request if tracking fails
     return NextResponse.json({ success: false }, { status: 200 });
   }

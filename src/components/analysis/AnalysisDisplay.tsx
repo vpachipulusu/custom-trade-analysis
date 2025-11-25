@@ -147,7 +147,7 @@ export default function AnalysisDisplay({ analysis, selectedModel, onModelChange
   const hasDualAnalysis = hasOpenAI || hasDeepSeek;
 
   // Debug logging for AI model
-  console.log("AI Model Info:", {
+  logger.info("AI Model Info", {
     aiModel: analysis.aiModel,
     aiModelName: analysis.aiModelName,
     displayValue: analysis.aiModelName || analysis.aiModel || 'AI Model'

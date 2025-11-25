@@ -4,6 +4,9 @@ import { createErrorResponse } from "@/lib/utils/errorHandler";
 import prisma from "@/lib/prisma";
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { initializeApp, getApps } from "firebase/app";
+import { getLogger } from "@/lib/logging";
+
+const logger = getLogger();
 
 // Initialize Firebase Storage (client-side config for server use)
 const getFirebaseStorage = () => {
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
       photoURL: updatedUser.photoURL,
     });
   } catch (error) {
-    console.error("Avatar upload error:", error);
+    logger.error("Avatar upload error", { error: error instanceof Error ? error.message : String(error) });
     return createErrorResponse(error, 500);
   }
 }
@@ -138,7 +141,7 @@ export async function DELETE(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.warn("Could not delete from storage:", error);
+      logger.warn("Could not delete from storage", { error: error instanceof Error ? error.message : String(error) });
       // Continue anyway - just remove from database
     }
 

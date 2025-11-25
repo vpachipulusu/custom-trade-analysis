@@ -12,12 +12,14 @@ import { ErrorAlert } from '@/components/common';
 import { AIModelSelector } from '@/components/analysis';
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { getLogger } from "@/lib/logging";
 
 export default function AnalysisPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const { getAuthToken } = useAuth();
+  const logger = getLogger();
 
   const { data: analysis, isLoading, error } = useAnalysis(id);
   const { settings, fetchSettings } = useUserSettings();
@@ -35,7 +37,7 @@ export default function AnalysisPage() {
         }
       } catch (error) {
         // User not logged in yet, settings will be fetched after auth
-        console.debug('Settings fetch skipped - user not authenticated');
+        logger.info('Settings fetch skipped - user not authenticated');
       }
     };
     loadSettings();
@@ -47,16 +49,16 @@ export default function AnalysisPage() {
   useEffect(() => {
     if (!initialized && !isLoading) {
       if (analysis?.aiModel) {
-        console.log("Setting model from analysis:", analysis.aiModel);
+        logger.info("Setting model from analysis", { aiModel: analysis.aiModel });
         setSelectedModel(analysis.aiModel);
         setInitialized(true);
       } else if (settings?.defaultAiModel && !isLoading) {
-        console.log("Setting model from settings:", settings.defaultAiModel);
+        logger.info("Setting model from settings", { aiModel: settings.defaultAiModel });
         setSelectedModel(settings.defaultAiModel);
         setInitialized(true);
       }
     }
-  }, [analysis, settings?.defaultAiModel, initialized, isLoading]);
+  }, [analysis, settings?.defaultAiModel, initialized, isLoading, logger]);
 
   return (
     <ProtectedRoute>

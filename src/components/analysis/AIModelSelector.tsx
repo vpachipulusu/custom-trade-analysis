@@ -12,6 +12,7 @@ import {
   Chip,
 } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import { getLogger } from "@/lib/logging";
 
 export interface AIModelInfo {
   id: string;
@@ -31,6 +32,7 @@ export default function AIModelSelector({
   onChange,
   disabled = false,
 }: AIModelSelectorProps) {
+  const logger = getLogger();
   const [models, setModels] = useState<AIModelInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +48,11 @@ export default function AIModelSelector({
       const isValidFormat = value.includes(':') || models.find(m => m.id === value);
       if (!isValidFormat) {
         // Current value is invalid format, reset to first available model
-        console.warn(`Invalid AI model selected: ${value}. Resetting to first available model.`);
+        logger.warn(`Invalid AI model selected: ${value}. Resetting to first available model.`);
         onChange(models[0].id);
       }
     }
-  }, [models, value, onChange]);
+  }, [models, value, onChange, logger]);
 
   const fetchEnabledModels = async () => {
     try {
@@ -66,7 +68,7 @@ export default function AIModelSelector({
 
       setError(null);
     } catch (err) {
-      console.error("Error fetching AI models:", err);
+      logger.error("Error fetching AI models", { error: err instanceof Error ? err.message : String(err) });
       setError("Failed to load AI models");
     } finally {
       setLoading(false);

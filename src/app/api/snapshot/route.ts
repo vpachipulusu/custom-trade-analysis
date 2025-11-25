@@ -8,7 +8,7 @@ import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger, LogContext } from "@/lib/logging";
-import { getMaxSnapshotsPerLayout } from "@/lib/utils/config";
+import { enforceSnapshotLimit } from "@/lib/db/snapshotCleanup";
 
 /**
  * POST /api/snapshot
@@ -52,45 +52,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if layout has reached the maximum number of snapshots
-    // Delete oldest snapshots until we're under the limit (leaving room for the new one)
-    const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
-    let existingSnapshots = await getSnapshotsByLayoutId(layoutId);
-
-    logger.info("Checking snapshot limit before creation", {
-      layoutId,
-      currentCount: existingSnapshots.length,
-      maxLimit: maxSnapshotsPerLayout,
-      willDeleteCount: Math.max(0, existingSnapshots.length - maxSnapshotsPerLayout + 1),
-    });
-
-    // Sort by createdAt (oldest first)
-    existingSnapshots = existingSnapshots.sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-
-    // Delete oldest snapshots until we're under the limit
-    while (existingSnapshots.length >= maxSnapshotsPerLayout) {
-      const oldestSnapshot = existingSnapshots[0];
-      logger.info("Deleting oldest snapshot to maintain limit", {
-        layoutId,
-        deletedSnapshotId: oldestSnapshot.id,
-        snapshotCreatedAt: oldestSnapshot.createdAt,
-        currentCount: existingSnapshots.length,
-        maxLimit: maxSnapshotsPerLayout,
-      });
-
-      await deleteSnapshot(oldestSnapshot.id);
-
-      logger.info("Snapshot deleted successfully", {
-        layoutId,
-        deletedSnapshotId: oldestSnapshot.id,
-        remainingCount: existingSnapshots.length - 1,
-      });
-
-      // Remove the deleted snapshot from the array
-      existingSnapshots = existingSnapshots.slice(1);
-    }
+    // Enforce snapshot limit - delete oldest snapshots if needed
+    await enforceSnapshotLimit(layoutId);
 
     // Get user's TradingView session credentials
     const { getUserById } = await import("@/lib/db/users");

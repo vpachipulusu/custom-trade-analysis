@@ -3,7 +3,7 @@ import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { sendTradingAlert, sendErrorAlert } from "@/lib/services/telegram";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger } from "../logging";
-import { getMaxSnapshotsPerLayout } from "@/lib/utils/config";
+import { enforceSnapshotLimit } from "@/lib/db/snapshotCleanup";
 import { getLayoutsBySymbol } from "@/lib/db/layouts";
 import {
   executeCompleteAnalysis,
@@ -93,34 +93,8 @@ async function processMultiLayoutAutomationJob(
           sessionidSign: decryptedSessionidSign,
         });
 
-        // Check snapshot limit and delete oldest if needed
-        const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
-        let existingSnapshots = await prisma.snapshot.findMany({
-          where: { layoutId: layout.id },
-          orderBy: { createdAt: "asc" },
-          select: { id: true, createdAt: true },
-        });
-
-        logger.info("Checking snapshot limits for multi-layout automation", {
-          layoutDbId: layout.id,
-          layoutIdTradingView: layout.layoutId,
-          existingCount: existingSnapshots.length,
-          maxAllowed: maxSnapshotsPerLayout,
-        });
-
-        // Delete oldest snapshots until we're under the limit
-        while (existingSnapshots.length >= maxSnapshotsPerLayout) {
-          const oldestSnapshot = existingSnapshots[0];
-          await prisma.snapshot.delete({
-            where: { id: oldestSnapshot.id },
-          });
-          logger.info("Auto-deleted oldest snapshot (multi-layout automation)", {
-            layoutDbId: layout.id,
-            deletedSnapshotId: oldestSnapshot.id,
-            maxLimit: maxSnapshotsPerLayout,
-          });
-          existingSnapshots = existingSnapshots.slice(1);
-        }
+        // Enforce snapshot limit - delete oldest if needed
+        await enforceSnapshotLimit(layout.id);
 
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
@@ -460,42 +434,8 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       preview: imagePath.substring(0, 50),
     });
 
-    // Step 3: Check snapshot limit and auto-delete oldest snapshots if needed
-    // Get ALL snapshots for this layout to maintain the overall limit
-    const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
-    let existingSnapshots = await prisma.snapshot.findMany({
-      where: {
-        layoutId,
-      },
-      orderBy: { createdAt: "asc" }, // Oldest first
-      select: { id: true, createdAt: true },
-    });
-
-    logger.info("Checking snapshot limits for automated job", {
-      layoutId,
-      existingCount: existingSnapshots.length,
-      maxAllowed: maxSnapshotsPerLayout,
-      willDelete: Math.max(0, existingSnapshots.length - maxSnapshotsPerLayout + 1),
-    });
-
-    // Delete oldest snapshots until we're under the limit (leaving room for the new one)
-    while (existingSnapshots.length >= maxSnapshotsPerLayout) {
-      const oldestSnapshot = existingSnapshots[0];
-      await prisma.snapshot.delete({
-        where: { id: oldestSnapshot.id },
-      });
-      logger.info("Auto-deleted oldest snapshot due to limit (automated job)", {
-        layoutId,
-        deletedSnapshotId: oldestSnapshot.id,
-        deletedSnapshotCreatedAt: oldestSnapshot.createdAt,
-        maxLimit: maxSnapshotsPerLayout,
-        existingCount: existingSnapshots.length,
-        remaining: existingSnapshots.length - 1,
-      });
-
-      // Remove the deleted snapshot from the array
-      existingSnapshots = existingSnapshots.slice(1);
-    }
+    // Step 3: Enforce snapshot limit - delete oldest snapshots if needed
+    await enforceSnapshotLimit(layoutId);
 
     // Step 4: Calculate expiration (24 hours from now)
     const expiresAt = new Date();

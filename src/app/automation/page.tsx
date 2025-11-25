@@ -23,7 +23,10 @@ import {
   ListItem,
   ListItemText,
   ListItemButton,
+  useTheme,
+  alpha,
 } from "@mui/material";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { ProtectedRoute } from '@/components/layout';
 import { Layout } from '@/components/layout';
 import { LoadingSpinner } from '@/components/common';
@@ -75,6 +78,7 @@ interface TelegramConfig {
 }
 
 export default function AutomationPage() {
+  const theme = useTheme();
   const { getAuthToken } = useAuth();
   const queryClient = useQueryClient();
   const { data: layouts } = useLayouts();
@@ -253,14 +257,53 @@ export default function AutomationPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Automation & Alerts
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Configure automated chart analysis and Telegram notifications
-          </Typography>
-        </Box>
+        {/* Modern Header with Gradient Background */}
+        <Paper
+          elevation={0}
+          sx={{
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            borderRadius: 3,
+            p: 4,
+            mb: 4,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 56,
+                height: 56,
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+              }}
+            >
+              <AutoAwesomeIcon sx={{ fontSize: 32, color: "white" }} />
+            </Box>
+            <Box>
+              <Typography
+                variant="h3"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                Automation & Alerts
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Configure automated chart analysis and Telegram notifications
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
 
         <Grid container spacing={3}>
           {/* Telegram Configuration */}

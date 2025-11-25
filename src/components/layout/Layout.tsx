@@ -133,119 +133,296 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <AppBar position="static" sx={{ bgcolor: isDark ? "#18181b" : "primary.main" }}>
-        <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{
+          bgcolor: isDark ? alpha("#18181b", 0.95) : alpha(theme.palette.primary.main, 0.98),
+          backdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${alpha(theme.palette.common.white, isDark ? 0.1 : 0.2)}`,
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar sx={{ px: { xs: 0, sm: 2 }, minHeight: { xs: 64, sm: 70 } }}>
+            {isMobile && (
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+
+            {/* Logo/Brand Section with Icon */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                cursor: "pointer",
+                transition: "transform 0.2s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                }
+              }}
+              onClick={() => router.push("/dashboard")}
             >
-              <MenuIcon />
-            </IconButton>
-          )}
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ cursor: "pointer" }}
-            onClick={() => router.push("/dashboard")}
-          >
-            TradingView AI Evaluator
-          </Typography>
-
-          {!isMobile && (
-            <Box sx={{ display: "flex", gap: 2, mx: 4, flexGrow: 1 }}>
-              <Button color="inherit" onClick={() => router.push("/dashboard")}>
-                Dashboard
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => router.push("/journal")}
-                startIcon={<BookIcon />}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.common.white, 0.2)} 0%, ${alpha(theme.palette.common.white, 0.1)} 100%)`,
+                  backdropFilter: "blur(10px)",
+                }}
               >
-                <Badge badgeContent={openTradesCount} color="secondary">
-                  Journal
-                </Badge>
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => router.push("/automation")}
-              >
-                Automation
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => router.push("/economic-calendar")}
-              >
-                Economic Calendar
-              </Button>
-            </Box>
-          )}
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          {user && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <TrendingUpIcon sx={{ fontSize: 24, color: "white" }} />
+              </Box>
               <Typography
-                variant="body2"
-                sx={{ mr: 1, display: { xs: "none", sm: "block" } }}
+                variant="h6"
+                component="div"
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  display: { xs: "none", sm: "block" },
+                  fontSize: { sm: "1.1rem", md: "1.25rem" }
+                }}
               >
-                {user.email}
+                TradingView AI Evaluator
               </Typography>
-              <ThemeToggle />
-              <IconButton
-                size="large"
-                aria-label="notifications"
-                onClick={() => router.push("/profile/notifications")}
-                color="inherit"
-              >
-                <Badge badgeContent={unreadCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <AccountCircle />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem disabled>
-                  <Typography variant="body2">{user.email}</Typography>
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleClose();
-                    router.push("/profile");
+            </Box>
+
+            {/* Navigation Links - Desktop */}
+            {!isMobile && (
+              <Box sx={{ display: "flex", gap: 1, mx: 4, flexGrow: 1 }}>
+                <Button
+                  color="inherit"
+                  onClick={() => router.push("/dashboard")}
+                  startIcon={<DashboardIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "translateY(-1px)",
+                    }
                   }}
                 >
-                  Profile Settings
-                </MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </Box>
-          )}
-        </Toolbar>
+                  Dashboard
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => router.push("/journal")}
+                  startIcon={<BookIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "translateY(-1px)",
+                    }
+                  }}
+                >
+                  <Badge
+                    badgeContent={openTradesCount}
+                    color="secondary"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        boxShadow: `0 2px 8px ${alpha(theme.palette.secondary.main, 0.4)}`
+                      }
+                    }}
+                  >
+                    Journal
+                  </Badge>
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => router.push("/automation")}
+                  startIcon={<AutoAwesomeIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "translateY(-1px)",
+                    }
+                  }}
+                >
+                  Automation
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => router.push("/economic-calendar")}
+                  startIcon={<CalendarMonthIcon />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "translateY(-1px)",
+                    }
+                  }}
+                >
+                  Economic Calendar
+                </Button>
+              </Box>
+            )}
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            {/* Right Side Icons & User Menu */}
+            {user && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mr: 1,
+                    display: { xs: "none", md: "block" },
+                    fontWeight: 500,
+                    opacity: 0.9
+                  }}
+                >
+                  {user.email}
+                </Typography>
+
+                <ThemeToggle />
+
+                <IconButton
+                  size="large"
+                  aria-label="notifications"
+                  onClick={() => router.push("/profile/notifications")}
+                  color="inherit"
+                  sx={{
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "scale(1.05)",
+                    }
+                  }}
+                >
+                  <Badge
+                    badgeContent={unreadCount}
+                    color="error"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        boxShadow: `0 2px 8px ${alpha(theme.palette.error.main, 0.5)}`
+                      }
+                    }}
+                  >
+                    <NotificationsIcon />
+                  </Badge>
+                </IconButton>
+
+                <IconButton
+                  size="large"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleMenu}
+                  sx={{
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      transform: "scale(1.05)",
+                    }
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: alpha(theme.palette.common.white, 0.2),
+                      fontSize: "0.95rem",
+                      fontWeight: 600
+                    }}
+                  >
+                    {user.email?.charAt(0).toUpperCase()}
+                  </Avatar>
+                </IconButton>
+
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: "top",
+                    horizontal: "right",
+                  }}
+                  open={Boolean(anchorEl)}
+                  onClose={handleClose}
+                  sx={{
+                    mt: 1.5,
+                    "& .MuiPaper-root": {
+                      borderRadius: 2,
+                      minWidth: 200,
+                      boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.15)}`,
+                    }
+                  }}
+                >
+                  <MenuItem disabled sx={{ opacity: 0.7 }}>
+                    <Typography variant="body2" fontWeight={600}>{user.email}</Typography>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleClose();
+                      router.push("/profile");
+                    }}
+                    sx={{
+                      borderRadius: 1,
+                      mx: 1,
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      }
+                    }}
+                  >
+                    Profile Settings
+                  </MenuItem>
+                  <MenuItem
+                    onClick={handleLogout}
+                    sx={{
+                      borderRadius: 1,
+                      mx: 1,
+                      color: theme.palette.error.main,
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.error.main, 0.1),
+                      }
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
+                </Menu>
+              </Box>
+            )}
+          </Toolbar>
+        </Container>
       </AppBar>
 
       {isMobile && (

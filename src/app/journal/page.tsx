@@ -10,8 +10,13 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Paper,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import SettingsIcon from "@mui/icons-material/Settings";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { useAuth } from "@/contexts/AuthContext";
 import { JournalProvider } from "@/contexts/JournalContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,6 +55,7 @@ function TabPanel(props: TabPanelProps) {
 
 export default function JournalPage() {
   const logger = getLogger();
+  const theme = useTheme();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -167,30 +173,111 @@ export default function JournalPage() {
     <ProtectedRoute>
       <JournalProvider>
         <Layout>
-          <Box
+          {/* Modern Header with Gradient Background */}
+          <Paper
+            elevation={0}
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 3,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              borderRadius: 3,
+              p: 4,
+              mb: 4,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
             }}
           >
-            <Typography variant="h4" component="h1" fontWeight="bold">
-              Trading Journal
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Button variant="outlined" onClick={() => setSettingsOpen(true)}>
-                Settings
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setAddTradeOpen(true)}
-              >
-                Add Trade
-              </Button>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 3,
+              }}
+            >
+              {/* Title Section with Icon */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 56,
+                    height: 56,
+                    borderRadius: 2,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                  }}
+                >
+                  <AccountBalanceWalletIcon sx={{ fontSize: 32, color: "white" }} />
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h3"
+                    component="h1"
+                    sx={{
+                      fontWeight: 800,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    Trading Journal
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Track, analyze, and optimize your trading performance
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Action Buttons */}
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<SettingsIcon />}
+                  onClick={() => setSettingsOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.25,
+                    borderWidth: 2,
+                    "&:hover": {
+                      borderWidth: 2,
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  Settings
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setAddTradeOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.25,
+                    boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 6px 24px ${alpha(theme.palette.primary.main, 0.5)}`,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  Add Trade
+                </Button>
+              </Box>
             </Box>
-          </Box>
+          </Paper>
 
           {error && (
             <Alert
@@ -202,32 +289,62 @@ export default function JournalPage() {
             </Alert>
           )}
 
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              aria-label="journal tabs"
-            >
-              <Tab label="Trade Log" />
-              <Tab label="Statistics" />
-              <Tab label="Month Analysis" />
-            </Tabs>
-          </Box>
+          {/* Modern Tabs with Enhanced Styling */}
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              overflow: "hidden",
+              border: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                aria-label="journal tabs"
+                sx={{
+                  px: 2,
+                  "& .MuiTab-root": {
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.95rem",
+                    minHeight: 56,
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      color: theme.palette.primary.main,
+                    },
+                  },
+                  "& .Mui-selected": {
+                    color: `${theme.palette.primary.main} !important`,
+                  },
+                  "& .MuiTabs-indicator": {
+                    height: 3,
+                    borderRadius: "3px 3px 0 0",
+                  },
+                }}
+              >
+                <Tab label="Trade Log" />
+                <Tab label="Statistics" />
+                <Tab label="Month Analysis" />
+              </Tabs>
+            </Box>
 
-          <TabPanel value={tabValue} index={0}>
-            <TradeLogTable
-              refreshTrigger={refreshTrigger}
-              onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
-            />
-          </TabPanel>
+            <TabPanel value={tabValue} index={0}>
+              <TradeLogTable
+                refreshTrigger={refreshTrigger}
+                onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
+              />
+            </TabPanel>
 
-          <TabPanel value={tabValue} index={1}>
-            <StatisticsTab refreshTrigger={refreshTrigger} />
-          </TabPanel>
+            <TabPanel value={tabValue} index={1}>
+              <StatisticsTab refreshTrigger={refreshTrigger} />
+            </TabPanel>
 
-          <TabPanel value={tabValue} index={2}>
-            <MonthlyAnalysisTable refreshTrigger={refreshTrigger} />
-          </TabPanel>
+            <TabPanel value={tabValue} index={2}>
+              <MonthlyAnalysisTable refreshTrigger={refreshTrigger} />
+            </TabPanel>
+          </Paper>
 
           <AddTradeDialog
             open={addTradeOpen}

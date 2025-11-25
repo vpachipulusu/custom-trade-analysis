@@ -19,11 +19,17 @@ import {
   Container,
   Button,
   Badge,
+  alpha,
+  Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import BookIcon from "@mui/icons-material/Book";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLogger } from "@/lib/logging";
 import { useUnreadCount } from "@/hooks/useNotifications";

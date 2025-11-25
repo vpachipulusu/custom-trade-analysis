@@ -3,7 +3,7 @@ import { captureWithPuppeteer } from "@/lib/services/puppeteer-screenshot";
 import { sendTradingAlert, sendErrorAlert } from "@/lib/services/telegram";
 import { decrypt } from "@/lib/utils/encryption";
 import { getLogger } from "../logging";
-import { getMaxAutomatedSnapshotsPerLayout } from "@/lib/utils/config";
+import { getMaxSnapshotsPerLayout } from "@/lib/utils/config";
 import { getLayoutsBySymbol } from "@/lib/db/layouts";
 import {
   executeCompleteAnalysis,
@@ -92,6 +92,35 @@ async function processMultiLayoutAutomationJob(
           sessionid: decryptedSessionId,
           sessionidSign: decryptedSessionidSign,
         });
+
+        // Check snapshot limit and delete oldest if needed
+        const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
+        let existingSnapshots = await prisma.snapshot.findMany({
+          where: { layoutId: layout.id },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, createdAt: true },
+        });
+
+        logger.info("Checking snapshot limits for multi-layout automation", {
+          layoutDbId: layout.id,
+          layoutIdTradingView: layout.layoutId,
+          existingCount: existingSnapshots.length,
+          maxAllowed: maxSnapshotsPerLayout,
+        });
+
+        // Delete oldest snapshots until we're under the limit
+        while (existingSnapshots.length >= maxSnapshotsPerLayout) {
+          const oldestSnapshot = existingSnapshots[0];
+          await prisma.snapshot.delete({
+            where: { id: oldestSnapshot.id },
+          });
+          logger.info("Auto-deleted oldest snapshot (multi-layout automation)", {
+            layoutDbId: layout.id,
+            deletedSnapshotId: oldestSnapshot.id,
+            maxLimit: maxSnapshotsPerLayout,
+          });
+          existingSnapshots = existingSnapshots.slice(1);
+        }
 
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
@@ -431,47 +460,41 @@ export async function processAutomationJob(job: AutomationJob): Promise<void> {
       preview: imagePath.substring(0, 50),
     });
 
-    // Step 3: Check automated snapshot limit and auto-delete oldest automated snapshots if needed
-    // Only count and delete automated snapshots to prevent automation from consuming manual snapshot quota
-    const maxAutomatedSnapshots = getMaxAutomatedSnapshotsPerLayout();
-
-    // Get all automated snapshots for this layout (with their analysis to check isAutomated flag)
-    let automatedSnapshots = await prisma.snapshot.findMany({
+    // Step 3: Check snapshot limit and auto-delete oldest snapshots if needed
+    // Get ALL snapshots for this layout to maintain the overall limit
+    const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
+    let existingSnapshots = await prisma.snapshot.findMany({
       where: {
         layoutId,
-        analysis: {
-          is: {
-            isAutomated: true
-          }
-        }
       },
       orderBy: { createdAt: "asc" }, // Oldest first
       select: { id: true, createdAt: true },
     });
 
-    logger.info("Checking automated snapshot limits", {
+    logger.info("Checking snapshot limits for automated job", {
       layoutId,
-      existingAutomatedCount: automatedSnapshots.length,
-      maxAllowed: maxAutomatedSnapshots,
-      willDelete: Math.max(0, automatedSnapshots.length - maxAutomatedSnapshots + 1),
+      existingCount: existingSnapshots.length,
+      maxAllowed: maxSnapshotsPerLayout,
+      willDelete: Math.max(0, existingSnapshots.length - maxSnapshotsPerLayout + 1),
     });
 
-    // Delete oldest automated snapshots until we're under the limit (leaving room for the new one)
-    while (automatedSnapshots.length >= maxAutomatedSnapshots) {
-      const oldestSnapshot = automatedSnapshots[0];
+    // Delete oldest snapshots until we're under the limit (leaving room for the new one)
+    while (existingSnapshots.length >= maxSnapshotsPerLayout) {
+      const oldestSnapshot = existingSnapshots[0];
       await prisma.snapshot.delete({
         where: { id: oldestSnapshot.id },
       });
-      logger.info("Auto-deleted oldest automated snapshot due to limit", {
+      logger.info("Auto-deleted oldest snapshot due to limit (automated job)", {
         layoutId,
         deletedSnapshotId: oldestSnapshot.id,
-        maxLimit: maxAutomatedSnapshots,
-        existingCount: automatedSnapshots.length,
-        remaining: automatedSnapshots.length - 1,
+        deletedSnapshotCreatedAt: oldestSnapshot.createdAt,
+        maxLimit: maxSnapshotsPerLayout,
+        existingCount: existingSnapshots.length,
+        remaining: existingSnapshots.length - 1,
       });
 
       // Remove the deleted snapshot from the array
-      automatedSnapshots = automatedSnapshots.slice(1);
+      existingSnapshots = existingSnapshots.slice(1);
     }
 
     // Step 4: Calculate expiration (24 hours from now)

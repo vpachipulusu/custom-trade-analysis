@@ -57,6 +57,13 @@ export async function POST(request: NextRequest) {
     const maxSnapshotsPerLayout = getMaxSnapshotsPerLayout();
     let existingSnapshots = await getSnapshotsByLayoutId(layoutId);
 
+    logger.info("Checking snapshot limit before creation", {
+      layoutId,
+      currentCount: existingSnapshots.length,
+      maxLimit: maxSnapshotsPerLayout,
+      willDeleteCount: Math.max(0, existingSnapshots.length - maxSnapshotsPerLayout + 1),
+    });
+
     // Sort by createdAt (oldest first)
     existingSnapshots = existingSnapshots.sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -65,13 +72,20 @@ export async function POST(request: NextRequest) {
     // Delete oldest snapshots until we're under the limit
     while (existingSnapshots.length >= maxSnapshotsPerLayout) {
       const oldestSnapshot = existingSnapshots[0];
-      await deleteSnapshot(oldestSnapshot.id);
-      logger.info("Auto-deleted oldest snapshot due to limit", {
+      logger.info("Deleting oldest snapshot to maintain limit", {
         layoutId,
         deletedSnapshotId: oldestSnapshot.id,
+        snapshotCreatedAt: oldestSnapshot.createdAt,
+        currentCount: existingSnapshots.length,
         maxLimit: maxSnapshotsPerLayout,
-        existingCount: existingSnapshots.length,
-        remaining: existingSnapshots.length - 1,
+      });
+
+      await deleteSnapshot(oldestSnapshot.id);
+
+      logger.info("Snapshot deleted successfully", {
+        layoutId,
+        deletedSnapshotId: oldestSnapshot.id,
+        remainingCount: existingSnapshots.length - 1,
       });
 
       // Remove the deleted snapshot from the array

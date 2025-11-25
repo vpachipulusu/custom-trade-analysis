@@ -257,14 +257,14 @@ export default function AutomationPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        {/* Modern Header with Gradient Background */}
+        {/* Modern Header */}
         <Paper
           elevation={0}
           sx={{
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            borderRadius: 3,
-            p: 4,
-            mb: 4,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+            borderRadius: 2,
+            p: 2.5,
+            mb: 3,
             border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
           }}
         >
@@ -274,31 +274,28 @@ export default function AutomationPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 56,
-                height: 56,
-                borderRadius: 2,
+                width: 40,
+                height: 40,
+                borderRadius: 1.5,
                 background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+                boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
               }}
             >
-              <AutoAwesomeIcon sx={{ fontSize: 32, color: "white" }} />
+              <AutoAwesomeIcon sx={{ fontSize: 24, color: "white" }} />
             </Box>
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 component="h1"
                 sx={{
-                  fontWeight: 800,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  letterSpacing: "-0.02em",
+                  fontWeight: 700,
+                  color: theme.palette.text.primary,
+                  letterSpacing: "-0.01em",
                 }}
               >
                 Automation & Alerts
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
                 Configure automated chart analysis and Telegram notifications
               </Typography>
             </Box>

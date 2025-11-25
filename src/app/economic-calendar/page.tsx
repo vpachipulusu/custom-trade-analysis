@@ -19,10 +19,14 @@ import {
   Alert,
   CircularProgress,
   Grid,
+  Paper,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import {
   ViewList as ViewListIcon,
   CalendarMonth as CalendarIcon,
+  CalendarMonth as CalendarMonthIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
@@ -68,6 +72,7 @@ const CATEGORIES = [
 ];
 
 export default function EconomicCalendarPage() {
+  const theme = useTheme();
   const [startDate, setStartDate] = useState<Date>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date>(
     endOfDay(addDays(new Date(), 7))
@@ -164,14 +169,52 @@ export default function EconomicCalendarPage() {
   return (
     <ProtectedRoute>
       <Layout>
+        {/* Modern Header */}
+        <Paper
+          elevation={0}
+          sx={{
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+            borderRadius: 2,
+            p: 2.5,
+            mb: 3,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 40,
+                height: 40,
+                borderRadius: 1.5,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+              }}
+            >
+              <CalendarMonthIcon sx={{ fontSize: 24, color: "white" }} />
+            </Box>
+            <Box>
+              <Typography
+                variant="h5"
+                component="h1"
+                sx={{
+                  fontWeight: 700,
+                  color: theme.palette.text.primary,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Economic Calendar
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Track high-impact economic events that may affect your trading decisions
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+
         <Box>
-          <Typography variant="h4" gutterBottom>
-            Economic Calendar
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Track high-impact economic events that may affect your trading
-            decisions
-          </Typography>
 
           {/* Filters */}
           <Card sx={{ mb: 3 }}>

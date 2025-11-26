@@ -31,7 +31,13 @@ import ImageIcon from "@mui/icons-material/Image";
 import { format } from "date-fns";
 import { Layout } from "@/hooks/useLayouts";
 import { useDeleteLayout } from "@/hooks/useLayouts";
-import { AddLayoutDialog, EditLayoutDialog, ViewSnapshotsDialog, DeleteConfirmationDialog, DashboardSettingsDialog } from "@/components/dialogs";
+import {
+  AddLayoutDialog,
+  EditLayoutDialog,
+  ViewSnapshotsDialog,
+  DeleteConfirmationDialog,
+  DashboardSettingsDialog,
+} from "@/components/dialogs";
 import { useCreateSnapshot } from "@/hooks/useSnapshots";
 import { useCreateSymbolAnalysis } from "@/hooks/useAnalyses";
 import { getLogger } from "@/lib/logging";
@@ -77,7 +83,9 @@ export default function LayoutsTable({
         });
         setUserSettings(response.data);
       } catch (error) {
-        logger.error("Failed to fetch user settings", { error: error instanceof Error ? error.message : String(error) });
+        logger.error("Failed to fetch user settings", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     };
     loadSettings();
@@ -120,7 +128,10 @@ export default function LayoutsTable({
     try {
       await createSnapshot.mutateAsync(layoutId);
     } catch (error) {
-      logger.error("Snapshot generation failed", { error: error instanceof Error ? error.message : String(error), layoutId });
+      logger.error("Snapshot generation failed", {
+        error: error instanceof Error ? error.message : String(error),
+        layoutId,
+      });
     }
   };
 
@@ -166,7 +177,9 @@ export default function LayoutsTable({
       });
       setUserSettings(response.data);
     } catch (error) {
-      logger.error("Failed to reload user settings", { error: error instanceof Error ? error.message : String(error) });
+      logger.error("Failed to reload user settings", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -244,7 +257,7 @@ export default function LayoutsTable({
               <TableCell>Interval</TableCell>
               <TableCell>Layout ID</TableCell>
               <TableCell>Snapshots</TableCell>
-              <TableCell>Created</TableCell>
+              <TableCell>Last Snapshot</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -255,9 +268,10 @@ export default function LayoutsTable({
               return group.layouts.map((layout, index) => {
                 const isFirstInGroup = index === 0;
                 const maxSnapshots = config?.maxSnapshotsPerLayout ?? 4;
-                const snapshotTooltip = layout.snapshotCount >= maxSnapshots
-                  ? `Generate Snapshot (oldest of ${maxSnapshots} will be auto-deleted)`
-                  : "Generate Snapshot";
+                const snapshotTooltip =
+                  layout.snapshotCount >= maxSnapshots
+                    ? `Generate Snapshot (oldest of ${maxSnapshots} will be auto-deleted)`
+                    : "Generate Snapshot";
 
                 return (
                   <TableRow
@@ -302,7 +316,9 @@ export default function LayoutsTable({
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell>{layout.interval ? formatInterval(layout.interval) : "-"}</TableCell>
+                    <TableCell>
+                      {layout.interval ? formatInterval(layout.interval) : "-"}
+                    </TableCell>
                     <TableCell>
                       {layout.layoutId ? (
                         <Chip label={layout.layoutId} size="small" />
@@ -318,7 +334,22 @@ export default function LayoutsTable({
                       />
                     </TableCell>
                     <TableCell>
-                      {format(new Date(layout.createdAt), "MMM dd, yyyy")}
+                      {layout.lastSnapshotAt ? (
+                        <Typography variant="body2">
+                          {format(
+                            new Date(layout.lastSnapshotAt),
+                            "MMM dd, yyyy HH:mm"
+                          )}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontStyle="italic"
+                        >
+                          No snapshots yet
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       {isFirstInGroup &&

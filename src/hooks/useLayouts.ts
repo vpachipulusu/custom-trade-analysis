@@ -9,6 +9,7 @@ export interface Layout {
   interval: string | null;
   createdAt: string;
   snapshotCount: number;
+  lastSnapshotAt: string | null;
 }
 
 export interface CreateLayoutData {

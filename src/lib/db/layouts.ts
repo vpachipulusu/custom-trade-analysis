@@ -40,6 +40,10 @@ export async function getLayoutsByUserId(userId: string) {
       snapshots: {
         select: {
           id: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       },
     },
@@ -91,10 +95,7 @@ export async function deleteLayout(id: string): Promise<void> {
 /**
  * Get all layouts for a specific symbol by user
  */
-export async function getLayoutsBySymbol(
-  userId: string,
-  symbol: string
-) {
+export async function getLayoutsBySymbol(userId: string, symbol: string) {
   return await prisma.layout.findMany({
     where: {
       userId,

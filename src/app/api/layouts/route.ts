@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/utils/apiAuth";
-import { createLayout, getLayoutsByUserId, countLayoutsBySymbol } from "@/lib/db/layouts";
+import {
+  createLayout,
+  getLayoutsByUserId,
+  countLayoutsBySymbol,
+} from "@/lib/db/layouts";
 import { validateLayoutData } from "@/lib/utils/validation";
 import { encrypt } from "@/lib/utils/encryption";
 import { createErrorResponse } from "@/lib/utils/errorHandler";
@@ -19,10 +23,11 @@ export async function GET(request: NextRequest) {
 
     const layouts = await getLayoutsByUserId(authResult.user.userId);
 
-    // Add snapshot count to each layout
+    // Add snapshot count and last snapshot date to each layout
     const layoutsWithCount = layouts.map((layout) => ({
       ...layout,
       snapshotCount: layout.snapshots?.length || 0,
+      lastSnapshotAt: layout.snapshots?.[0]?.createdAt || null,
       snapshots: undefined, // Remove full snapshots array
     }));
 
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
       if (existingLayoutsCount >= maxLayoutsPerSymbol) {
         return NextResponse.json(
           {
-            error: `Maximum of ${maxLayoutsPerSymbol} layouts per symbol reached. Please delete an existing layout for ${body.symbol} before adding a new one.`
+            error: `Maximum of ${maxLayoutsPerSymbol} layouts per symbol reached. Please delete an existing layout for ${body.symbol} before adding a new one.`,
           },
           { status: 400 }
         );

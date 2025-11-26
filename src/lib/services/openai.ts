@@ -1,7 +1,11 @@
 import axios from "axios";
 import { EconomicEvent, calculateImmediateRisk } from "./economicCalendar";
 import { getLogger } from "../logging";
-import { ANALYSIS_PROMPT, buildMultiLayoutPrompt, buildMultiTimeframePrompt } from "./prompts";
+import {
+  ANALYSIS_PROMPT,
+  buildMultiLayoutPrompt,
+  buildMultiTimeframePrompt,
+} from "./prompts";
 
 export interface AnalysisResult {
   action: "BUY" | "SELL" | "HOLD";
@@ -33,7 +37,10 @@ const OPENAI_API_KEY = process.env.OPENAI_KEY;
 /**
  * Analyzes a TradingView chart using OpenAI GPT-4o
  */
-export async function analyzeChart(imageUrl: string, modelId?: string): Promise<AnalysisResult> {
+export async function analyzeChart(
+  imageUrl: string,
+  modelId?: string
+): Promise<AnalysisResult> {
   try {
     if (!OPENAI_API_KEY) {
       throw new Error("OPENAI_KEY environment variable is not set");
@@ -68,14 +75,15 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 1000,
+        max_tokens: 4000,
+        temperature: 0.7,
       },
       {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
-        timeout: 60000, // 60 second timeout
+        timeout: 90000, // 90 second timeout
       }
     );
 
@@ -93,9 +101,19 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
     } catch (parseError) {
       logger.error("Failed to parse OpenAI response", {
         content: content.substring(0, 500),
+        contentLength: content.length,
+        finishReason: response.data.choices[0].finish_reason,
         error:
           parseError instanceof Error ? parseError.message : "Unknown error",
       });
+
+      // Check if response was truncated
+      if (response.data.choices[0].finish_reason === "length") {
+        throw new Error(
+          "AI response was truncated due to length limits. Please try again or use a simpler chart."
+        );
+      }
+
       throw new Error("Failed to parse AI analysis result");
     }
 
@@ -225,7 +243,7 @@ export async function analyzeMultiTimeframeCharts(
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 1200, // Slightly more for multi-timeframe analysis
+        max_tokens: 4000, // Increased to prevent truncation
       },
       {
         headers: {
@@ -248,11 +266,21 @@ export async function analyzeMultiTimeframeCharts(
     try {
       analysisResult = JSON.parse(content);
     } catch (parseError) {
-      logger.error("Failed to parse OpenAI multi-timeframe response", {
+      logger.error("Failed to parse multi-timeframe OpenAI response", {
         content: content.substring(0, 500),
+        contentLength: content.length,
+        finishReason: response.data.choices[0].finish_reason,
         error:
           parseError instanceof Error ? parseError.message : "Unknown error",
       });
+
+      // Check if response was truncated
+      if (response.data.choices[0].finish_reason === "length") {
+        throw new Error(
+          "AI multi-timeframe response was truncated. Please reduce the number of timeframes or try again."
+        );
+      }
+
       throw new Error("Failed to parse AI multi-timeframe analysis result");
     }
 
@@ -312,8 +340,10 @@ function correctPriceMagnitude(
 
     // Only apply correction if the corrected price is in reasonable ranges
     // BTC: 80,000-100,000, Gold: 2,000-3,000
-    if ((correctedPrice >= 80000 && correctedPrice <= 100000) ||
-        (correctedPrice >= 2000 && correctedPrice <= 3000)) {
+    if (
+      (correctedPrice >= 80000 && correctedPrice <= 100000) ||
+      (correctedPrice >= 2000 && correctedPrice <= 3000)
+    ) {
       logger.warn("Detected incorrect price magnitude, correcting", {
         originalPrice: price,
         correctedPrice,
@@ -329,10 +359,7 @@ function correctPriceMagnitude(
 /**
  * Validates and corrects trade setup prices
  */
-function validateAndCorrectTradeSetup(
-  tradeSetup: any,
-  logger: any
-): any {
+function validateAndCorrectTradeSetup(tradeSetup: any, logger: any): any {
   if (!tradeSetup) return tradeSetup;
 
   const corrected = { ...tradeSetup };
@@ -355,7 +382,10 @@ function validateAndCorrectTradeSetup(
   }
 
   if (tradeSetup.targetPrice !== null && tradeSetup.targetPrice !== undefined) {
-    corrected.targetPrice = correctPriceMagnitude(tradeSetup.targetPrice, logger);
+    corrected.targetPrice = correctPriceMagnitude(
+      tradeSetup.targetPrice,
+      logger
+    );
   }
 
   // Always recalculate risk-reward ratio if we have all three prices
@@ -385,9 +415,11 @@ function validateAndCorrectTradeSetup(
   } else {
     // Log warning if any values are missing
     logger.warn("Cannot calculate risk-reward ratio - missing prices", {
-      hasEntry: corrected.entryPrice !== null && corrected.entryPrice !== undefined,
+      hasEntry:
+        corrected.entryPrice !== null && corrected.entryPrice !== undefined,
       hasStop: corrected.stopLoss !== null && corrected.stopLoss !== undefined,
-      hasTarget: corrected.targetPrice !== null && corrected.targetPrice !== undefined,
+      hasTarget:
+        corrected.targetPrice !== null && corrected.targetPrice !== undefined,
       entryPrice: corrected.entryPrice,
       stopLoss: corrected.stopLoss,
       targetPrice: corrected.targetPrice,
@@ -647,7 +679,7 @@ export async function analyzeMultipleLayouts(
             },
           ],
           response_format: { type: "json_object" },
-          max_tokens: 1500, // More tokens for multi-layout analysis
+          max_tokens: 4000, // Increased to prevent truncation
         },
         {
           headers: {
@@ -845,7 +877,7 @@ If no events exist, return NONE risk and NEUTRAL outlook with message about clea
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 1000,
+        max_tokens: 2000, // Increased for detailed economic analysis
         temperature: 0.3,
       },
       {

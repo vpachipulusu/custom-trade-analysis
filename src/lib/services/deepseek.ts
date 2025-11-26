@@ -58,7 +58,7 @@ Return ONLY valid JSON in this exact format:
             content: textPrompt,
           },
         ],
-        max_tokens: 500,
+        max_tokens: 4000,
         temperature: 0.1,
       },
       {
@@ -181,17 +181,22 @@ export async function analyzeMultipleLayouts(
     }
 
     const logger = getLogger();
-    logger.info("Starting DeepSeek multi-layout analysis (text-only placeholder)", {
-      layoutCount: layouts.length,
-      intervals: layouts.map((l) => l.interval).join(", "),
-    });
+    logger.info(
+      "Starting DeepSeek multi-layout analysis (text-only placeholder)",
+      {
+        layoutCount: layouts.length,
+        intervals: layouts.map((l) => l.interval).join(", "),
+      }
+    );
 
     // If only one layout, use single chart analysis
     if (layouts.length === 1) {
       return await analyzeChart(layouts[0].imageUrl);
     }
 
-    const textPrompt = `Provide a multi-timeframe analysis placeholder in JSON format. The intervals being analyzed are: ${layouts.map(l => l.interval).join(", ")}.
+    const textPrompt = `Provide a multi-timeframe analysis placeholder in JSON format. The intervals being analyzed are: ${layouts
+      .map((l) => l.interval)
+      .join(", ")}.
 
 Return ONLY valid JSON:
 {
@@ -200,7 +205,7 @@ Return ONLY valid JSON:
   "timeframe": "swing",
   "reasons": [
     "Multi-timeframe analysis not available - DeepSeek vision API pending",
-    "Analyzed intervals: ${layouts.map(l => l.interval).join(", ")}",
+    "Analyzed intervals: ${layouts.map((l) => l.interval).join(", ")}",
     "Manual chart review recommended for ${layouts.length} timeframe analysis",
     "Refer to OpenAI tab for image-based multi-timeframe analysis"
   ],
@@ -225,7 +230,7 @@ Return ONLY valid JSON:
             content: textPrompt,
           },
         ],
-        max_tokens: 600,
+        max_tokens: 4000,
         temperature: 0.1,
       },
       {
@@ -382,7 +387,7 @@ If no events exist, return NONE risk and NEUTRAL outlook with message about clea
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 1000,
+        max_tokens: 4000,
         temperature: 0.3,
       },
       {
@@ -515,7 +520,8 @@ function validateAndCorrectTradeSetup(tradeSetup: any, logger: any): any {
     }
   } else {
     logger.warn("Cannot calculate risk-reward ratio - missing prices", {
-      hasEntry: corrected.entryPrice !== null && corrected.entryPrice !== undefined,
+      hasEntry:
+        corrected.entryPrice !== null && corrected.entryPrice !== undefined,
       hasStop: corrected.stopLoss !== null && corrected.stopLoss !== undefined,
       hasTarget:
         corrected.targetPrice !== null && corrected.targetPrice !== undefined,

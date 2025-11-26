@@ -13,7 +13,9 @@ const CLAUDE_MODEL = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20240620"; /
  * Convert image URL to base64 for Claude API
  * Returns both base64 data and detected media type
  */
-async function getImageBase64(imageUrl: string): Promise<{ base64: string; mediaType: string }> {
+async function getImageBase64(
+  imageUrl: string
+): Promise<{ base64: string; mediaType: string }> {
   try {
     const response = await axios.get(imageUrl, {
       responseType: "arraybuffer",
@@ -57,7 +59,10 @@ async function getImageBase64(imageUrl: string): Promise<{ base64: string; media
 /**
  * Analyzes a TradingView chart using Claude API
  */
-export async function analyzeChart(imageUrl: string, modelId?: string): Promise<AnalysisResult> {
+export async function analyzeChart(
+  imageUrl: string,
+  modelId?: string
+): Promise<AnalysisResult> {
   try {
     if (!CLAUDE_API_KEY) {
       throw new Error("CLAUDE_KEY environment variable is not set");
@@ -80,7 +85,7 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
       CLAUDE_API_URL,
       {
         model,
-        max_tokens: 1024,
+        max_tokens: 4000,
         messages: [
           {
             role: "user",
@@ -132,7 +137,8 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
     } catch (parseError) {
       logger.error("Failed to parse Claude response", {
         content: content.substring(0, 500),
-        error: parseError instanceof Error ? parseError.message : "Unknown error",
+        error:
+          parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI analysis result");
     }
@@ -221,7 +227,11 @@ export async function analyzeMultipleLayouts(
           type: "image" as const,
           source: {
             type: "base64" as const,
-            media_type: mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            media_type: mediaType as
+              | "image/jpeg"
+              | "image/png"
+              | "image/gif"
+              | "image/webp",
             data: base64,
           },
         };
@@ -242,7 +252,7 @@ export async function analyzeMultipleLayouts(
       CLAUDE_API_URL,
       {
         model,
-        max_tokens: 1500,
+        max_tokens: 4000,
         messages: [
           {
             role: "user",
@@ -280,7 +290,8 @@ export async function analyzeMultipleLayouts(
     } catch (parseError) {
       logger.error("Failed to parse Claude multi-layout response", {
         content: responseContent.substring(0, 500),
-        error: parseError instanceof Error ? parseError.message : "Unknown error",
+        error:
+          parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI multi-layout analysis result");
     }
@@ -304,7 +315,9 @@ export async function analyzeMultipleLayouts(
     });
 
     throw new Error(
-      error instanceof Error ? error.message : "Failed to analyze multiple layouts"
+      error instanceof Error
+        ? error.message
+        : "Failed to analyze multiple layouts"
     );
   }
 }
@@ -332,7 +345,9 @@ export async function analyzeEconomicImpact(params: {
         immediateRisk: "NONE",
         weeklyOutlook: "NEUTRAL",
         warnings: [],
-        opportunities: ["Clear economic calendar provides stable trading environment"],
+        opportunities: [
+          "Clear economic calendar provides stable trading environment",
+        ],
         recommendation: `The ${action} signal on ${symbol} (${confidence}% confidence) is not conflicted by upcoming economic events.`,
       };
     }
@@ -356,7 +371,7 @@ Return ONLY valid JSON:
       CLAUDE_API_URL,
       {
         model: CLAUDE_MODEL,
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [
           {
             role: "user",
@@ -420,10 +435,17 @@ Return ONLY valid JSON:
 function validateAnalysisResult(result: any): result is AnalysisResult {
   if (!result || typeof result !== "object") return false;
   if (!["BUY", "SELL", "HOLD"].includes(result.action)) return false;
-  if (typeof result.confidence !== "number" || result.confidence < 0 || result.confidence > 100) return false;
+  if (
+    typeof result.confidence !== "number" ||
+    result.confidence < 0 ||
+    result.confidence > 100
+  )
+    return false;
   if (!["intraday", "swing", "long"].includes(result.timeframe)) return false;
-  if (!Array.isArray(result.reasons) || result.reasons.length === 0) return false;
-  if (!result.reasons.every((reason: any) => typeof reason === "string")) return false;
+  if (!Array.isArray(result.reasons) || result.reasons.length === 0)
+    return false;
+  if (!result.reasons.every((reason: any) => typeof reason === "string"))
+    return false;
   return true;
 }
 
@@ -434,7 +456,8 @@ function isValidEconomicImpact(result: any): boolean {
   if (!validRisks.includes(result.immediateRisk)) return false;
   const validOutlooks = ["BULLISH", "BEARISH", "NEUTRAL", "VOLATILE"];
   if (!validOutlooks.includes(result.weeklyOutlook)) return false;
-  if (!Array.isArray(result.warnings) || !Array.isArray(result.opportunities)) return false;
+  if (!Array.isArray(result.warnings) || !Array.isArray(result.opportunities))
+    return false;
   if (typeof result.recommendation !== "string") return false;
   return true;
 }

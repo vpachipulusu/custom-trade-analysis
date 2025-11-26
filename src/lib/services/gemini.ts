@@ -29,7 +29,10 @@ async function getImageBase64(imageUrl: string): Promise<string> {
 /**
  * Analyzes a TradingView chart using Google Gemini Pro Vision
  */
-export async function analyzeChart(imageUrl: string, modelId?: string): Promise<AnalysisResult> {
+export async function analyzeChart(
+  imageUrl: string,
+  modelId?: string
+): Promise<AnalysisResult> {
   try {
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_KEY environment variable is not set");
@@ -65,7 +68,7 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
         ],
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 4000,
         },
       },
       {
@@ -97,7 +100,8 @@ export async function analyzeChart(imageUrl: string, modelId?: string): Promise<
     } catch (parseError) {
       logger.error("Failed to parse Gemini response", {
         content: content.substring(0, 500),
-        error: parseError instanceof Error ? parseError.message : "Unknown error",
+        error:
+          parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI analysis result");
     }
@@ -197,7 +201,7 @@ export async function analyzeMultipleLayouts(
         contents: [{ parts }],
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 1500,
+          maxOutputTokens: 4000,
         },
       },
       {
@@ -228,7 +232,8 @@ export async function analyzeMultipleLayouts(
     } catch (parseError) {
       logger.error("Failed to parse Gemini multi-layout response", {
         content: content.substring(0, 500),
-        error: parseError instanceof Error ? parseError.message : "Unknown error",
+        error:
+          parseError instanceof Error ? parseError.message : "Unknown error",
       });
       throw new Error("Failed to parse AI multi-layout analysis result");
     }
@@ -252,7 +257,9 @@ export async function analyzeMultipleLayouts(
     });
 
     throw new Error(
-      error instanceof Error ? error.message : "Failed to analyze multiple layouts"
+      error instanceof Error
+        ? error.message
+        : "Failed to analyze multiple layouts"
     );
   }
 }
@@ -280,7 +287,9 @@ export async function analyzeEconomicImpact(params: {
         immediateRisk: "NONE",
         weeklyOutlook: "NEUTRAL",
         warnings: [],
-        opportunities: ["Clear economic calendar provides stable trading environment"],
+        opportunities: [
+          "Clear economic calendar provides stable trading environment",
+        ],
         recommendation: `The ${action} signal on ${symbol} (${confidence}% confidence) is not conflicted by upcoming economic events.`,
       };
     }
@@ -306,7 +315,7 @@ Return ONLY valid JSON:
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 2000,
         },
       },
       {
@@ -348,9 +357,10 @@ Return ONLY valid JSON:
       } events detected.`,
       immediateRisk,
       weeklyOutlook: "NEUTRAL",
-      warnings: immediateRisk === "HIGH" || immediateRisk === "EXTREME"
-        ? ["High-impact economic events detected"]
-        : [],
+      warnings:
+        immediateRisk === "HIGH" || immediateRisk === "EXTREME"
+          ? ["High-impact economic events detected"]
+          : [],
       opportunities: [],
       recommendation: `Review economic calendar manually before executing ${params.action} on ${params.symbol}.`,
     };
@@ -360,10 +370,17 @@ Return ONLY valid JSON:
 function validateAnalysisResult(result: any): result is AnalysisResult {
   if (!result || typeof result !== "object") return false;
   if (!["BUY", "SELL", "HOLD"].includes(result.action)) return false;
-  if (typeof result.confidence !== "number" || result.confidence < 0 || result.confidence > 100) return false;
+  if (
+    typeof result.confidence !== "number" ||
+    result.confidence < 0 ||
+    result.confidence > 100
+  )
+    return false;
   if (!["intraday", "swing", "long"].includes(result.timeframe)) return false;
-  if (!Array.isArray(result.reasons) || result.reasons.length === 0) return false;
-  if (!result.reasons.every((reason: any) => typeof reason === "string")) return false;
+  if (!Array.isArray(result.reasons) || result.reasons.length === 0)
+    return false;
+  if (!result.reasons.every((reason: any) => typeof reason === "string"))
+    return false;
   return true;
 }
 
@@ -374,7 +391,8 @@ function isValidEconomicImpact(result: any): boolean {
   if (!validRisks.includes(result.immediateRisk)) return false;
   const validOutlooks = ["BULLISH", "BEARISH", "NEUTRAL", "VOLATILE"];
   if (!validOutlooks.includes(result.weeklyOutlook)) return false;
-  if (!Array.isArray(result.warnings) || !Array.isArray(result.opportunities)) return false;
+  if (!Array.isArray(result.warnings) || !Array.isArray(result.opportunities))
+    return false;
   if (typeof result.recommendation !== "string") return false;
   return true;
 }

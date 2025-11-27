@@ -7,10 +7,6 @@ import {
   Typography,
   Box,
   Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Button,
   Grid,
   Divider,
@@ -101,16 +97,69 @@ function AIAnalysisContent({ analysisData, providerName, analysis }: AIAnalysisC
         <Typography variant="h6" gutterBottom>
           Analysis Reasons
         </Typography>
-        <List>
-          {analysisData.reasons.map((reason, index) => (
-            <ListItem key={index}>
-              <ListItemIcon>
-                <CheckCircleIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText primary={reason} />
-            </ListItem>
-          ))}
-        </List>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
+          {analysisData.reasons.map((reason, index) => {
+            // Extract confluence type (text before the first colon)
+            const colonIndex = reason.indexOf(':');
+            const confluenceType = colonIndex > 0 ? reason.substring(0, colonIndex).trim() : `Reason ${index + 1}`;
+            const confluenceDetail = colonIndex > 0 ? reason.substring(colonIndex + 1).trim() : reason;
+
+            return (
+              <Paper
+                key={index}
+                elevation={3}
+                sx={{
+                  flex: '1 1 calc(50% - 16px)',
+                  minWidth: '280px',
+                  p: 2,
+                  borderLeft: 4,
+                  borderColor: 'primary.main',
+                  bgcolor: 'background.paper',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 6,
+                    bgcolor: 'action.hover',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  <CheckCircleIcon
+                    sx={{
+                      color: 'success.main',
+                      fontSize: 24,
+                      mt: 0.5,
+                      flexShrink: 0
+                    }}
+                  />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 700,
+                        color: 'primary.main',
+                        mb: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5
+                      }}
+                    >
+                      {confluenceType}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: 'text.secondary',
+                        lineHeight: 1.5
+                      }}
+                    >
+                      {confluenceDetail}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
       </Grid>
 
       {/* Trade Setup */}

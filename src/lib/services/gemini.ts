@@ -67,7 +67,7 @@ export async function analyzeChart(
           },
         ],
         generationConfig: {
-          temperature: 0.4,
+          temperature: 0.1,
           maxOutputTokens: 4000,
         },
       },
@@ -200,7 +200,7 @@ export async function analyzeMultipleLayouts(
       {
         contents: [{ parts }],
         generationConfig: {
-          temperature: 0.4,
+          temperature: 0.1,
           maxOutputTokens: 4000,
         },
       },
@@ -314,7 +314,7 @@ Return ONLY valid JSON:
       {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.3,
+          temperature: 0.1,
           maxOutputTokens: 2000,
         },
       },

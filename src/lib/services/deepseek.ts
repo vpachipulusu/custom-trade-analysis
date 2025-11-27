@@ -388,7 +388,7 @@ If no events exist, return NONE risk and NEUTRAL outlook with message about clea
         ],
         response_format: { type: "json_object" },
         max_tokens: 4000,
-        temperature: 0.3,
+        temperature: 0.1,
       },
       {
         headers: {

@@ -86,6 +86,7 @@ export async function analyzeChart(
       {
         model,
         max_tokens: 4000,
+        temperature: 0.1,
         messages: [
           {
             role: "user",
@@ -253,6 +254,7 @@ export async function analyzeMultipleLayouts(
       {
         model,
         max_tokens: 4000,
+        temperature: 0.1,
         messages: [
           {
             role: "user",
@@ -372,6 +374,7 @@ Return ONLY valid JSON:
       {
         model: CLAUDE_MODEL,
         max_tokens: 2000,
+        temperature: 0.1,
         messages: [
           {
             role: "user",

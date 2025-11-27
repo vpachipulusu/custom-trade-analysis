@@ -155,6 +155,10 @@ export async function POST(request: NextRequest) {
                 sessionidSign: decryptedSessionidSign!,
               });
 
+              // Enforce snapshot limit - delete oldest snapshots if needed
+              const { enforceSnapshotLimit } = await import("@/lib/db/snapshotCleanup");
+              await enforceSnapshotLimit(layout.id);
+
               // Calculate expiration (24 hours from now)
               const expiresAt = new Date();
               expiresAt.setHours(expiresAt.getHours() + 24);

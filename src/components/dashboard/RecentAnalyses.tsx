@@ -76,6 +76,20 @@ export default function RecentAnalyses({ analyses }: RecentAnalysesProps) {
               </Box>
 
               <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                {analysis.tradeSetup?.quality && (
+                  <Chip
+                    label={`Setup ${analysis.tradeSetup.quality}`}
+                    size="small"
+                    color={
+                      analysis.tradeSetup.quality === "A"
+                        ? "success"
+                        : analysis.tradeSetup.quality === "B"
+                        ? "warning"
+                        : "error"
+                    }
+                    sx={{ fontWeight: 700 }}
+                  />
+                )}
                 <Chip
                   label={analysis.timeframe}
                   size="small"
